@@ -1,0 +1,15 @@
+import antfu from '@antfu/eslint-config'
+import readableTailwind from 'eslint-plugin-readable-tailwind'
+
+export default antfu({
+  formatters: true,
+  solid: true,
+  typescript: {
+    tsconfigPath: './tsconfig.json',
+  },
+}).append({
+  plugins: {
+    'readable-tailwind': readableTailwind,
+  },
+  rules: readableTailwind.configs.error.rules,
+})
