@@ -48,11 +48,11 @@ export default defineConfig({
         destination: 'ssr_',
         // already added by default Vike route
         route: false,
-        buildOptions: {
-          minify: true,
-          treeShaking: true,
-          bundle: true,
-        },
+        // buildOptions: {
+        //   minify: true,
+        //   treeShaking: true,
+        //   bundle: true,
+        // },
       },
     ],
   },
