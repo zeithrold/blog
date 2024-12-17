@@ -11,16 +11,6 @@ import paths from 'vite-tsconfig-paths'
 export default defineConfig({
   plugins: [
     vike(),
-    mdx({
-      jsxImportSource: 'solid-jsx',
-    }),
-    vikeSolid(),
-    paths(),
-    devtools({
-      autoname: true,
-    }),
-    banner('POWERED BY ZEITHROLD | 2024 Zeithrold https://github.com/zeithrold/blog'),
-    vercel(),
     devServer({
       entry: './src/server/entry.ts',
       exclude: [
@@ -31,8 +21,23 @@ export default defineConfig({
         /.*\.(svg|png)($|\?)/,
         /^\/(public|assets|static)\/.+/,
         /^\/node_modules\/.*/,
+        /.*\.(mdx?)($|\?)/,
       ],
+      injectClientScript: false,
     }),
+    {
+      enforce: 'pre',
+      ...mdx({
+        jsxImportSource: 'solid-jsx',
+      }),
+    },
+    vikeSolid(),
+    paths(),
+    devtools({
+      autoname: true,
+    }),
+    banner('POWERED BY ZEITHROLD | 2024 Zeithrold https://github.com/zeithrold/blog'),
+    vercel(),
   ],
   build: {
     rollupOptions: {
@@ -42,17 +47,14 @@ export default defineConfig({
   vercel: {
     additionalEndpoints: [
       {
-        // entry file to the server. Default export must be a node server or a function
         source: './src/server/vercel.ts',
-        // replaces default Vike target
         destination: 'ssr_',
-        // already added by default Vike route
-        route: false,
-        // buildOptions: {
-        //   minify: true,
-        //   treeShaking: true,
-        //   bundle: true,
-        // },
+        route: true,
+        buildOptions: {
+          minify: true,
+          treeShaking: true,
+          bundle: true,
+        },
       },
     ],
   },

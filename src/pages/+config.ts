@@ -3,6 +3,6 @@ import config from 'vike-solid/config'
 
 export default {
   extends: config,
-  ssr: true,
   clientRouting: false,
+  prerender: false,
 } satisfies Config
