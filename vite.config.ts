@@ -47,7 +47,7 @@ export default defineConfig({
         // replaces default Vike target
         destination: 'ssr_',
         // already added by default Vike route
-        route: true,
+        route: false,
         buildOptions: {
           minifySyntax: true,
           minifyWhitespace: true,
