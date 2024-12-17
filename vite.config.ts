@@ -49,7 +49,7 @@ export default defineConfig({
       {
         source: './src/server/vercel.ts',
         destination: 'ssr_',
-        route: true,
+        route: false,
         buildOptions: {
           minify: true,
           treeShaking: true,

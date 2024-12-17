@@ -3,9 +3,13 @@ import { stream } from 'hono/streaming'
 import { renderPage } from 'vike/server'
 
 export default async function vike(c: Context) {
+  const supabase = c.get('supabase')
+  const user = c.get('user')
   const pageContext = await renderPage({
     urlOriginal: c.req.url,
     headersOriginal: c.req.header(),
+    supabase,
+    user,
   })
   const response = pageContext.httpResponse
   const { writable, readable } = new TransformStream()
