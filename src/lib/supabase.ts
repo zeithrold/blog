@@ -1,5 +1,6 @@
 import type { CookieOptions } from '@supabase/ssr'
 import type { Context } from 'hono'
+import process from 'node:process'
 import { createServerClient } from '@supabase/ssr'
 import { getCookie, setCookie } from 'hono/cookie'
 
@@ -46,8 +47,8 @@ function supabaseCookieOptions(c: Context) {
 
 export function createSupabase(c: Context) {
   return createServerClient(
-    import.meta.env.SUPABASE_URL as string,
-    import.meta.env.SUPABASE_ANON_KEY as string,
+    process.env.SUPABASE_URL as string,
+    process.env.SUPABASE_ANON_KEY as string,
     supabaseCookieOptions(c),
   )
 }

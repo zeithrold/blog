@@ -1,8 +1,9 @@
 import api from '@/api'
 import supabase from '@/middlewares/supabase'
 import vike from '@/middlewares/vike'
-
 import { Hono } from 'hono'
+
+import 'dotenv/config'
 
 const app = new Hono()
 
