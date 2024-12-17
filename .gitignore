@@ -205,3 +205,4 @@ $RECYCLE.BIN/
 # Local Netlify folder
 .netlify
 .vercel/
+.vercel

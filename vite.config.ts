@@ -10,7 +10,9 @@ import paths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   plugins: [
-    vike(),
+    vike({
+      prerender: true,
+    }),
     mdx({
       jsxImportSource: 'solid-jsx',
     }),
