@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.noto-sans {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.noto-serif {
+  font-family: 'Noto Serif', serif;
+}

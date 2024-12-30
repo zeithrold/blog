@@ -1,6 +1,6 @@
-import api from '@/api'
 import supabase from '@/middlewares/supabase'
 import vike from '@/middlewares/vike'
+import api from '@/routes/api'
 import { Hono } from 'hono'
 
 import 'dotenv/config'
@@ -12,8 +12,8 @@ app.use(async (c, next) => {
   await next()
 })
 
-app.route('/v1/api', api)
 app.use(supabase)
+app.route('/v1/api', api)
 
 app.all('*', vike)
 

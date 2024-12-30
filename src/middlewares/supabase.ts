@@ -1,4 +1,4 @@
-import { createSupabase } from '@/lib/supabase'
+import { createSupabase } from '@/lib/supabase/init'
 import { createMiddleware } from 'hono/factory'
 
 const supabase = createMiddleware(async (c, next) => {

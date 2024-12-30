@@ -1,21 +1,14 @@
-import { Show } from 'solid-js'
+import Card from '@/components/error/Card'
 import { usePageContext } from 'vike-solid/usePageContext'
 
 export default function Page() {
-  const { is404, errorWhileRendering } = usePageContext()
-
+  const { abortStatusCode, is404 } = usePageContext()
+  const errorCode
+    = is404
+      ? 404
+      // eslint-disable-next-line ts/strict-boolean-expressions
+      : abortStatusCode || 500
   return (
-    <Show
-      when={is404}
-      fallback={(
-        <div>
-          <h1>500</h1>
-          <pre>{`${errorWhileRendering}`}</pre>
-        </div>
-      )}
-    >
-      <h1>404</h1>
-    </Show>
-
+    <Card errorCode={errorCode} />
   )
 }

@@ -7,9 +7,10 @@ export default antfu({
   typescript: {
     tsconfigPath: './tsconfig.json',
   },
-}).append({
-  plugins: {
-    'readable-tailwind': readableTailwind,
-  },
-  rules: readableTailwind.configs.error.rules,
 })
+  .append({
+    plugins: {
+      'readable-tailwind': readableTailwind,
+    },
+    rules: readableTailwind.configs.error.rules,
+  })

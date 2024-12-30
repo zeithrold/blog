@@ -1,14 +1,10 @@
 import type { JSX } from 'solid-js/jsx-runtime'
-import { attachDevtoolsOverlay } from '@solid-devtools/overlay'
-import './tailwind.css'
-import 'solid-devtools'
+import '~/style.css'
 
-attachDevtoolsOverlay()
-
-export default function Layout(props: { children?: JSX.Element }) {
+export default function (props: { children: JSX.Element }) {
   return (
-    <div class="flex">
+    <>
       {props.children}
-    </div>
+    </>
   )
 }

@@ -1,3 +1,4 @@
+import process from 'node:process'
 import devServer from '@hono/vite-dev-server'
 import mdx from '@mdx-js/rollup'
 import devtools from 'solid-devtools/vite'
@@ -8,9 +9,15 @@ import banner from 'vite-plugin-banner'
 import vercel from 'vite-plugin-vercel'
 import paths from 'vite-tsconfig-paths'
 
+const isProcution = process.env.NODE_ENV === 'production'
+const baseAssets = isProcution ? 'https://r2.zeithrold.dev/blog' : undefined
+
 export default defineConfig({
   plugins: [
-    vike(),
+    vike({
+      baseAssets,
+      prerender: false,
+    }),
     devServer({
       entry: './src/server/entry.ts',
       exclude: [
@@ -36,12 +43,16 @@ export default defineConfig({
     devtools({
       autoname: true,
     }),
-    banner('POWERED BY ZEITHROLD | 2024 Zeithrold https://github.com/zeithrold/blog'),
+    banner('2024 Zeithrold https://github.com/zeithrold/blog | Licensed under MIT'),
     vercel(),
   ],
   build: {
     rollupOptions: {
       treeshake: 'recommended',
+      output: {
+        entryFileNames: 'assets/entries/entry-[hash].js',
+        chunkFileNames: 'assets/chunks/chunk-[hash].js',
+      },
     },
   },
   vercel: {
