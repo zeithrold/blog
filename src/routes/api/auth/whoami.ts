@@ -1,33 +1,27 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
-import get from '@/lib/sql/user/get'
+import { handle } from '@/lib/helper/handler'
+import { Response as R } from '@/lib/openapi'
+import { returnUser } from '@/task/postprocess/api/auth-whoami'
+import { prepareOpenID } from '@/task/preprocess/api/auth-whoami'
+import { getUser } from '@/task/process/get-user'
 import { createRoute, z } from '@hono/zod-openapi'
+import * as F from 'fp-ts/function'
+import * as TE from 'fp-ts/TaskEither'
 
-async function sha256(str: string) {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(str)
-  const buffer = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-const WhoamiSuccessResponseSchema
+const WhoamiResponseSchema
   = z.object({
     data: z.object({
-      openid: z.string().uuid(),
-      email: z.string().email(),
-      name: z.string(),
-      avatar: z.string().url(),
-    }).optional(),
+      openid: z.string().uuid().openapi({ description: 'The user ID.' }),
+      email: z.string().email().openapi({ description: 'The user email.' }),
+      name: z.string().openapi({ description: 'The user name.' }),
+      avatar: z.string().url().openapi({ description: 'The user avatar.' }),
+    })
+      .nullable()
+      .openapi({
+        description: 'The current user. If the user is not registered, this field will be null.',
+      }),
     error: z.null(),
-  })
-
-const WhoamiErrorResponseSchema
-  = z.object({
-    data: z.null(),
-    error: z.object({
-      type: z.string(),
-      message: z.string(),
-    }),
-  })
+  }).openapi('WhoamiResponse')
 
 const whoamiRoute = createRoute({
   method: 'get',
@@ -35,67 +29,25 @@ const whoamiRoute = createRoute({
   path: '/whoami',
   security: [{ Session: [] }],
   responses: {
-    200: {
-      content: {
-        'application/json': {
-          schema: WhoamiSuccessResponseSchema,
-        },
-      },
+    ...R.json({
+      schema: WhoamiResponseSchema,
       description: 'The current user.',
-    },
-    401: {
-      content: {
-        'application/json': {
-          schema: WhoamiErrorResponseSchema,
-        },
-      },
-      description: 'Unauthorized.',
-    },
-    500: {
-      content: {
-        'application/json': {
-          schema: WhoamiErrorResponseSchema,
-        },
-      },
-      description: 'Internal error.',
-    },
+    }),
+    ...R.error({
+      status: 401,
+      description: 'Will return a 401 if the user is not authorized.',
+    }),
   },
 })
 
 export default function whoami(hono: OpenAPIHono) {
   return hono.openapi(whoamiRoute, async (c) => {
-    const supabase = c.get('supabase')
-    const { data, error } = await supabase.auth.getUser()
-    if (error) {
-      return c.json({
-        data: null,
-        error: {
-          type: 'internal',
-          message: 'Internal error.',
-        },
-      }, 500)
-    }
-    const { user } = data
-    const dbUser = await get(user.id)()
-    if (!dbUser) {
-      return c.json({
-        data: null,
-        error: {
-          type: 'unauthorized',
-          message: 'User not found.',
-        },
-      }, 401)
-    }
-    const { name, email } = dbUser
-    const avatar = `https://www.gravatar.com/avatar/${await sha256(email)}`
-    return c.json({
-      error: null,
-      data: {
-        name,
-        email,
-        openid: user.id,
-        avatar,
-      },
-    }, 200)
+    const backend = F.flow(
+      prepareOpenID,
+      TE.chain(getUser),
+      TE.chain(returnUser),
+    )
+    const { body, status } = await handle(backend(c))
+    return c.json(body, status)
   })
 }

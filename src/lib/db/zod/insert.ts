@@ -1,5 +1,6 @@
 import { createInsertSchema } from 'drizzle-zod'
-import { content, user } from '../schema'
+import { content, tag, user } from '../schema'
 
-export const Content = createInsertSchema(content)
-export const Member = createInsertSchema(user)
+export const ContentInsertSchema = createInsertSchema(content)
+export const UserInsertSchema = createInsertSchema(user)
+export const TagInsertSchema = createInsertSchema(tag)

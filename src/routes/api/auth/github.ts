@@ -1,4 +1,7 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
+import {
+  Response as R,
+} from '@/lib/openapi'
 import { createRoute } from '@hono/zod-openapi'
 
 const githubRoute = createRoute({
@@ -7,14 +10,9 @@ const githubRoute = createRoute({
   description: 'Login with GitHub',
   tags: ['Auth'],
   responses: {
-    302: {
-      headers: {
-        Location: {
-          type: 'string',
-        },
-      },
-      description: 'Redirects to the next URL.',
-    },
+    ...R.redirect({
+      description: 'Redirects to the GitHub OAuth login page.',
+    }),
   },
 })
 

@@ -1,4 +1,7 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
+import {
+  Response as R,
+} from '@/lib/openapi'
 import { createRoute } from '@hono/zod-openapi'
 
 const signOutRoute = createRoute({
@@ -7,21 +10,20 @@ const signOutRoute = createRoute({
   tags: ['Auth'],
   security: [{ Session: [] }],
   responses: {
-    302: {
-      headers: {
-        Location: {
-          type: 'string',
-        },
-      },
-      description: 'Redirects to the next URL.',
-    },
+    ...R.redirect({
+      description: 'Redirects to the home page.',
+    }),
   },
+  description: 'Sign out of the current session.',
 })
 
 export default function signOut(hono: OpenAPIHono) {
   return hono.openapi(signOutRoute, async (c) => {
     const supabase = c.get('supabase')
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      return c.redirect('/?sign-out-error=internal')
+    }
     return c.redirect('/')
   })
 }

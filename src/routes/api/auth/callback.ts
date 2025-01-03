@@ -1,4 +1,8 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
+import {
+  Response as R,
+  Security as S,
+} from '@/lib/openapi'
 import { createRoute, z } from '@hono/zod-openapi'
 
 export const CallbackParamsSchema = z
@@ -16,19 +20,15 @@ const callbackRoute = createRoute({
   method: 'get',
   path: '/callback',
   tags: ['Auth'],
+  operationId: 'auth-callback',
   request: {
     query: CallbackParamsSchema,
   },
-  security: [{ Session: [] }],
+  security: S.session(),
   responses: {
-    302: {
-      headers: {
-        Location: {
-          type: 'string',
-        },
-      },
+    ...R.redirect({
       description: 'Redirects to the next URL.',
-    },
+    }),
   },
 })
 

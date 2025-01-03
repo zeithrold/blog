@@ -1,5 +1,6 @@
 import { createSelectSchema } from 'drizzle-zod'
-import { content, user } from '../schema'
+import { content, tag, user } from '../schema'
 
-export const Content = createSelectSchema(content)
-export const Member = createSelectSchema(user)
+export const ContentSelectSchema = createSelectSchema(content)
+export const UserSelectSchema = createSelectSchema(user)
+export const TagSelectSchema = createSelectSchema(tag)

@@ -9,6 +9,7 @@
     "preview": "cross-env NODE_ENV=production tsx ./src/server/node.ts"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.0",
     "@hono/swagger-ui": "^0.5.0",
     "@hono/zod-openapi": "^0.18.3",
     "@hono/zod-validator": "^0.4.2",
@@ -46,6 +47,7 @@
     "daisyui": "^4.12.22",
     "drizzle-kit": "^0.30.1",
     "eslint": "^9.16.0",
+    "eslint-plugin-drizzle": "^0.2.3",
     "eslint-plugin-format": "^0.1.3",
     "eslint-plugin-readable-tailwind": "^1.8.2",
     "eslint-plugin-solid": "^0.14.5",

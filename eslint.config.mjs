@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import drizzle from 'eslint-plugin-drizzle'
 import readableTailwind from 'eslint-plugin-readable-tailwind'
 
 export default antfu({
@@ -8,6 +9,12 @@ export default antfu({
     tsconfigPath: './tsconfig.json',
   },
 })
+  .append({
+    plugins: {
+      drizzle,
+    },
+    rules: drizzle.configs.recommended.rules,
+  })
   .append({
     plugins: {
       'readable-tailwind': readableTailwind,
