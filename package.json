@@ -9,19 +9,17 @@
     "preview": "cross-env NODE_ENV=production tsx ./src/server/node.ts"
   },
   "dependencies": {
-    "@asteasolutions/zod-to-openapi": "^7.3.0",
-    "@hono/swagger-ui": "^0.5.0",
-    "@hono/zod-openapi": "^0.18.3",
-    "@hono/zod-validator": "^0.4.2",
+    "@hono/trpc-server": "^0.3.4",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.8",
+    "@trpc/client": "^10.45.2",
+    "@trpc/server": "^10.45.2",
     "dompurify": "^3.2.3",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.2",
     "drizzle-zod": "^0.6.0",
     "fp-ts": "^2.16.9",
     "hono": "^4.6.14",
-    "html-minifier-terser": "^7.2.0",
     "marked": "^15.0.4",
     "marked-plaintify": "^1.1.1",
     "postgres": "^3.4.5",
@@ -34,14 +32,12 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^3.12.0",
-    "@hono/node-server": "^1.13.7",
     "@hono/vite-dev-server": "^0.17.0",
     "@mdx-js/rollup": "^3.1.0",
     "@solid-devtools/overlay": "^0.31.3",
     "@tailwindcss/typography": "^0.5.15",
     "@types/html-minifier-terser": "^7.0.2",
     "@types/node": "^22.10.2",
-    "@vite-plugin-vercel/vike": "^9.0.2",
     "autoprefixer": "^10.4.20",
     "cross-env": "^7.0.3",
     "daisyui": "^4.12.22",
@@ -56,9 +52,11 @@
     "solid-jsx": "^1.1.4",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vike-cloudflare": "^0.1.6",
     "vite": "^5.0.2",
     "vite-plugin-banner": "^0.8.0",
-    "vite-plugin-vercel": "^9.0.3",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "wrangler": "^3.99.0"
   }
 }

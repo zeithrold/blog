@@ -2,7 +2,9 @@ import process from 'node:process'
 import { sql } from 'drizzle-orm'
 import { pgSchema, serial, timestamp, uuid } from 'drizzle-orm/pg-core'
 
-export const schema = pgSchema(process.env.POSTGRES_SCHEMA!)
+const POSTGRES_SCHEMA = process.env.POSTGRES_SCHEMA as string
+
+export const schema = pgSchema(POSTGRES_SCHEMA)
 
 export function initEntity() {
   return {

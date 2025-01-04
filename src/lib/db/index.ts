@@ -3,7 +3,9 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from './schema'
 
-export const client = postgres(process.env.DATABASE_URL as string, {
+const POSTGRES_URL = process.env.POSTGRES_URL as string
+
+export const client = postgres(POSTGRES_URL, {
   prepare: false,
 })
 

@@ -23,7 +23,6 @@ interface ImportMeta { readonly env: ImportMetaEnv }
 interface ContextData {
   supabase: SupabaseClient
   user: User | null
-  method: HonoRequest['method']
 }
 
 declare global {namespace Vike {interface PageContext extends ContextData {}}}

@@ -78,7 +78,8 @@ export const content = schema.table('contents', {
   /**
    * Primary author of the content
    */
-  primaryAuthor: uuid('primary_author').notNull(),
+  primaryAuthor: uuid('primary_author')
+    .notNull(),
   /**
    * Authors of the content
    */
@@ -93,19 +94,23 @@ export const content = schema.table('contents', {
   /**
    * Title of the content
    */
-  title: text('title').notNull(),
+  title: text('title')
+    .notNull(),
   /**
    * Content written in markdown
    */
-  content: text('content').notNull(),
+  content: text('content')
+    .notNull(),
   /**
    * Content generated in HTML
    */
-  contentHtml: text('content_html').notNull(),
+  contentHtml: text('content_html')
+    .notNull(),
   /**
    * Content generated in plain text
    */
-  contentPlainText: text('content_plaintext').notNull(),
+  contentPlainText: text('content_plaintext')
+    .notNull(),
   /**
    * Whether the content is current version of a content
    * If it is not the current version, it will be false

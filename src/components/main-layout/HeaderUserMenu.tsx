@@ -1,12 +1,13 @@
-import type { ClientType } from '@/routes/api/auth'
-import { client } from '@/routes/api/client'
-import { BiRegularLoaderAlt, BiRegularLock, BiRegularUserCircle } from 'solid-icons/bi'
+import trpc from '@/lib/trpc'
+import { BiRegularErrorCircle, BiRegularLoaderAlt, BiRegularLock, BiRegularUserCircle } from 'solid-icons/bi'
 import { createResource, Match, Switch } from 'solid-js'
 
-const AuthClient = client<ClientType>('/auth')
+async function getCurrentUser() {
+  return trpc.auth.whoami.query()
+}
 
-async function getSession() {
-  return (await AuthClient.whoami.$get()).json()
+function ErrorIcon() {
+  return <BiRegularErrorCircle class="text-xl" />
 }
 
 function LoadingIcon() {
@@ -22,24 +23,23 @@ function UserIcon() {
 }
 
 export default function HeaderUserMenu() {
-  const [data] = createResource(getSession)
+  const [data] = createResource(getCurrentUser)
   return (
-    <Switch>
-      <Match when={data.loading}>
-        <button type="button" class="btn btn-square btn-ghost text-xl">
-          <LoadingIcon />
-        </button>
-      </Match>
-      <Match when={!data.loading && data()?.data}>
-        <button type="button" class="btn btn-square btn-ghost text-xl">
+    <button type="button" class="btn btn-square btn-ghost text-xl">
+      <Switch>
+        <Match when={data.state === 'ready' && data() !== null}>
           <UserIcon />
-        </button>
-      </Match>
-      <Match when={true}>
-        <button type="button" class="btn btn-square btn-ghost text-xl">
+        </Match>
+        <Match when={data.state === 'errored'}>
+          <ErrorIcon />
+        </Match>
+        <Match when={data.state === 'ready' && data() === null}>
           <LoginIcon />
-        </button>
-      </Match>
-    </Switch>
+        </Match>
+        <Match when={true}>
+          <LoadingIcon />
+        </Match>
+      </Switch>
+    </button>
   )
 }

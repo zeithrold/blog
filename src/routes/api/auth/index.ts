@@ -1,20 +1,12 @@
-import { OpenAPIHono } from '@hono/zod-openapi'
-import * as F from 'fp-ts/function'
+import { Hono } from 'hono'
 import callback from './callback'
 import github from './github'
 import signOut from './sign-out'
-import whoami from './whoami'
 
-const auth = new OpenAPIHono()
+const auth = new Hono()
 
-const _route = F.pipe(
-  auth,
-  callback,
-  github,
-  signOut,
-  whoami,
-)
-
-export type ClientType = typeof _route
+auth.get('/github', github)
+auth.get('/callback', callback)
+auth.get('/sign-out', signOut)
 
 export default auth
