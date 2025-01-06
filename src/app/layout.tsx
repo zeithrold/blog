@@ -1,24 +1,24 @@
-import { Noto_Sans } from 'next/font/google'
+import type { LayoutProps } from '@/types'
+import Footer from '@/components/layout/footer/Footer'
+import { ClerkProvider } from '@clerk/nextjs'
 import React from 'react'
 import './globals.css'
 
-const noto_sans = Noto_Sans({
-  subsets: ['latin'],
-})
-
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: LayoutProps) {
   return (
-    <html>
-      <body className={`
-        ${noto_sans.className}
-      `}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html>
+        <body>
+          <div className="flex min-h-[100vh] flex-col">
+            <div className="flex flex-1">
+              {children}
+            </div>
+            <Footer />
+          </div>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
