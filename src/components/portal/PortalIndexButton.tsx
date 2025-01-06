@@ -8,7 +8,7 @@ export default function PortalIndexButton() {
   const [title, setTitle] = React.useState(<span>Blog Portal</span>)
   return (
     <Link
-      className="btn btn-primary btn-sm text-lg font-bold"
+      className="btn btn-sm text-lg font-bold transition-all duration-300"
       href="/"
       onMouseOver={() => setTitle(
         <span className="flex items-center justify-center">

@@ -1,5 +1,7 @@
-export default function IndexPage() {
+export default async function IndexPage() {
   return (
-    <h1 className="text-lg font-bold">Hello, world!</h1>
+    <div>
+      <h1 className="text-5xl font-bold">Featured</h1>
+    </div>
   )
 }
