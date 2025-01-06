@@ -1,32 +1,27 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "incremental": true,
+    "target": "ES2017",
     "jsx": "preserve",
-    "jsxImportSource": "solid-js",
-    // Enable latest features
-    "lib": ["ESNext", "DOM"],
-    "moduleDetection": "force",
-    "module": "ESNext",
-
-    // Bundler mode
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "esnext",
     "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["./src/*"],
-      "~/*": ["./*"]
+      "@/*": ["./src/*"]
     },
-    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
     "allowJs": true,
-
-    // Best practices
     "strict": true,
-    "noFallthroughCasesInSwitch": true,
-
-    "noPropertyAccessFromIndexSignature": false,
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "noEmit": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true
-  }
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

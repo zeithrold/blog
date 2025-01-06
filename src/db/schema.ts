@@ -155,9 +155,9 @@ export const user = schema.table('users', {
    */
   email: text('email').notNull(),
   /**
-   * Introduction of the member
+   * bio of the member
    */
-  introduction: text('introduction'),
+  bio: text('bio'),
   /**
    * Role of the member
    */

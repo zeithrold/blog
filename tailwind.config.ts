@@ -3,9 +3,12 @@ import typography from '@tailwindcss/typography'
 import daisyui from 'daisyui'
 
 export default {
-  content: ['./src/**/*.{html,js,jsx,ts,tsx,vue}'],
-  theme: {
-    extend: {},
-  },
-  plugins: [daisyui, typography],
+  content: [
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  plugins: [
+    daisyui,
+    typography,
+  ],
 } satisfies Config
