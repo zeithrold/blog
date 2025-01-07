@@ -10,6 +10,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html>
+        <head>
+          <title>zeithrold/blog</title>
+        </head>
         <body>
           <div className="flex min-h-[100vh] flex-col">
             <div className="flex flex-1">

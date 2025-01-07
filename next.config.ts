@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
       protocol: 'https',
       hostname: 'images.unsplash.com',
       pathname: '/photo-**',
+    }, {
+      protocol: 'https',
+      hostname: 'www.gravatar.com',
+      pathname: '/avatar/**',
     }],
   },
   // Optionally, add any other Next.js config below

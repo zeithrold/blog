@@ -1,22 +1,28 @@
-import type { AuthorListType } from './AuthorList'
-import Content from './Content'
+import type { AuthorListType, TagListType } from '@/components/meta'
 import CoverImage from './CoverImage'
+import PostCardContent from './PostCardContent'
 
-export interface ArticleCardProps {
+export interface PostCardProps {
   title: string
   content: string
   authors: AuthorListType
   slug: string
+  date: Date
   image?: string
+  tags?: TagListType
+  featured?: boolean
 }
 
-export default function ArticleCard({
+export default function PostCard({
   title,
   content,
   authors,
   slug,
+  date,
   image,
-}: ArticleCardProps) {
+  tags,
+  featured,
+}: PostCardProps) {
   return (
     <div
       className={`
@@ -29,12 +35,15 @@ export default function ArticleCard({
       <CoverImage
         slug={slug}
         src={image}
+        featured={featured}
       />
-      <Content
+      <PostCardContent
         title={title}
         content={content}
         authors={authors}
         slug={slug}
+        date={date}
+        tags={tags}
       />
     </div>
   )

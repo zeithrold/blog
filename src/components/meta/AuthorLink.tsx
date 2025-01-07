@@ -13,7 +13,7 @@ export default function AuthorLink({
       <Link
         href={`/author/@${username}`}
         className={`
-          focus:text-stone-500
+          focus:text-stone-400
 
           hover:underline
         `}
