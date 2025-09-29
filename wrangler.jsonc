@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ztd-candy-v3",
+  "compatibility_date": "2025-07-26",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "67535bc48ab741a98034d9db4e5347f6"
+    }
+  ]
+}
