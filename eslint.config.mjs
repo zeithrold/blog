@@ -12,5 +12,6 @@ export default withNuxt(
     vue: true,
     formatters: true,
     rules,
+    ignores: ['app/components/ui/**'],
   }),
 )

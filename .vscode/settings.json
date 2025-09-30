@@ -65,7 +65,7 @@
     "tsconfig.json": "tsconfig.*.json",
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, pnpm-workspace.yaml",
     "Cargo.toml": "Cargo.lock, rust-toolchain.toml, eslint.config.mjs",
-    "nuxt.config.ts": "nuxt.config.js, eslint.config.mjs, uno.config.mjs, tsconfig.json, wrangler.jsonc",
+    "nuxt.config.ts": "nuxt.config.js, eslint.config.mjs, uno.config.mjs, tsconfig.json, wrangler.jsonc, components.json",
     ".gitignore": ".nvmrc, .editorconfig"
   },
   "vue.inlayHints.destructuredProps": true,

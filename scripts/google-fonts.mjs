@@ -2,10 +2,10 @@ import { constructURL } from 'google-fonts-helper'
 
 const defaultFontConfig = {
   wght: [
-    400,
+    500,
     700,
   ],
-  ital: [400],
+  ital: [500],
 }
 
 const requiredFontList = [
@@ -23,12 +23,17 @@ const sansFontList = requiredFontList.filter(font => font.includes('Noto Sans'))
 const serifFontList = requiredFontList.filter(font => font.includes('Noto Serif'))
 
 const fonts = constructURL({
-  families: Object.fromEntries(
-    requiredFontList.map(font => [
-      font,
-      defaultFontConfig,
-    ]),
-  ),
+  families: {
+    ...Object.fromEntries(
+      requiredFontList.map(font => [
+        font,
+        defaultFontConfig,
+      ]),
+    ),
+    'Noto Sans Mono': {
+      wght: [400],
+    },
+  },
   display: 'swap',
 }) || 'https://fonts.googleapis.com/css2?family=Roboto'
 

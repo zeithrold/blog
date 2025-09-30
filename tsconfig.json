@@ -1,4 +1,13 @@
 {
+  // NOTE: This only makes shadcn work, Nuxt actually overrides this
+  "compilerOptions": {
+    "baseUrl": "./app",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
   "references": [
     {
       "path": "./.nuxt/tsconfig.app.json"
