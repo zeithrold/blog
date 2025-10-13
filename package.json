@@ -53,6 +53,7 @@
     "eslint-plugin-format": "^1.0.2",
     "google-fonts-helper": "^3.7.3",
     "nitro-cloudflare-dev": "^0.2.2",
+    "npm-run-all2": "^8.0.4",
     "tailwindcss": "^4.1.13",
     "wrangler": "^4.40.2"
   }

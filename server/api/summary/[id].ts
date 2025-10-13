@@ -6,16 +6,16 @@ import { createNotionFetch } from '~~/server/lib'
  * Get the full text of the blocks
  */
 function getFullText(blocks: BlockObjectResponse[]) {
-  let result = ''
+  const list: string[] = []
   for (const blockItem of blocks) {
     if (blockItem.type === 'paragraph') {
-      result += blockItem.paragraph.rich_text.map(text => text.plain_text).join('')
+      list.push(blockItem.paragraph.rich_text.map(text => text.plain_text).join(' '))
     }
     if (blockItem.type === 'divider') {
       break
     }
   }
-  return result
+  return list.join(' ')
 }
 
 export default defineCachedEventHandler(async (event) => {
