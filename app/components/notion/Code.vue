@@ -53,7 +53,5 @@ onLoaded(({ hljs }) => {
     class="font-mono shadow rounded-2xl p-4 border border-black/5"
     v-html="highlightResult.value"
   />
-  <div v-if="code.caption.length > 0" class="flex items-center justify-center">
-    <NotionRichTextGroup :rich-text="code.caption" class="text-sm !text-black/50 font-sans" />
-  </div>
+  <NotionCaption :caption="props.code.caption" />
 </template>

@@ -17,7 +17,7 @@ definePageMeta({
 
 <template>
   <div class="flex-1 flex flex-col items-center">
-    <PageTitle :id="id" />
+    <PageHeader :id="id" />
     <div class="container mx-auto px-4">
       <PageContent :id="id" />
     </div>

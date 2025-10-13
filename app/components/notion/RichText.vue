@@ -47,7 +47,9 @@ const href = computed(() => {
       <StickyNote v-if="props.mention.type === 'page'" />
       <Calendar v-if="props.mention.type === 'date'" />
       <CircleUser v-if="props.mention.type === 'user'" />
-      <span :class="cn(className)">{{ plain_text }}</span>
+      <span v-if="props.mention.type !== 'user'" :class="cn(className)">{{ plain_text }}</span>
+      <span v-else :class="cn(className)">{{ plain_text.slice(2) }}</span>
+      <!-- To remove the @ from the plain_text -->
     </UiButton>
   </NuxtLink>
   <NotionRichTextEquation v-else v-bind="props" />

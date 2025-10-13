@@ -1,5 +1,6 @@
+import type { UserObjectResponse } from '@notionhq/client'
 import { isFullUser } from '@notionhq/client'
-import { createNotionClient } from '~~/server/lib'
+import { createNotionFetch } from '~~/server/lib'
 
 export default defineCachedEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -9,10 +10,8 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const client = createNotionClient(event)
-  const response = await client.users.retrieve({
-    user_id: id,
-  })
+  const fetch = await createNotionFetch(event)
+  const response: UserObjectResponse = await fetch(`/users/${id}`)
   if (!isFullUser(response)) {
     throw createError({
       statusCode: 400,

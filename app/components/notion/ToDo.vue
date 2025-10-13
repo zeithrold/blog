@@ -13,7 +13,7 @@ const { id, to_do } = defineProps<ToDoBlockObjectResponse>()
     />
     <label
       :for="id"
-      class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      class="font-medium leading-none peer-disabled:cursor-not-allowed"
     >
       <NotionRichTextGroup :rich-text="to_do.rich_text" />
     </label>

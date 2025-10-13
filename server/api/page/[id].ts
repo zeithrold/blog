@@ -1,5 +1,6 @@
+import type { PageObjectResponse } from '@notionhq/client'
 import { isFullPage } from '@notionhq/client'
-import { createNotionClient } from '~~/server/lib'
+import { createNotionFetch } from '~~/server/lib'
 
 export default defineCachedEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -9,9 +10,8 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const client = createNotionClient(event)
-  const response = await client.getPage(id)
-  response.notion_user
+  const fetch = await createNotionFetch(event)
+  const response: PageObjectResponse = await fetch(`/pages/${id}`)
   if (!isFullPage(response)) {
     throw createError({
       statusCode: 400,

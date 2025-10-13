@@ -3,7 +3,7 @@ import type { BlockObjectResponse, ListBlockChildrenResponse } from '@notionhq/c
 import { isFullBlock } from '@notionhq/client'
 import { omit } from 'es-toolkit'
 import { v4 as uuidv4 } from 'uuid'
-import { createNotionClient } from '../../lib'
+import { createNotionFetch } from '~~/server/lib'
 
 /**
  * Group the block list into a group block if the
@@ -70,11 +70,15 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'start_cursor must be a string or undefined',
     })
   }
-  const client = createNotionClient(event)
-  const response = await client.blocks.children.list({
-    block_id: id,
-    start_cursor,
-  })
+  const fetch = await createNotionFetch(event)
+  const response = await fetch<ListBlockChildrenResponse>(
+    `/blocks/${id}/children`,
+    {
+      params: {
+        start_cursor,
+      },
+    },
+  )
   const metadata = omit(response, ['results'])
   const { results } = response
   const blocks = parseBlockList(results)

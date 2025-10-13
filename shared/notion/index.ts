@@ -1,4 +1,5 @@
 import type { BlockObjectResponse, ListBlockChildrenResponse } from '@notionhq/client'
+import type { NotionError } from './errors'
 
 export interface GroupBlockResponse {
   type: 'group'
@@ -18,3 +19,6 @@ export type BlockChildrenMetadata = Omit<ListBlockChildrenResponse, 'results'>
 export interface BlockChildrenResponse extends BlockChildrenMetadata {
   blocks: BlockResponse[]
 }
+
+export type NotionResponse<T> = T | NotionError
+export * from './errors'
