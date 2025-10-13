@@ -1,5 +1,4 @@
 import type { H3Event } from 'h3'
-import { merge } from 'es-toolkit'
 
 /**
  * Create a new Notion fetch instance

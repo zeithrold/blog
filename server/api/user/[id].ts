@@ -10,8 +10,8 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const fetch = await createNotionFetch(event)
-  const response: UserObjectResponse = await fetch(`/users/${id}`)
+  const notionFetch = await createNotionFetch(event)
+  const response = await notionFetch<UserObjectResponse>(`/users/${id}`)
   if (!isFullUser(response)) {
     throw createError({
       statusCode: 400,

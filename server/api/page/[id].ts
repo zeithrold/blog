@@ -10,8 +10,8 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const fetch = await createNotionFetch(event)
-  const response: PageObjectResponse = await fetch(`/pages/${id}`)
+  const notionFetch = await createNotionFetch(event)
+  const response = await notionFetch<PageObjectResponse>(`/pages/${id}`)
   if (!isFullPage(response)) {
     throw createError({
       statusCode: 400,

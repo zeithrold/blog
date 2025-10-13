@@ -1,28 +1,25 @@
+import type { QueryDataSourceResponse } from '@notionhq/client'
 import { ConfigSchema } from '#shared/schemas'
-import { Client } from '@notionhq/client'
+import { createNotionFetch } from '~~/server/lib'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   try {
     const { notion } = useRuntimeConfig()
     const { data, success, error } = await ConfigSchema.safeParseAsync(notion)
     if (!success) {
       throw error
     }
-    const client = new Client({
-      auth: notion.token,
-    })
-    const response = await client.dataSources.query({
-      data_source_id: data.datasourceId,
-    })
+    const notionFetch = await createNotionFetch(event)
+    const response = await notionFetch<QueryDataSourceResponse>(`/data_sources/${data.datasourceId}/query`)
     return {
-      status: 'healthy' as const,
+      status: 'healthy',
       records: response.results.length,
-    }
+    } as const
   }
   catch (error) {
     console.error('Error while retrieving status', error)
     return {
       status: 'unhealthy' as const,
-    }
+    } as const
   }
 })

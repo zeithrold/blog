@@ -26,8 +26,8 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const fetch = await createNotionFetch(event)
-  const response = await fetch<ListBlockChildrenResponse>(`/blocks/${id}/children`)
+  const notionFetch = await createNotionFetch(event)
+  const response = await notionFetch<ListBlockChildrenResponse>(`/blocks/${id}/children`)
   const fullText = getFullText(response.results.filter(isFullBlock))
   // max text of 10000 characters
   const summary = fullText.slice(0, 10000)

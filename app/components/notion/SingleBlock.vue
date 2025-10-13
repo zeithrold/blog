@@ -37,5 +37,9 @@ const { block, level } = defineProps<SingleBlockResponse & {
       v-if="block.type === 'image'"
       v-bind="block"
     />
+    <LazyNotionColumnList
+      v-if="block.type === 'column_list'"
+      v-bind="block"
+    />
   </template>
 </template>

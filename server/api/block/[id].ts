@@ -3,7 +3,7 @@ import type { BlockObjectResponse, ListBlockChildrenResponse } from '@notionhq/c
 import { isFullBlock } from '@notionhq/client'
 import { omit } from 'es-toolkit'
 import { v4 as uuidv4 } from 'uuid'
-import { createNotionFetch } from '~~/server/lib'
+import { createNotionFetch, validateStartCursor } from '~~/server/lib'
 
 /**
  * Group the block list into a group block if the
@@ -63,15 +63,9 @@ export default defineCachedEventHandler(async (event) => {
       statusMessage: 'id must be a string',
     })
   }
-  const { start_cursor } = getQuery(event)
-  if (Array.isArray(start_cursor) || (typeof start_cursor !== 'string' && start_cursor !== undefined)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'start_cursor must be a string or undefined',
-    })
-  }
-  const fetch = await createNotionFetch(event)
-  const response = await fetch<ListBlockChildrenResponse>(
+  const start_cursor = validateStartCursor(getQuery(event).start_cursor)
+  const notionFetch = await createNotionFetch(event)
+  const response = await notionFetch<ListBlockChildrenResponse>(
     `/blocks/${id}/children`,
     {
       params: {
