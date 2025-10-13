@@ -42,15 +42,15 @@ const href = computed(() => {
   >
     {{ plain_text }}
   </span>
-  <NuxtLink v-else-if="props.type === 'mention'" :to="href">
-    <UiButton variant="link" size="lg">
-      <StickyNote v-if="props.mention.type === 'page'" />
-      <Calendar v-if="props.mention.type === 'date'" />
-      <CircleUser v-if="props.mention.type === 'user'" />
+  <span v-else-if="props.type === 'mention'" class="underline inline-flex items-center gap-1 hover:text-muted-foreground">
+    <NuxtLink :to="href" class="inline-flex items-center gap-1">
+      <StickyNote v-if="props.mention.type === 'page'" class="w-4 h-4" />
+      <Calendar v-if="props.mention.type === 'date'" class="w-4 h-4" />
+      <CircleUser v-if="props.mention.type === 'user'" class="w-4 h-4" />
       <span v-if="props.mention.type !== 'user'" :class="cn(className)">{{ plain_text }}</span>
       <span v-else :class="cn(className)">{{ plain_text.slice(2) }}</span>
       <!-- To remove the @ from the plain_text -->
-    </UiButton>
-  </NuxtLink>
+    </NuxtLink>
+  </span>
   <NotionRichTextEquation v-else v-bind="props" />
 </template>

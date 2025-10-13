@@ -41,5 +41,9 @@ const { block, level } = defineProps<SingleBlockResponse & {
       v-if="block.type === 'column_list'"
       v-bind="block"
     />
+    <NotionQuote
+      v-if="block.type === 'quote'"
+      v-bind="block"
+    />
   </template>
 </template>
