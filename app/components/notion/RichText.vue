@@ -15,7 +15,7 @@ const className = computed(() => {
     [props.class ?? '']: true,
     'rounded-md font-mono px-1 py-0.5 text-sm text-black/50 bg-black/5': props.annotations.code,
     'font-bold': props.annotations.bold,
-    'font-italic': props.annotations.italic,
+    'italic': props.annotations.italic,
     'line-through': props.annotations.strikethrough,
     'underline': props.annotations.underline,
     [colorClassMap[props.annotations.color]]: true,

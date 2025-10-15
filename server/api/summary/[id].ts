@@ -36,4 +36,5 @@ export default defineCachedEventHandler(async (event) => {
   }
 }, {
   maxAge: 60 * 5,
+  swr: false,
 })

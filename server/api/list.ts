@@ -50,6 +50,12 @@ export default defineCachedEventHandler(async (event) => {
   const response = await notionFetch<QueryDataSourceResponse>(`/data_sources/${runtimeConfig.notion.datasourceId}/query`, {
     body: {
       start_cursor: startCursor,
+      sorts: [
+        {
+          timestamp: 'created_time',
+          direction: 'descending',
+        },
+      ],
     },
     method: 'POST',
   })
@@ -61,4 +67,5 @@ export default defineCachedEventHandler(async (event) => {
   }
 }, {
   maxAge: 60 * 5,
+  swr: false,
 })

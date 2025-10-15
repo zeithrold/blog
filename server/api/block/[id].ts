@@ -82,4 +82,5 @@ export default defineCachedEventHandler(async (event) => {
   } as BlockChildrenResponse
 }, {
   maxAge: 60 * 5,
+  swr: false,
 })
