@@ -23,6 +23,9 @@ export default defineNuxtConfig({
   ],
 
   app: {
+    rootAttrs: {
+      id: '__zeithrold',
+    },
     head: {
       link: [
         { href: fonts, rel: 'stylesheet' },

@@ -36,13 +36,21 @@ const href = computed(() => {
 
 <template>
   <span
-    v-if="props.type === 'text'"
+    v-if="props.type === 'text' && props.href === null"
     :class="cn(className)"
     v-bind="$attrs"
   >
     {{ plain_text }}
   </span>
-  <span v-else-if="props.type === 'mention'" class="underline inline-flex items-center gap-1 hover:text-muted-foreground">
+  <NuxtLink v-else-if="props.type === 'text'" :to="props.href ?? ''">
+    <span
+      :class="cn(className, 'hover:opacity-50 underline cursor-pointer')"
+      v-bind="$attrs"
+    >
+      {{ plain_text }}
+    </span>
+  </NuxtLink>
+  <span v-else-if="props.type === 'mention'" class="underline inline-flex items-center gap-1 hover:opacity-50 cursor-pointer">
     <NuxtLink :to="href" class="inline-flex items-center gap-1">
       <StickyNote v-if="props.mention.type === 'page'" class="w-4 h-4" />
       <Calendar v-if="props.mention.type === 'date'" class="w-4 h-4" />

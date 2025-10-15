@@ -22,4 +22,5 @@ export interface ListResponse {
   pages: PageItem[]
   next_cursor: string
   has_more: boolean
+  tag: PartialSelectResponse | undefined
 }

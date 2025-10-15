@@ -3,15 +3,18 @@ import z from 'zod'
 import { cn } from '~/lib/utils'
 import { validateQueryParam } from '~/lib/validation'
 
-const { startCursor } = defineProps<{
+const { startCursor, tag } = defineProps<{
   startCursor?: string
+  tag?: string
 }>()
 
 const startCursorValidated = validateQueryParam(startCursor, 'start_cursor', z.uuid())
+const tagValidated = validateQueryParam(tag, 'tag', z.string())
 
 const { data, status } = await useFetch<ListResponse>('/api/list', {
   query: {
     start_cursor: startCursorValidated,
+    tag: tagValidated,
   },
 })
 
@@ -28,6 +31,9 @@ function nextPage() {
     v-if="data"
     class="container mx-auto px-4 flex flex-col gap-4 py-4 max-w-4xl w-full"
   >
+    <div v-if="data.tag" class="flex justify-center">
+      <span class="text-lg font-bold">Showing results for tag: <PageTag v-bind="data.tag" /></span>
+    </div>
     <div
       :class="cn(
         'grid grid-cols-1 md:grid-cols-2 gap-4',

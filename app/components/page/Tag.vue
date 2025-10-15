@@ -30,7 +30,9 @@ function getTagClasses(color: string) {
 </script>
 
 <template>
-  <span :class="getTagClasses(color)">
-    #{{ name }}
-  </span>
+  <NuxtLink :to="`/tag/${name}`">
+    <span :class="getTagClasses(color)">
+      #{{ name }}
+    </span>
+  </NuxtLink>
 </template>

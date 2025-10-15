@@ -1,10 +1,31 @@
 import type { MultiSelectPropertyItemObjectResponse, QueryDataSourceResponse } from '@notionhq/client'
 import { isFullPage } from '@notionhq/client'
+import z from 'zod'
 
-import { createNotionFetch, validateStartCursor } from '~~/server/lib'
+import { createNotionFetch, validateQueryParam, validateUUID } from '~~/server/lib'
 
 interface BuildResultOptions {
   tag?: string
+}
+
+/**
+ * Build tag option
+ */
+async function buildTagOption(property: string, name: string) {
+  const { tags } = await $fetch('/api/tags')
+  const foundTag = tags.find(item => item.name === name)
+  if (!foundTag) {
+    return undefined
+  }
+  return {
+    tag: foundTag,
+    filter: {
+      property,
+      multi_select: {
+        contains: foundTag.name,
+      },
+    },
+  }
 }
 
 /**
@@ -44,9 +65,11 @@ async function buildResult(response: QueryDataSourceResponse, { tag }: BuildResu
 }
 
 export default defineCachedEventHandler(async (event) => {
-  const startCursor = validateStartCursor(getQuery(event).start_cursor)
-  const notionFetch = await createNotionFetch(event)
   const runtimeConfig = useRuntimeConfig(event)
+  const startCursor = validateUUID(getQuery(event).start_cursor)
+  const tag = runtimeConfig.notion.fields.tag !== '' ? validateQueryParam(getQuery(event).tag, 'tag', z.string()) : undefined
+  const tagOption = tag !== undefined ? await buildTagOption(runtimeConfig.notion.fields.tag, tag) : undefined
+  const notionFetch = await createNotionFetch(event)
   const response = await notionFetch<QueryDataSourceResponse>(`/data_sources/${runtimeConfig.notion.datasourceId}/query`, {
     body: {
       start_cursor: startCursor,
@@ -56,6 +79,7 @@ export default defineCachedEventHandler(async (event) => {
           direction: 'descending',
         },
       ],
+      filter: tagOption?.filter,
     },
     method: 'POST',
   })
@@ -64,6 +88,7 @@ export default defineCachedEventHandler(async (event) => {
     pages: result,
     next_cursor: response.next_cursor,
     has_more: response.has_more,
+    tag: tagOption?.tag,
   }
 }, {
   maxAge: 60 * 5,
