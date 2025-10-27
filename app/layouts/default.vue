@@ -5,7 +5,7 @@ const { site } = useAppConfig()
 <template>
   <div class="font-sans min-h-screen w-full flex flex-col selection:bg-black/10">
     <Head>
-      <Title>{{ site.title }} - {{ site.description }}</Title>
+      <Title>{{ site.description }}</Title>
       <Meta name="description" :content="site.description" />
     </Head>
     <LayoutHeader />

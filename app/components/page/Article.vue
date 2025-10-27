@@ -13,6 +13,7 @@ const idValidated = validateMainParam(id, 'id', z.uuid())
 const startCursorValidated = validateQueryParam(startCursor, 'start_cursor', z.uuid())
 
 const { data: pageData, status: pageStatus } = await useFetch(`/api/page/${idValidated}`)
+const { data: tagsData, status: tagsStatus } = await useFetch(`/api/page/${idValidated}/tags`)
 const { data: blockData, status: blockStatus } = await useFetch(`/api/block/${id}`, {
   query: {
     start_cursor: startCursorValidated,
@@ -28,27 +29,6 @@ const title = computed(() => {
   return titleProperty?.title.map(title => title.plain_text).join('') || undefined
 })
 
-const tags = computed(() => {
-  if (!pageData.value) {
-    return []
-  }
-  const { properties } = pageData.value
-
-  // 查找多选类型的属性作为标签
-  const tagProperty = Object.entries(properties).find(([
-    _key,
-    value,
-  ]) => value.type === 'multi_select')
-
-  if (tagProperty && tagProperty[1].type === 'multi_select') {
-    return tagProperty[1].multi_select || []
-  }
-
-  return []
-})
-
-const appConfig = useAppConfig()
-
 /**
  * Next page
  */
@@ -59,7 +39,7 @@ function nextPage() {
 
 <template>
   <Head>
-    <Title>{{ appConfig.site.title }} - {{ title }}</Title>
+    <Title>{{ title }}</Title>
   </Head>
 
   <PageSkeleton v-if="pageStatus === 'pending' || blockStatus === 'pending'" />
@@ -77,8 +57,8 @@ function nextPage() {
     <PageAuthor :id="pageData.created_by.id" :created-at="pageData.created_time" />
 
     <!-- Tags -->
-    <div v-if="tags.length > 0" class="flex flex-wrap gap-2">
-      <PageTag v-for="tag in tags" :key="tag.id" v-bind="tag" />
+    <div v-if="tagsData && tagsData.tags.length > 0 && tagsStatus === 'success'" class="flex flex-wrap gap-2">
+      <PageTag v-for="tag in tagsData.tags" :key="tag.id" v-bind="tag" />
     </div>
 
     <!-- Content -->

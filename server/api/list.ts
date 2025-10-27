@@ -12,10 +12,19 @@ interface BuildResultOptions {
   tag?: string
 }
 
+type FilterList = (MultiSelectFilter | CheckboxFilter)[]
+
 interface MultiSelectFilter {
   property: string
   multi_select: {
     contains: string
+  }
+}
+
+interface CheckboxFilter {
+  property: string
+  checkbox: {
+    does_not_equal: boolean
   }
 }
 
@@ -37,6 +46,38 @@ async function buildTagOption(property: string, name: string) {
       },
     },
   }
+}
+
+/**
+ * Build draft option
+ */
+function buildDraftOption(property: string) {
+  if (property === '') {
+    return {}
+  }
+  return {
+    filter: {
+      property,
+      checkbox: {
+        does_not_equal: true,
+      },
+    },
+  }
+}
+
+/**
+ *
+ */
+async function buildFilterList(event: H3Event<EventHandlerRequest>) {
+  const runtimeConfig = useRuntimeConfig()
+  const tag = runtimeConfig.notion.fields.tag !== '' ? validateQueryParam(getQuery(event).tag, 'tag', z.string()) : undefined
+  const tagOption = await validateAndBuildTagOption(tag, runtimeConfig.notion.fields.tag)
+  const draftOption = buildDraftOption(runtimeConfig.notion.fields.draft)
+  const filterList = [
+    tagOption,
+    draftOption,
+  ].map(item => item?.filter).filter(Boolean) as FilterList
+  return { filterList, tag }
 }
 
 /**
@@ -78,7 +119,7 @@ async function buildResult(response: QueryDataSourceResponse, { tag }: BuildResu
 /**
  * Build fetch body for Notion API
  */
-function buildFetchBody(startCursor: string | undefined, tagFilter: MultiSelectFilter | undefined) {
+function buildFetchBody(startCursor: string | undefined, filterList: FilterList) {
   return {
     start_cursor: startCursor,
     sorts: [
@@ -87,7 +128,13 @@ function buildFetchBody(startCursor: string | undefined, tagFilter: MultiSelectF
         direction: 'descending',
       },
     ],
-    filter: tagFilter,
+    filter: filterList.length === 0
+      ? undefined
+      : filterList.length === 1
+        ? filterList[0]
+        : {
+            and: filterList,
+          },
   }
 }
 
@@ -112,7 +159,8 @@ async function validateAndBuildTagOption(tag: string | undefined, tagField: stri
 
 export interface FetchNotionDataOptions {
   startCursor: string | undefined
-  tagFilter: MultiSelectFilter | undefined
+  filterList: FilterList
+
   datasourceId: string
   event: H3Event<EventHandlerRequest>
 }
@@ -120,10 +168,10 @@ export interface FetchNotionDataOptions {
 /**
  * Fetch data from Notion API
  */
-async function fetchNotionData({ event, startCursor, tagFilter, datasourceId }: FetchNotionDataOptions) {
+async function fetchNotionData({ event, startCursor, filterList, datasourceId }: FetchNotionDataOptions) {
   const notionFetch = await createNotionFetch(event)
   return notionFetch<QueryDataSourceResponse>(`/data_sources/${datasourceId}/query`, {
-    body: buildFetchBody(startCursor, tagFilter),
+    body: buildFetchBody(startCursor, filterList),
     method: 'POST',
   })
 }
@@ -131,12 +179,11 @@ async function fetchNotionData({ event, startCursor, tagFilter, datasourceId }: 
 export default defineCachedEventHandler(async (event) => {
   const runtimeConfig = useRuntimeConfig(event)
   const startCursor = validateUUID(getQuery(event).start_cursor)
-  const tag = runtimeConfig.notion.fields.tag !== '' ? validateQueryParam(getQuery(event).tag, 'tag', z.string()) : undefined
-  const tagOption = await validateAndBuildTagOption(tag, runtimeConfig.notion.fields.tag)
+  const { filterList, tag } = await buildFilterList(event)
   const response = await fetchNotionData({
     event,
     startCursor,
-    tagFilter: tagOption?.filter,
+    filterList,
     datasourceId: runtimeConfig.notion.datasourceId,
   })
   const result = await buildResult(response, { tag: runtimeConfig.notion.fields.tag })
@@ -145,7 +192,7 @@ export default defineCachedEventHandler(async (event) => {
     pages: result,
     next_cursor: response.next_cursor,
     has_more: response.has_more,
-    tag: tagOption?.tag,
+    tag,
   }
 }, {
   maxAge: 60 * 5,

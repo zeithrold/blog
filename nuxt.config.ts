@@ -12,11 +12,22 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
+  site: {
+    name: '@Zeithrold/Blog',
+    description: 'Ahead Every Moment - @Zeithrold/Blog',
+  },
+
+  seo: {
+    meta: {
+      author: 'Zeithrold',
+    },
+  },
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/image',
     '@vueuse/nuxt',
-    '@nuxtjs/robots',
+    '@nuxtjs/seo',
     'nitro-cloudflare-dev',
     'shadcn-nuxt',
     '@nuxt/scripts',
@@ -80,6 +91,7 @@ export default defineNuxtConfig({
       datasourceId: '',
       fields: {
         tag: '',
+        draft: '',
       },
     },
   },

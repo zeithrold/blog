@@ -7,7 +7,10 @@ export default defineCachedEventHandler(async (event) => {
   const dataSourceId = runtimeConfig.notion.datasourceId
   const dataSourceResponse = await notionFetch<GetDataSourceResponse>(`/data_sources/${dataSourceId}`)
   const tagKey = runtimeConfig.notion.fields.tag
-  if (tagKey === '' || dataSourceResponse.properties[tagKey] === undefined || dataSourceResponse.properties[tagKey].type !== 'multi_select') {
+  if (tagKey === ''
+    || dataSourceResponse.properties[tagKey] === undefined
+    || dataSourceResponse.properties[tagKey].type !== 'multi_select'
+  ) {
     return {
       tags: [],
     }
