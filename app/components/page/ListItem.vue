@@ -12,7 +12,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UiCard>
+  <UiCard class="hover:shadow-lg transition duration-300 ease-in-out hover:transform-[scale(1.01)]">
     <UiCardHeader>
       <NuxtLink :to="`/-/${id}`">
         <UiCardTitle class="hover:underline text-xl">
