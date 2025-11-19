@@ -15,7 +15,7 @@ onMounted(() => {
   <UiCard>
     <UiCardHeader>
       <NuxtLink :to="`/-/${id}`">
-        <UiCardTitle class="hover:underline">
+        <UiCardTitle class="hover:underline text-xl">
           {{ title }}
         </UiCardTitle>
       </NuxtLink>
