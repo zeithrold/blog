@@ -22,6 +22,7 @@
     "@nuxt/image": "^1.11.0",
     "@nuxt/scripts": "0.12.1",
     "@nuxtjs/seo": "^3.2.2",
+    "@sentry/nuxt": "^10.34.0",
     "@unhead/vue": "^2.0.17",
     "@vueuse/core": "^13.9.0",
     "@vueuse/nuxt": "^13.9.0",
@@ -29,6 +30,7 @@
     "clsx": "^2.1.1",
     "es-toolkit": "^1.39.10",
     "eslint": "^9.36.0",
+    "import-in-the-middle": "^2.0.4",
     "lucide-vue-next": "^0.544.0",
     "notion-client": "^7.6.0",
     "nuxt": "^4.1.2",
@@ -56,5 +58,10 @@
     "npm-run-all2": "^8.0.4",
     "tailwindcss": "^4.1.13",
     "wrangler": "^4.40.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@vercel/nft": "^0.27.4"
+    }
   }
 }

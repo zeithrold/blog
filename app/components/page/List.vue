@@ -19,6 +19,17 @@ const { data, status } = await useFetch<ListResponse>('/api/list', {
 })
 
 /**
+ * Get valid tag object
+ */
+const validTag = computed(() => {
+  const tag = data.value?.tag
+  if (tag && tag.id && tag.name && tag.color) {
+    return tag
+  }
+  return null
+})
+
+/**
  * Next page
  */
 function nextPage() {
@@ -31,8 +42,8 @@ function nextPage() {
     v-if="data"
     class="container mx-auto px-4 flex flex-col gap-4 py-4 max-w-4xl w-full"
   >
-    <div v-if="data.tag" class="flex justify-center">
-      <span class="text-lg font-bold">Showing results for tag: <PageTag v-bind="data.tag" /></span>
+    <div v-if="validTag" class="flex justify-center">
+      <span class="text-lg font-bold">Showing results for tag: <PageTag v-bind="validTag" /></span>
     </div>
     <div
       :class="cn(
@@ -43,7 +54,7 @@ function nextPage() {
     </div>
     <div v-if="data.has_more" class="flex justify-center p-2">
       <UiButton @click="nextPage">
-        下一页
+        Next Page
       </UiButton>
     </div>
   </div>

@@ -5,8 +5,16 @@ import fonts from './scripts/google-fonts.mjs'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-
   css: ['~/assets/css/tailwind.css'],
+
+  typescript: {
+    tsConfig: {
+      include: [
+        '../sentry.client.config.ts',
+        '../sentry.server.config.ts',
+      ],
+    },
+  },
 
   vite: {
     plugins: [tailwindcss()],
@@ -31,6 +39,7 @@ export default defineNuxtConfig({
     'nitro-cloudflare-dev',
     'shadcn-nuxt',
     '@nuxt/scripts',
+    '@sentry/nuxt/module',
   ],
 
   app: {
@@ -94,5 +103,14 @@ export default defineNuxtConfig({
         draft: '',
       },
     },
+  },
+
+  sentry: {
+    org: 'zeithrold',
+    project: 'blog',
+  },
+
+  sourcemap: {
+    client: 'hidden',
   },
 })

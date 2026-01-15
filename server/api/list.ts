@@ -77,7 +77,7 @@ async function buildFilterList(event: H3Event<EventHandlerRequest>) {
     tagOption,
     draftOption,
   ].map(item => item?.filter).filter(Boolean) as FilterList
-  return { filterList, tag }
+  return { filterList, tag: tagOption?.tag }
 }
 
 /**

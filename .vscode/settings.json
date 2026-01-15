@@ -65,7 +65,7 @@
     "tsconfig.json": "tsconfig.*.json",
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, pnpm-workspace.yaml",
     "Cargo.toml": "Cargo.lock, rust-toolchain.toml, eslint.config.mjs",
-    "nuxt.config.ts": "nuxt.config.js, eslint.config.mjs, uno.config.mjs, tsconfig.json, wrangler.jsonc, components.json",
+    "nuxt.config.ts": "nuxt.config.js, eslint.config.mjs, uno.config.mjs, tsconfig.json, wrangler.jsonc, components.json, sentry.client.config.ts, sentry.server.config.ts",
     ".gitignore": ".nvmrc, .editorconfig"
   },
   "vue.inlayHints.destructuredProps": true,
@@ -74,14 +74,5 @@
   "vue.inlayHints.optionsWrapper": true,
   "vue.inlayHints.vBindShorthand": true,
   "vue.suggest.propNameCasing": "alwaysKebabCase",
-  "vue.suggest.componentNameCasing": "alwaysPascalCase",
-
-  // Rust 相关设置 - 简化配置以避免 LSP 崩溃
-  "rust-analyzer.checkOnSave": true,
-  "rust-analyzer.check.command": "check",
-  "rust-analyzer.check.allTargets": false,
-  "rust-analyzer.procMacro.enable": true,
-  "rust-analyzer.imports.granularity.group": "module",
-  "rust-analyzer.imports.prefix": "crate",
-  "rust-analyzer.lens.enable": false
+  "vue.suggest.componentNameCasing": "alwaysPascalCase"
 }
