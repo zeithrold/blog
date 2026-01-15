@@ -38,6 +38,9 @@ jobs:
       - name: Build project
         run: pnpm build
 
+      - name: Remove sourcemap files
+        run: find .output -name "*.map" -type f -delete
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
