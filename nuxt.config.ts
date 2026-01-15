@@ -108,6 +108,7 @@ export default defineNuxtConfig({
   sentry: {
     org: 'zeithrold',
     project: 'blog',
+    autoInjectServerSentry: 'top-level-import',
   },
 
   sourcemap: {
