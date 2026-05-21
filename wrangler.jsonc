@@ -8,6 +8,17 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "routes": [
+    {
+      "pattern": "blog.ztd.me",
+      "custom_domain": true,
+      "enabled": true,
+      "previews_enabled": false
+    }
+  ],
+  "placement": {
+    "mode": "smart"
+  },
   "kv_namespaces": [
     {
       "binding": "KV",
