@@ -10,6 +10,8 @@
     }
   },
 
+  "eslint.format.enable": true,
+
   // Auto fix
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
@@ -65,7 +67,7 @@
     "tsconfig.json": "tsconfig.*.json",
     "package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock, pnpm-workspace.yaml",
     "Cargo.toml": "Cargo.lock, rust-toolchain.toml, eslint.config.mjs",
-    "nuxt.config.ts": "nuxt.config.js, eslint.config.mjs, uno.config.mjs, tsconfig.json, wrangler.jsonc, components.json, sentry.client.config.ts, sentry.server.config.ts",
+    "next.config.ts": "next.config.js, open-next.config.ts, eslint.config.mjs, tsconfig.json, wrangler.jsonc, postcss.config.mjs",
     ".gitignore": ".nvmrc, .editorconfig"
   },
   "vue.inlayHints.destructuredProps": true,

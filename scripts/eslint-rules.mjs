@@ -32,12 +32,12 @@ const rules = {
   ],
   'max-lines-per-function': [
     'warn',
-    40,
+    75,
   ],
   'style/array-bracket-newline': [
     'error',
     {
-      minItems: 2,
+      minItems: 3,
       multiline: true,
     },
   ],
@@ -59,48 +59,8 @@ const rules = {
     'error',
     { max: 3 },
   ],
-  'vue/component-name-in-template-casing': [
-    'error',
-    'PascalCase',
-  ],
-  'vue/block-lang': [
-    'error',
-    {
-      script: { lang: 'ts' },
-    },
-  ],
-  'vue/component-api-style': [
-    'error',
-    ['script-setup'],
-  ],
-  'vue/define-emits-declaration': [
-    'error',
-    'type-based',
-  ],
-  'vue/define-props-declaration': [
-    'error',
-    'type-based',
-  ],
-  'vue/define-props-destructuring': 'error',
-  'vue/html-comment-content-newline': [
-    'error',
-    {
-      singleline: 'never',
-      multiline: 'always',
-    },
-  ],
-  'vue/max-template-depth': [
-    'error',
-    { maxDepth: 5 },
-  ],
-  'vue/next-tick-style': 'error',
-  'vue/max-attributes-per-line': [
-    'error',
-    {
-      singleline: { max: 3 },
-      multiline: { max: 1 },
-    },
-  ],
+  // Next.js Server Components use try/catch for data fetching, not client render errors.
+  'react/error-boundaries': 'off',
 }
 
 export default rules

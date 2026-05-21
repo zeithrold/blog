@@ -1,8 +1,6 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - sharp
-  - unrs-resolver
-  - vue-demi
-  - workerd
+  - msw

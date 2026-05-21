@@ -1,17 +1,33 @@
 // @ts-check
 import antfu from '@antfu/eslint-config'
-import { withNuxt } from './.nuxt/eslint.config.mjs'
+import nextPlugin from '@next/eslint-plugin-next'
 import rules from './scripts/eslint-rules.mjs'
 
-export default withNuxt(
-  // Your custom configs here
-  antfu({
+export default antfu(
+  {
+    react: true,
     typescript: {
       tsconfigPath: './tsconfig.json',
     },
-    vue: true,
     formatters: true,
     rules,
-    ignores: ['app/components/ui/**'],
-  }),
+    ignores: [
+      '.next/**',
+      '.open-next/**',
+      'node_modules/**',
+      'next-env.d.ts',
+      'styles/globals.css',
+      'components/ui/**',
+    ],
+  },
+  {
+    plugins: {
+      next: nextPlugin,
+    },
+    // @ts-ignore
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+    },
+  },
 )

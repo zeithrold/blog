@@ -1,27 +1,41 @@
 {
-  // NOTE: This only makes shadcn work, Nuxt actually overrides this
   "compilerOptions": {
-    "baseUrl": "./app",
+    "incremental": true,
+    "target": "ES2017",
+    "jsx": "react-jsx",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
-  "references": [
-    {
-      "path": "./.nuxt/tsconfig.app.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.server.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.shared.json"
-    },
-    {
-      "path": "./.nuxt/tsconfig.node.json"
-    }
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
-  // https://nuxt.com/docs/guide/concepts/typescript
-  "files": []
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,4 +1,9 @@
-# Nuxt dev/build outputs
+# Next.js / OpenNext
+.next
+.open-next
+out
+
+# Legacy Nuxt (if any remain)
 .output
 .data
 .nuxt
@@ -24,6 +29,5 @@ logs
 !.env.example
 
 .wrangler
-
-# Sentry Config File
-.env.sentry-build-plugin
+.eslintcache
+tsconfig.tsbuildinfo
