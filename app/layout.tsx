@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
+import { NavigationProgress } from '@/components/layout/NavigationProgress'
 import { getSiteMeta } from '@/lib/config'
 import { fontsUrl } from '@/lib/fonts'
 import { cn } from '@/lib/utils'
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.gstatic.com" rel="preconnect" crossOrigin="" />
       </head>
       <body id="__zeithrold" className="flex min-h-screen flex-col bg-background pt-12 text-foreground">
+        <NavigationProgress />
         <Header />
         <main className="flex-1 flex flex-col">{children}</main>
         <Footer />
