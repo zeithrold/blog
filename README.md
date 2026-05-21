@@ -42,7 +42,7 @@ Generate config at [/setup](/setup) (disable in production with `SETUP_PAGE_ENAB
 pnpm dev          # local development
 pnpm build        # Next.js production build
 pnpm preview      # OpenNext + Wrangler local preview
-pnpm deploy       # Build and deploy to Cloudflare
+pnpm run deploy   # Build and deploy to Cloudflare
 ```
 
 ## Routes

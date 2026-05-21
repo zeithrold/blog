@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build and deploy to Cloudflare
-        run: pnpm deploy
+        run: pnpm run deploy
         env:
           BLOG_CONFIG_B64: ${{ secrets.BLOG_CONFIG_B64 }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
