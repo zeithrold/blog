@@ -1,0 +1,97 @@
+.blog-editor.bn-root {
+  --bn-colors-editor-text: var(--ztd-foreground);
+  --bn-colors-editor-background: var(--ztd-background);
+  --bn-colors-menu-text: var(--ztd-foreground);
+  --bn-colors-menu-background: var(--ztd-surface);
+  --bn-colors-tooltip-text: var(--ztd-foreground);
+  --bn-colors-tooltip-background: var(--ztd-surface);
+  --bn-colors-hovered-text: var(--ztd-foreground);
+  --bn-colors-hovered-background: var(--ztd-muted);
+  --bn-colors-selected-text: var(--ztd-action-foreground);
+  --bn-colors-selected-background: var(--ztd-action);
+  --bn-colors-border: var(--ztd-border);
+  --bn-colors-side-menu: var(--ztd-muted-foreground);
+  --bn-font-family: var(--ztd-font-sans);
+}
+
+.blog-editor .bn-editor {
+  min-height: 22rem;
+  padding: 1rem 2rem;
+  font-size: var(--ztd-font-body, 18px);
+  line-height: 1.8;
+}
+
+/* The writing canvas uses its text caret; keep control focus rings outside it. */
+.blog-editor .bn-editor:focus-visible {
+  outline: none;
+}
+
+.blog-editor .bn-block-content[data-content-type='heading'] {
+  --level: 1.55em;
+
+  letter-spacing: -0.015em;
+}
+
+.blog-editor .bn-block-content[data-content-type='heading'][data-level='2'] {
+  --level: 1.25em;
+}
+
+.blog-editor .bn-block-content[data-content-type='heading'][data-level='3'] {
+  --level: 1.05em;
+}
+
+.blog-editor .bn-block-content[data-content-type='codeBlock'] {
+  border: 1px solid var(--ztd-border);
+  border-radius: var(--blog-radius-panel);
+  background-color: var(--ztd-surface);
+  color: var(--ztd-foreground);
+  font-family: var(--ztd-font-mono);
+  font-size: var(--ztd-font-help, 14px);
+}
+
+.blog-editor .bn-block-content[data-content-type='codeBlock'] > div > select {
+  color: var(--ztd-muted-foreground);
+}
+
+.editor-suggestions {
+  width: min(344px, calc(100vw - 24px));
+  max-height: min(360px, 50dvh);
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+  scrollbar-width: thin;
+  font-size: var(--ztd-font-help, 14px);
+  line-height: 1.4;
+  animation: editor-suggestions-enter 120ms ease-out;
+}
+
+
+@keyframes editor-suggestions-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-suggestions {
+    animation: none;
+  }
+
+  .editor-option {
+    transition: none;
+  }
+}
+
+.blog-editor[data-table-dragging] .bn-side-menu,
+.blog-editor[data-table-dragging] .editor-side-button,
+.editor-overlays[data-table-dragging] .editor-side,
+.editor-overlays[data-table-dragging] .bn-formatting-toolbar {
+  visibility: hidden;
+}

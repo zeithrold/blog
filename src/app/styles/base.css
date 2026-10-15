@@ -1,0 +1,72 @@
+:root {
+  --blog-radius: 8px;
+  --blog-radius-panel: 12px;
+  --blog-radius-card: 16px;
+  --blog-content-width: 1080px;
+  --blog-reading-width: 44rem;
+  --blog-selection: color-mix(in srgb, var(--ztd-accent) 20%, transparent);
+  --blog-shadow-hover: color-mix(in srgb, var(--ztd-foreground) 5%, transparent);
+  --blog-shadow-overlay: color-mix(in srgb, var(--ztd-foreground) 14%, transparent);
+  --blog-backdrop: color-mix(in srgb, var(--ztd-foreground) 32%, transparent);
+  --blog-highlight-foreground: #171717;
+  --blog-inline-gray: #57534e;
+  --blog-highlight-gray: #e7e5e4;
+  --blog-inline-brown: #78350f;
+  --blog-highlight-brown: #fef3c7;
+  --blog-inline-red: #991b1b;
+  --blog-highlight-red: #fee2e2;
+  --blog-inline-orange: #9a3412;
+  --blog-highlight-orange: #ffedd5;
+  --blog-inline-yellow: #854d0e;
+  --blog-highlight-yellow: #fef9c3;
+  --blog-inline-green: #166534;
+  --blog-highlight-green: #dcfce7;
+  --blog-inline-blue: #1e40af;
+  --blog-highlight-blue: #dbeafe;
+  --blog-inline-purple: #6b21a8;
+  --blog-highlight-purple: #f3e8ff;
+  --blog-inline-pink: #9d174d;
+  --blog-highlight-pink: #fce7f3;
+  --admin-appbar-height: 73px;
+  --admin-header-height: 61px;
+  --admin-sidebar-width: 232px;
+  --admin-sidebar-background: color-mix(in srgb, var(--ztd-muted) 45%, var(--ztd-background));
+  --admin-hover: color-mix(in srgb, var(--ztd-muted) 80%, transparent);
+  --admin-selected: var(--ztd-muted);
+}
+
+@media (width < 1024px) {
+  :root {
+    --admin-appbar-height: 65px;
+  }
+}
+
+:root[data-frontend-mode='dark'] {
+  --blog-inline-gray: #b8b2ad;
+  --blog-inline-brown: #d9a86c;
+  --blog-inline-red: #f59a9a;
+  --blog-inline-orange: #f6a76a;
+  --blog-inline-yellow: #ecc94b;
+  --blog-inline-green: #7fd49a;
+  --blog-inline-blue: #8db7f5;
+  --blog-inline-purple: #c9a2f5;
+  --blog-inline-pink: #f19ac2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-frontend-mode='system'] {
+    --blog-inline-gray: #b8b2ad;
+    --blog-inline-brown: #d9a86c;
+    --blog-inline-red: #f59a9a;
+    --blog-inline-orange: #f6a76a;
+    --blog-inline-yellow: #ecc94b;
+    --blog-inline-green: #7fd49a;
+    --blog-inline-blue: #8db7f5;
+    --blog-inline-purple: #c9a2f5;
+    --blog-inline-pink: #f19ac2;
+  }
+}
+
+::selection {
+  background: var(--blog-selection);
+}

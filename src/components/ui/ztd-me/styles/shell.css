@@ -1,0 +1,16 @@
+/* Root ownership and inherited typography remain runtime CSS. Layout lives in JSX. */
+.ztd-frontend,
+.ztd-overlay {
+  color-scheme: var(--ztd-color-scheme);
+  color: var(--ztd-foreground);
+  font-family: var(--ztd-font-sans);
+  font-size: var(--ztd-font-control);
+  line-height: var(--ztd-leading-control);
+  font-synthesis: none;
+}
+
+.ztd-frontend :focus-visible,
+.ztd-overlay :focus-visible {
+  outline: 2px solid var(--ztd-focus);
+  outline-offset: 2px;
+}

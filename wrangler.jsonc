@@ -1,43 +1,25 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ztd-blog",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2025-04-01",
+  "name": "blog-cms-local",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["* * * * *"] },
   "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "directory": "dist/client",
+    "run_worker_first": true
   },
-  "routes": [
+  "vars": { "PUBLIC_ORIGIN": "http://127.0.0.1:8800" },
+  "d1_databases": [
     {
-      "pattern": "blog.ztd.me",
-      "custom_domain": true,
-      "enabled": true,
-      "previews_enabled": false
+      "binding": "DB",
+      "database_name": "blog-cms-local",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
     }
   ],
-  "placement": {
-    "mode": "smart"
-  },
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "67535bc48ab741a98034d9db4e5347f6"
-    }
-  ],
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1,
-    "logs": {
-      "enabled": true,
-      "head_sampling_rate": 1,
-      "persist": true,
-      "invocation_logs": true
-    },
-    "traces": {
-      "enabled": true,
-      "persist": true,
-      "head_sampling_rate": 1
-    }
-  }
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "blog-cms-local" }]
 }

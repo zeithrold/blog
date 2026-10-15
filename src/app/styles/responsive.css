@@ -1,0 +1,12 @@
+@media (prefers-reduced-motion: reduce) {
+  .blog-editor .editor-side .editor-side-button {
+    transition: none;
+  }
+
+  *,
+*::before,
+*::after {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

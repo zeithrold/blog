@@ -13,6 +13,7 @@ dist
 
 # Node dependencies
 node_modules
+.pnpm-store/
 
 # Logs
 logs
@@ -31,3 +32,15 @@ logs
 .wrangler
 .eslintcache
 tsconfig.tsbuildinfo
+
+# Verification output
+test-results
+playwright-report
+
+# Local Worker secrets
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+
+.vinext/

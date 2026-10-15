@@ -1,0 +1,49 @@
+.editor-toolbar.bn-formatting-toolbar {
+  width: max-content;
+  max-width: min(640px, calc(100vw - 24px));
+  align-items: center;
+  padding: 4px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.editor-toolbar.bn-formatting-toolbar button {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: inherit;
+}
+
+.editor-toolbar.bn-formatting-toolbar button[aria-pressed='true'] {
+  background: var(--ztd-muted);
+  color: var(--ztd-foreground);
+}
+
+.editor-toolbar.bn-formatting-toolbar button > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+@media (width <= 700px) {
+  .editor-toolbar.bn-formatting-toolbar {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .editor-toolbar.bn-formatting-toolbar button {
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+    padding: 8px;
+  }
+
+  .editor-toolbar.bn-formatting-toolbar .editor-block-type-select {
+    flex: 0 1 auto;
+    min-width: 44px;
+    max-width: 88px;
+  }
+}

@@ -1,33 +1,17 @@
-// @ts-check
-import antfu from '@antfu/eslint-config'
-import nextPlugin from '@next/eslint-plugin-next'
-import rules from './scripts/eslint-rules.mjs'
+import config from '@ztd-me/eslint'
 
-export default antfu(
-  {
-    react: true,
-    typescript: {
-      tsconfigPath: './tsconfig.json',
-    },
-    formatters: true,
-    rules,
-    ignores: [
-      '.next/**',
-      '.open-next/**',
-      'node_modules/**',
-      'next-env.d.ts',
-      'styles/globals.css',
-      'components/ui/**',
-    ],
+export default config({
+  ignores: [
+    '.vinext/**',
+    'dist/**',
+    'next-env.d.ts',
+    // Preserve the pinned upstream documentation example verbatim; runtime UI remains linted.
+    'src/components/ui/ztd-me/README.md',
+    'src/components/ui/ztd-me/foundation.md',
+  ],
+  react: { framework: 'vinext', appDir: 'src/app' },
+  typescript: {
+    tsconfigPath: 'tsconfig.json',
+    tsconfigRootDir: import.meta.dirname,
   },
-  {
-    plugins: {
-      next: nextPlugin,
-    },
-    // @ts-ignore
-    rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs['core-web-vitals'].rules,
-    },
-  },
-)
+})

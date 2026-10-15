@@ -1,0 +1,17 @@
+@layer theme, base, editor-vendor, components, utilities;
+
+@import 'tailwindcss';
+@import '../components/ui/ztd-me/tailwind.css';
+@import '../components/ui/ztd-me/styles/fonts-serif.css';
+@import '@blocknote/react/style.css' layer(editor-vendor);
+@import './styles/base.css' layer(base);
+@import './styles/public.css' layer(components);
+@import './styles/reader.css' layer(components);
+@import './styles/admin.css' layer(components);
+@import './styles/editor.css' layer(components);
+@import './styles/editor-formatting.css' layer(components);
+@import './styles/editor-notices.css' layer(components);
+@import './styles/history.css' layer(components);
+@import './styles/responsive.css' layer(components);
+
+@source '../components/ui/ztd-me';

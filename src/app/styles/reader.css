@@ -1,0 +1,32 @@
+.taxonomy-chip::after {
+  position: absolute;
+  inset: -5px 0;
+  content: '';
+}
+
+.callout {
+  --blog-callout-tone: var(--blog-inline-blue);
+
+  border-color: color-mix(in srgb, var(--blog-callout-tone) 22%, var(--ztd-border));
+  background: color-mix(in srgb, var(--blog-callout-tone) 5%, var(--ztd-surface));
+}
+
+.callout[data-tone='warning'] {
+  --blog-callout-tone: var(--blog-inline-yellow);
+}
+
+.callout[data-tone='success'] {
+  --blog-callout-tone: var(--blog-inline-green);
+}
+
+.callout[data-tone='danger'] {
+  --blog-callout-tone: var(--blog-inline-red);
+}
+
+.callout-header {
+  color: color-mix(in srgb, var(--blog-callout-tone) 75%, var(--ztd-foreground));
+}
+
+.callout-icon {
+  color: var(--blog-callout-tone);
+}

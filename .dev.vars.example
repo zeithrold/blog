@@ -1,0 +1,4 @@
+ACCESS_TEAM_DOMAIN="your-team.cloudflareaccess.com"
+ACCESS_AUD="replace-with-your-application-audience"
+OWNER_SUBS='["replace-with-your-owner-sub"]'
+CSRF_SIGNING_SECRET="replace-with-a-random-secret-of-at-least-32-characters"

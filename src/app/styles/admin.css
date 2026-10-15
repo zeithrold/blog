@@ -1,0 +1,25 @@
+.stat[data-state] dt::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ztd-success);
+  content: '';
+}
+
+/* Whole rows open their document; row controls stay above the stretched link. */
+.document-list li.document-row .document-title::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+/* Links keep the shared 44px hit area; the selected surface is drawn inside it. */
+
+.admin-sidebar a::before {
+  position: absolute;
+  z-index: -1;
+  inset: 4px 0;
+  border-radius: var(--blog-radius);
+  content: '';
+  transition: background-color 0.12s;
+}

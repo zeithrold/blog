@@ -1,0 +1,25 @@
+.revision-meta-detail > span:not(:last-child)::after {
+  padding-left: 10px;
+  color: var(--ztd-border);
+  content: '·';
+}
+
+.revision-loading-icon {
+  animation: revision-spin 900ms linear infinite;
+}
+
+.history-revision .revision-meta-detail > span::after {
+  content: none;
+}
+
+@keyframes revision-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revision-loading-icon {
+    animation: none;
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "supplementalNotices": [
+    {
+      "name": "khroma",
+      "version": "2.1.0",
+      "license": "MIT",
+      "path": "public/licenses/upstream/khroma.txt",
+      "source": "https://raw.githubusercontent.com/fabiospampinato/khroma/4968165afb0d3d09be66497e7985a34f7bfe6d42/license",
+      "sourceCommit": "4968165afb0d3d09be66497e7985a34f7bfe6d42",
+      "sha256": "66b333b0f66759a0b710459e03f7029abe17f4358114a128d2c972e642961b49",
+      "scope": "Published version source"
+    },
+    {
+      "name": "@vitejs/plugin-rsc",
+      "version": "0.5.35",
+      "license": "MIT",
+      "path": "public/licenses/upstream/vitejs-plugin-rsc.txt",
+      "source": "https://raw.githubusercontent.com/vitejs/vite-plugin-react/a309c8b0b0303c008a4d7b07881bea7e0b6cbbbb/LICENSE",
+      "sourceCommit": "a309c8b0b0303c008a4d7b07881bea7e0b6cbbbb",
+      "sha256": "29b68325fe026047d13e187b44c33b2acacf7dc647dec4583702e59f235e13b5",
+      "scope": "Published version source"
+    },
+    {
+      "name": "react-remove-scroll-bar",
+      "version": "2.3.8",
+      "license": "MIT",
+      "path": "public/licenses/upstream/react-remove-scroll-bar.txt",
+      "source": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/8ca9ba5ea52de03308fe8ced94f7b159a44d28ff/LICENSE",
+      "sourceCommit": "8ca9ba5ea52de03308fe8ced94f7b159a44d28ff",
+      "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
+      "scope": "Official repository notice; installed manifest declares MIT; npm gitHead is malformed and is not claimed as verified"
+    }
+  ]
+}

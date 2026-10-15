@@ -1,0 +1,2 @@
+export const TABLE_COLUMN_MIN_WIDTH = 40
+export const TABLE_COLUMN_MAX_WIDTH = 2000
