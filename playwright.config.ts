@@ -22,7 +22,8 @@ export default defineConfig({
       name: 'performance',
       testDir: 'tests/performance',
       timeout: 120000,
-      use: { browserName: 'chromium', trace: 'on' },
+      // DOM snapshots and video recording distort CPU-throttled latency measurements.
+      use: { browserName: 'chromium', trace: 'off', video: 'off' },
     },
   ],
   webServer: {

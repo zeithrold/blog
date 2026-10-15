@@ -10,6 +10,9 @@ export type BlogMessageKey<N extends BlogNamespace> = Extract<keyof (typeof en)[
 export type TranslationValues = I18nValues
 export type BlogTranslator<N extends BlogNamespace> = (key: BlogMessageKey<N>, values?: TranslationValues) => string
 
+// Share the validated adapter within one engine, without retaining roots or server requests.
+const adapters = new WeakMap<i18n, I18nAdapter<typeof en>>()
+
 // Every root or server request creates its own instance; only resources are shared.
 export function createBlogI18n(locale: Locale): i18n {
   const instance = createInstance()
@@ -39,7 +42,11 @@ export function reportTranslationError(error: unknown): void {
 }
 
 export function createBlogAdapter(instance: i18n): I18nAdapter<typeof en> {
-  return createI18nAdapter({
+  const existing = adapters.get(instance)
+  if (existing !== undefined) {
+    return existing
+  }
+  const adapter = createI18nAdapter({
     instance: {
       translate: ({ locale, namespace, key, values }) => String(instance.t(key, {
         ...interpolationValues(values),
@@ -49,6 +56,8 @@ export function createBlogAdapter(instance: i18n): I18nAdapter<typeof en> {
     },
     resources: { en, 'zh-CN': zhCN },
   })
+  adapters.set(instance, adapter)
+  return adapter
 }
 
 export function blogTranslator<N extends BlogNamespace>(instance: i18n, namespace: N): BlogTranslator<N> {

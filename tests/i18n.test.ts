@@ -87,6 +87,8 @@ test('root instances isolate language and the adapter obeys the explicit shared 
   await first.changeLanguage('zh-CN')
   assert.equal(second.language, 'en')
   const adapter = createBlogAdapter(first)
+  assert.ok(Object.is(createBlogAdapter(first), adapter))
+  assert.notEqual(createBlogAdapter(second), adapter)
   const values = { lng: 'zh-CN', ns: 'editor', lngs: 'zh-CN' }
   const original = structuredClone(values)
   assert.equal(adapter.t('en', 'site', 'search'), 'Search')

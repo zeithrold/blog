@@ -33,6 +33,12 @@ Playwright has two configurations. `playwright.config.ts` defines Chromium and W
 projects and a performance project that uses Chromium CDP. `playwright.development.config.ts` starts
 the Vite development server to check login, saving, and hot module replacement.
 
+The performance project disables trace and video recording to avoid measurement overhead under CPU
+throttling. It retains timing reports and screenshots; functional projects retain failure traces.
+Preview actions scope control queries to the header, action menu, and preview dialog. This avoids
+repeated whole-editor scans while preserving the interaction flow, accessibility assertions, timing
+boundaries, sample counts, and performance budgets.
+
 `pnpm test:e2e` runs functional tests in Chromium and WebKit. To select one browser, use
 `pnpm exec playwright test --project=chromium`. `pnpm test:integration` runs service integration tests
 only; `pnpm test:editor-performance` runs the performance project separately, and
