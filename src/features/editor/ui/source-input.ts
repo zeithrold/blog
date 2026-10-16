@@ -31,8 +31,7 @@ function revealBeforeNativeInput(reveal: () => void): void {
 
 function enterSource(editor: Editor, popup: SourcePopup): void {
   if (editor.prosemirrorState.selection instanceof NodeSelection) {
-    revealBeforeNativeInput(popup.open)
-    editor.focus()
+    popup.open()
   }
   else if (!popup.isOpen) {
     // Preserve an existing text/IME range without refocusing it.
@@ -97,7 +96,14 @@ export function sourceInputEvents(editor: Editor, blockId: string, popup: Source
     paste: (event) => {
       if (!event.defaultPrevented && (event.clipboardData?.files.length ?? 0) === 0
         && sourceTarget(event, editor, blockId)) {
+        const text = event.clipboardData?.getData('text/plain') ?? ''
+        if (text.length > 32768) {
+          return
+        }
+        event.preventDefault()
+        event.stopPropagation()
         enterSource(editor, popup)
+        editor.transact(transaction => transaction.insertText(text))
       }
     },
     beforeinput: (event) => {

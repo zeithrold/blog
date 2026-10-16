@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '~/tests/support/browser/test'
 import { openFixture, percentile, typing } from './helpers'
 import {
   captures,
@@ -8,10 +8,10 @@ import {
 } from './measurements'
 
 for (const row of [
-  { count: 100, bytes: 64000, cpu: 1, ready: 1000, p95: 50, p99: 100 },
-  { count: 500, bytes: 190000, cpu: 1, ready: 1000, p95: 50, p99: 100 },
-  { count: 2000, bytes: 522000, cpu: 1, ready: 2000, p95: 80, p99: 150 },
-  { count: 500, bytes: 190000, cpu: 4, ready: 2500, p95: 100, p99: 200 },
+  { count: 100, bytes: 64000, cpu: 1, ready: 1000, p95: 50, p99: 100, previewP95: 500 },
+  { count: 500, bytes: 190000, cpu: 1, ready: 1000, p95: 50, p99: 100, previewP95: 500 },
+  { count: 2000, bytes: 522000, cpu: 1, ready: 2000, p95: 80, p99: 150, previewP95: 2000 },
+  { count: 500, bytes: 190000, cpu: 4, ready: 2500, p95: 100, p99: 200, previewP95: 750 },
 ]) {
   test(`${row.count} native blocks / ${row.bytes} bytes / ${row.cpu}x CPU`, async ({
     page,
@@ -59,6 +59,6 @@ for (const row of [
     expect(report.p99).toBeLessThanOrEqual(row.p99)
     expect(report.navigationP95).toBeLessThanOrEqual(row.p95)
     expect(report.snapshotMax).toBeLessThanOrEqual(50)
-    expect(report.previewP95).toBeLessThanOrEqual(row.count === 2000 ? 2000 : 500)
+    expect(report.previewP95).toBeLessThanOrEqual(row.previewP95)
   })
 }

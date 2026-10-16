@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { acknowledgementSchema, sessionSchema } from '../../src/content/contracts'
+import { acknowledgementSchema, sessionSchema } from '@/content/contracts'
 import { fixture } from './fixtures'
 import { focusPosition, instrumentation, samples } from './measurements'
 

@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import type { Workspace } from '@/features/editor/core/editor-types'
 import type { TableEditor, TableTarget } from '@/features/editor/ui/table-controls-model'
 import type { TableKeyboardControls } from '@/features/editor/ui/table-keyboard-controls'
-import { TableHandlesController } from '@blocknote/react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { TableBar } from '@/features/editor/ui/table-bars'
@@ -23,22 +22,15 @@ type ControlProps = {
   portalElement: HTMLElement | null
 }
 
-function EmptyTableControl(): null {
-  return null
-}
-
 export function EditorTableControls(props: ControlProps): ReactNode {
   const compact = useCompactLayout(700)
   const targets = useTableTargets(props.editor)
   const cell = useTableCell(props.editor, compact, targets)
   const keyboard = useTableKeyboardControls(props.editor, targets, props.disabled)
+  // Project-owned bars provide the handles. A second native controller creates
+  // empty floating elements and duplicate resize observers with this configuration.
   return (
     <>
-      <TableHandlesController
-        tableHandle={EmptyTableControl}
-        extendButton={EmptyTableControl}
-        portalElement={props.portalElement ?? undefined}
-      />
       {targets.map(target => createPortal(
         <TableControls {...props} keyboard={keyboard} target={target} compact={compact} cell={cell} />,
         target.widgets,

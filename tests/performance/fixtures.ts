@@ -1,6 +1,6 @@
-import type { Block, Document } from '../../src/content/document'
-import { canonicalize, stableJSON } from '../../src/content/canonical'
-import { emptyDocument } from '../../src/content/document'
+import type { Block, Document } from '@/content/document'
+import { canonicalize, stableJSON } from '@/content/canonical'
+import { emptyDocument } from '@/content/document'
 
 function id(index: number): string {
   return `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`

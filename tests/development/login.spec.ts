@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
-import { openDocumentSchema } from '../../src/content/contracts'
-import { saved } from '../browser/helpers'
+import { openDocumentSchema } from '@/content/contracts'
+import { saved } from '~/tests/support/browser/document'
 
 test('development login keeps authentication and CSRF guards', async ({ page, request }) => {
   expect((await request.get('/api/admin/session')).status()).toBe(401)

@@ -14,7 +14,16 @@ export function useInputGuards(workspace: Workspace): {
   const { model, draft } = workspace
   const { editor, composingRef } = model
   return {
-    onKeyDownCapture: event => selectBeforeBlockDeletion(event, workspace, pendingDeletionRef),
+    onKeyDownCapture: (event) => {
+      if ((event.key === 'Backspace' || event.key === 'Delete')
+        && event.target instanceof HTMLElement && event.target.closest('button') !== null) {
+        // A control's deletion key must never reach ProseMirror's document commands.
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+      selectBeforeBlockDeletion(event, workspace, pendingDeletionRef)
+    },
     onCompositionStartCapture: () => {
       composingRef.current = true
       draft.coordinator.setComposing(true)

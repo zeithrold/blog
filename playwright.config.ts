@@ -27,7 +27,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node tests/browser-server.mjs',
+    command: 'node --import tsx tests/support/worker/browser-server.ts',
     url: `http://127.0.0.1:${testPort}/api/health`,
     reuseExistingServer: false,
     timeout: 30000,

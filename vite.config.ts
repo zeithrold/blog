@@ -3,7 +3,7 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vinext from 'vinext'
 import { defineConfig } from 'vite'
-import { developmentLogin } from './tests/development/login-plugin'
+import { developmentLogin } from './tests/support/development/login-plugin'
 
 export default defineConfig(async ({ command, isPreview }): Promise<UserConfig> => {
   const login = command === 'serve' && isPreview !== true ? await developmentLogin() : undefined

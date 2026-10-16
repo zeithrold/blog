@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '../../src/content/contracts'
-import { draftPreview } from '../browser/editor-source-helpers'
+import { openDocumentSchema } from '@/content/contracts'
+import { draftPreview } from '~/tests/support/browser/preview'
 
 export async function focusPosition(page: Page, position: number): Promise<void> {
   await page.evaluate((location) => {

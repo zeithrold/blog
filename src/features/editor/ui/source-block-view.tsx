@@ -5,6 +5,7 @@ import { useEditorState } from '@blocknote/react'
 import { Pencil } from 'lucide-react'
 import { NodeSelection } from 'prosemirror-state'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { flushSync } from 'react-dom'
 import { Button } from '@/components/ui/ztd-me/client'
 import { isPlainBlockSelection as sourceSelection } from '@/features/editor/core/source-selection'
 import { sourceInputEvents } from '@/features/editor/ui/source-input'
@@ -30,6 +31,26 @@ const sourcePanelClass = [
 ].join(' ')
 
 type Editor = typeof editorSchema.BlockNoteEditor
+// BlockNote remounts node views when publication switches the editor's editable
+// state. Keep presentation state with the editor rather than losing it on remount.
+const visibleSources = new WeakMap<Editor, Set<string>>()
+
+function useSourceVisibility(editor: Editor, blockId: string) {
+  const [open, setOpen] = useState(() => visibleSources.get(editor)?.has(blockId) ?? false)
+  const changeOpen = useCallback((value: boolean): void => {
+    const ids = visibleSources.get(editor) ?? new Set<string>()
+    if (value) {
+      ids.add(blockId)
+    }
+    else {
+      ids.delete(blockId)
+    }
+    visibleSources.set(editor, ids)
+    setOpen(value)
+  }, [editor, blockId])
+  return { open, setOpen: changeOpen }
+}
+
 function useSourceSelection(editor: Editor, blockId: string) {
   const selector = (): 'outside' | 'text' | 'node' => {
     if (editor.getTextCursorPosition().block.id !== blockId) {
@@ -46,17 +67,43 @@ function useSourceSelection(editor: Editor, blockId: string) {
   const focused = useSyncExternalStore(subscribe, () => editor.isFocused(), () => false)
   return { mode, focused }
 }
+function useSourceDismiss(
+  editor: Editor,
+  blockId: string,
+  outside: boolean,
+  { open, setOpen }: ReturnType<typeof useSourceVisibility>,
+): void {
+  useEffect(() => {
+    if (!outside || !open) {
+      return
+    }
+    // Let focus and native selection settle before closing. A click on another
+    // control must not hide source while WebKit is restoring its previous caret.
+    const frame = requestAnimationFrame(() => {
+      if (editor.isEditable && editor.prosemirrorView.hasFocus()
+        && editor.getTextCursorPosition().block.id !== blockId) {
+        setOpen(false)
+      }
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [
+    outside,
+    open,
+    editor,
+    blockId,
+    setOpen,
+  ])
+}
 function useSourcePopup(editor: Editor, blockId: string) {
-  const [open, setOpen] = useState(false)
+  const visibility = useSourceVisibility(editor, blockId)
+  const { open, setOpen } = visibility
   const { mode, focused } = useSourceSelection(editor, blockId)
   // A writing caret inside source must always have a visible editor, including
   // when arrow navigation enters an existing formula or diagram.
   if (!open && mode === 'text' && focused && editor.isEditable) {
     setOpen(true)
   }
-  if (mode === 'outside' && open) {
-    setOpen(false)
-  }
+  useSourceDismiss(editor, blockId, mode === 'outside', visibility)
   const popup = useMemo(() => ({
     isOpen: open,
     isSelected: mode === 'node' && focused && !open,
@@ -66,9 +113,11 @@ function useSourcePopup(editor: Editor, blockId: string) {
       if (!editor.isEditable) {
         return
       }
-      editor.setTextCursorPosition(blockId, 'end')
+      // WebKit cannot place a native caret in the still-hidden source element.
+      // eslint-disable-next-line react/dom-no-flush-sync -- Reveal source before moving its native caret.
+      flushSync(() => setOpen(true))
       editor.focus()
-      setOpen(true)
+      editor.setTextCursorPosition(blockId, 'end')
     },
     close: (): void => {
       setOpen(false)
@@ -81,9 +130,9 @@ function useSourcePopup(editor: Editor, blockId: string) {
           { type: 'paragraph' },
         ], blockId, 'after')[0]
       if (next !== undefined) {
+        editor.focus()
         editor.setTextCursorPosition(next.id, 'start')
       }
-      editor.focus()
     },
   }), [
     editor,
@@ -91,6 +140,7 @@ function useSourcePopup(editor: Editor, blockId: string) {
     open,
     mode,
     focused,
+    setOpen,
   ])
   useSourceEvents(editor, blockId, popup)
   return popup
@@ -142,6 +192,10 @@ export function SourceBlockView({
           aria-label={label}
           data-publication-editor=""
           disabled={!editor.isEditable}
+          onPointerDownCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
           onClick={popup.open}
         >
           <Pencil size={16} aria-hidden="true" />
@@ -209,6 +263,10 @@ function SourceEditor({ contentRef, source, sourcePlaceholder, popup, done, chil
           type="button"
           size="sm"
           data-source-done=""
+          onPointerDownCapture={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
           onClick={(event) => {
             event.stopPropagation()
             popup.close()
