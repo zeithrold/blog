@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button, Input } from '@/components/ui/ztd-me/client'
 import { SiteAfterword } from '@/features/reader/post-list'
 import { SiteCount, SiteText } from '@/i18n/site-text'
-import { repository } from '@/server/context'
+import { repository } from '@/server/runtime/context'
 import {
   utility1Class,
   utility2Class,

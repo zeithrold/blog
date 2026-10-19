@@ -1,10 +1,10 @@
-import type { Environment } from '@/server/environment'
+import type { Environment } from '@/server/runtime/environment'
 import handler from 'vinext/server/app-router-entry'
 import { UUID } from '@/content/document'
-import { api } from '@/server/api'
-import { AssetContent } from '@/server/asset-content'
-import { diagramFrame } from '@/server/diagram-frame'
-import { feeds } from '@/server/feeds'
+import { api } from '@/server/http/api'
+import { AssetContent } from '@/server/media/asset-content'
+import { diagramFrame } from '@/server/reader/diagram-frame'
+import { feeds } from '@/server/reader/feeds'
 
 type Result = {
   response: Response

@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
 import { emptyDocument } from '@/content/document'
+import { openDocumentSchema } from '@/contracts/documents'
 import { writeDocument } from '~/tests/support/browser/document'
 
 export type SourceKind = 'math' | 'mermaid'

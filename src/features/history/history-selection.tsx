@@ -5,11 +5,11 @@ import type { BlogTranslator } from '@/i18n/instance'
 import { Eye, RotateCcw, Send } from 'lucide-react'
 import { ChoiceSelect } from '@/components/ui/choice-select'
 import { Button, Label } from '@/components/ui/ztd-me/client'
-import { background } from '@/features/editor/core/tasks'
-import { issueLabels } from '@/features/editor/ui/publication-issue-labels'
 import { HistoryMore } from '@/features/history/history-sidebar'
 import { revisionLabel, revisionOptions } from '@/features/history/revision-labels'
 import { RevisionState } from '@/features/history/revision-presentation'
+import { background } from '@/shared/admin/background'
+import { issueLabels } from '@/shared/admin/publication-issue-labels'
 
 const utility1Class = [
   'history-selected-heading [&_p]:m-0 [&_p]:text-muted-foreground [&_p]:text-[length:14px]',

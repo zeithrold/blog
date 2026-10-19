@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { canonicalize } from '@/content/canonical'
 import { emptyDocument, safeURL, validateDocument } from '@/content/document'
-import { parseJSON } from '@/server/json'
+import { parseJSON } from '@/server/http/json'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 test('canonical snapshots are fixed points, preserve IDs/Unicode and never mutate editor data', async () => {

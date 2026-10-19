@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
-import { historySchema } from '@/content/contracts'
 import { UUID } from '@/content/document'
+import { historySchema } from '@/contracts/history'
 import { HistoryPage } from '@/features/history/history-page'
-import { repository, serverOwner, serverSessionToken } from '@/server/context'
+import { repository, serverOwner, serverSessionToken } from '@/server/runtime/context'
 
 export default async function History({
   params,

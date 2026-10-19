@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Buffer } from 'node:buffer'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { withinViewport } from '~/tests/support/browser/layout'
 
 type FilePayload = { name: string, mimeType: string, buffer: Buffer }

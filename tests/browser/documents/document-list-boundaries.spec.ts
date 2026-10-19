@@ -1,4 +1,4 @@
-import { acknowledgementSchema, openDocumentSchema } from '@/content/contracts'
+import { acknowledgementSchema, openDocumentSchema } from '@/contracts/documents'
 import { mutate } from '~/tests/support/browser/api'
 import { horizontalBounds } from '~/tests/support/browser/layout'
 import { expect, test } from '~/tests/support/browser/test'

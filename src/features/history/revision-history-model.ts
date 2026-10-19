@@ -1,7 +1,7 @@
 import type { z } from 'zod'
 import { useRef, useState } from 'react'
-import { historySchema } from '@/content/contracts'
-import { get } from '@/features/editor/services/api-client'
+import { historySchema } from '@/contracts/history'
+import { get } from '@/shared/admin/api-client'
 
 export type RevisionHistory = z.infer<typeof historySchema>
 

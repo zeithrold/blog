@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { emptyDocument } from '@/content/document'
 import { safeStructuredJSON } from '@/content/structured-json'
-import { pastedDocument } from '@/features/editor/core/clipboard-document'
+import { pastedDocument } from '@/features/editor/engine/clipboard-document'
 import { equal } from '~/tests/support/unit/assertions'
 
 test('copied footnote groups receive new IDs and preserve their internal references', () => {

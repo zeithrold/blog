@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { nodeItem, sameNode } from '@/features/editor/core/native'
+import { nodeItem, sameNode } from '@/features/editor/engine/native'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 for (const structured of [false, true]) {

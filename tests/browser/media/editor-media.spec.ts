@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { saved } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 

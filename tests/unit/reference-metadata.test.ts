@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { normalizeDoi } from '@/content/reference-metadata'
-import { fillEmptyFields } from '@/features/editor/services/reference-form'
-import { Problem } from '@/server/problem'
-import { referenceMetadata } from '@/server/reference-metadata'
+import { fillEmptyFields } from '@/features/editor/references/reference-form'
+import { Problem } from '@/server/http/problem'
+import { referenceMetadata } from '@/server/references/reference-metadata'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 const doi = '10.1234/example'

@@ -1,4 +1,4 @@
-import { acknowledgementSchema } from '@/content/contracts'
+import { acknowledgementSchema } from '@/contracts/documents'
 import { equal } from '~/tests/support/unit/assertions'
 
 type JsonResponse = {

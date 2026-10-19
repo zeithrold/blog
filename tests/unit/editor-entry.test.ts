@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
 import { emptyDocument } from '@/content/document'
-import { loadEditorEntry } from '@/features/editor/services/editor-entry'
+import { loadEditorEntry } from '@/features/editor/workspace/entry-model'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 test('editor entry obtains current credentials and a fresh document without using the route snapshot', async () => {

@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Locale } from '~/tests/support/browser/locale'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'

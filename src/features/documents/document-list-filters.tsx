@@ -7,7 +7,7 @@ import { useId } from 'react'
 import { ChoiceSelect } from '@/components/ui/choice-select'
 import { Button, Input } from '@/components/ui/ztd-me/client'
 import { defaultDocumentFilters, documentFiltersSchema, hasDocumentFilters } from '@/content/document-list-query'
-import { background } from '@/features/editor/core/tasks'
+import { background } from '@/shared/admin/background'
 import {
   utility1Class,
   utility2Class,

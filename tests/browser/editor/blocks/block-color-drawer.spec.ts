@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { writeDocument } from '~/tests/support/browser/document'
 import { withinViewport } from '~/tests/support/browser/layout'
 import { setChinese } from '~/tests/support/browser/locale'

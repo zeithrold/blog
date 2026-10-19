@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { acknowledgementSchema, openDocumentSchema, sessionSchema } from '@/content/contracts'
+import { acknowledgementSchema, openDocumentSchema } from '@/contracts/documents'
+import { sessionSchema } from '@/contracts/session'
 import { expect, test } from '~/tests/support/browser/test'
 
 type Ack = ReturnType<typeof acknowledgementSchema.parse>

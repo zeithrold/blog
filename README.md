@@ -83,6 +83,32 @@ Preview P95 budgets are 500 ms for the 100- and 500-block scenarios at 1× CPU, 
 2000 blocks at 1× CPU, and 750 ms for 500 blocks at 4× CPU. CPU throttling, sample counts,
 measurement boundaries, and the other performance budgets remain the same across runs.
 
+## Source organization
+
+`src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
+Worker security. `src/server` groups HTTP handling, authentication, document persistence, media,
+catalogs, publication, public reading, reference lookup, operations, and runtime bindings. Repository
+inheritance and request behavior are unchanged by this grouping.
+
+`src/content` contains environment-independent document structures, validation, and content rules.
+`src/contracts` defines HTTP request/response schemas by business domain; shared response types are
+inferred from these schemas. Browser code imports contracts directly instead of server repositories.
+`src/shared/admin` owns cross-feature requests, CSRF/idempotency handling, navigation, feedback,
+confirmation dialogs, and publication issue labels. `src/components/ui/ztd-me` retains its separate
+upstream source and license boundary; application controls and general hooks remain alongside it.
+
+`src/features` groups application behavior. Inside `editor`, `workspace` composes the session and
+settings, `engine` integrates BlockNote, and `adapters` implements its component interfaces. Draft
+persistence and recovery live in `draft`; blocks, controls, media insertion, references, publication,
+and preview keep their views and state together. Editor-specific history integration belongs to the
+workspace; `features/history` provides revision loading, comparison, and the standalone history page.
+The standalone media gallery remains in `features/media`.
+
+Feature CSS stays with its owner and is imported by `src/app/styles.css` in the established order.
+Global CSS stays under `src/app/styles`. Translation resources and phrase mappings use matching
+semantic groups, including editor blocks, tables, references, draft state, and preview. Existing
+`site`, `editor`, and `documents` namespaces, translation keys, and phrase lookup behavior are retained.
+
 ## Build and repository conventions
 
 Do not create a `scripts` directory without explicit permission from the repository owner. Backup and

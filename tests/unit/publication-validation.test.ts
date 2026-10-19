@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { canonicalize } from '@/content/canonical'
-import { acknowledgementSchema } from '@/content/contracts'
 import { ContentError, emptyDocument, validateDocument } from '@/content/document'
-import { APIError, read } from '@/features/editor/services/api-client'
-import { problemResponse } from '@/server/problem'
+import { acknowledgementSchema } from '@/contracts/documents'
+import { problemResponse } from '@/server/http/problem'
+import { APIError, read } from '@/shared/admin/api-client'
 
 function incompleteDocument(): ReturnType<typeof emptyDocument> {
   const document = emptyDocument()

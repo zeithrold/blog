@@ -1,9 +1,9 @@
 import type { MediaAsset, MediaRole, UploadRole } from '@/features/media/media-types'
-import { sessionSchema } from '@/content/contracts'
-import { assetListSchema } from '@/content/service-contracts'
-import { APIError, Client, get } from '@/features/editor/services/api-client'
-import { uploadMedia } from '@/features/editor/services/media-service'
+import { assetListSchema } from '@/contracts/media'
+import { sessionSchema } from '@/contracts/session'
+import { uploadMedia } from '@/features/editor/media/media-service'
 import { hasPendingUploads, MediaUploadQueue } from '@/features/media/upload-queue'
+import { APIError, Client, get } from '@/shared/admin/api-client'
 import { adminError } from '@/shared/admin/errors'
 
 type GalleryState = {

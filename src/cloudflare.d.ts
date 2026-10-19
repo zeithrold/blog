@@ -1,5 +1,5 @@
 declare module 'cloudflare:workers' {
-  export const env: import('./server/environment').Environment
+  export const env: import('./server/runtime/environment').Environment
 }
 declare module 'virtual:vinext-rsc-entry' {
   function ensureInstrumentation(): Promise<void>

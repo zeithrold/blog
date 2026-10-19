@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { canSelectPreviousAtomicBlock, lastBlockDescendant } from '@/features/editor/core/block-deletion'
+import { canSelectPreviousAtomicBlock, lastBlockDescendant } from '@/features/editor/engine/block-deletion'
 import { contentsHeadings } from '@/features/reader/contents-model'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 

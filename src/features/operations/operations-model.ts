@@ -1,7 +1,7 @@
 import type { z } from 'zod'
 import { useMemo, useRef, useState } from 'react'
-import { operationsSchema, resumeSchema } from '@/content/service-contracts'
-import { Client } from '@/features/editor/services/api-client'
+import { operationsSchema, resumeSchema } from '@/contracts/operations'
+import { Client } from '@/shared/admin/api-client'
 import { useAdminResource } from '@/shared/admin/resource'
 
 type Model = {

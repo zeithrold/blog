@@ -1,8 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Cell, Document, Table } from '@/content/document'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
 import { emptyDocument } from '@/content/document'
+import { openDocumentSchema } from '@/contracts/documents'
 import { saved } from '~/tests/support/browser/document'
 import { withinViewport } from '~/tests/support/browser/layout'
 

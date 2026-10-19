@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Document } from '@/content/document'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { writeDocument } from '~/tests/support/browser/document'
 import { documentTable, mergedTableDocument } from './table-overlay-helpers'
 import { widthBoundaryDocument } from './table-width-limits-helpers'

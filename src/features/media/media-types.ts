@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { assetListSchema, assetRoleSchema } from '@/content/service-contracts'
+import type { assetListSchema, assetRoleSchema } from '@/contracts/media'
 
 export type MediaAsset = z.infer<typeof assetListSchema>['items'][number]
 export type MediaRole = z.infer<typeof assetRoleSchema>

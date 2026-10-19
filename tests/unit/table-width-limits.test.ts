@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { BlockNoteEditor, HistoryExtension } from '@blocknote/core'
 import { EditorState } from 'prosemirror-state'
 import { TABLE_COLUMN_MAX_WIDTH, TABLE_COLUMN_MIN_WIDTH } from '@/content/table-limits'
-import { tableWidthLimits } from '@/features/editor/core/table-width-limits'
+import { tableWidthLimits } from '@/features/editor/blocks/table/table-width-limits'
 
 function nativeTableState() {
   const editor = BlockNoteEditor.create({

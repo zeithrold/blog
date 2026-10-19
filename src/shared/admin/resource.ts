@@ -1,7 +1,7 @@
 'use client'
 import type { z } from 'zod'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { get } from '@/features/editor/services/api-client'
+import { get } from '@/shared/admin/api-client'
 
 export function useAdminResource<T>(
   path: string,

@@ -3,7 +3,7 @@ import type { Runtime } from '~/tests/support/worker/runtime'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { acknowledgementSchema, openDocumentSchema } from '@/content/contracts'
+import { acknowledgementSchema, openDocumentSchema } from '@/contracts/documents'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 import { runtime } from '~/tests/support/worker/runtime'
 

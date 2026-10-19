@@ -1,5 +1,5 @@
 export default {
-  files: ['src/app/**/*.css', 'src/components/ui/ztd-me/**/*.css'],
+  files: ['src/**/*.css'],
   classFiles: [
     'src/**/*.tsx',
     'src/**/*-layout.ts',

@@ -1,7 +1,7 @@
 import type { CatalogEntry, CatalogFields, CatalogKind } from '@/features/catalog/catalog-types'
-import { catalogItemSchema, catalogListSchema } from '@/content/service-contracts'
+import { catalogItemSchema, catalogListSchema } from '@/contracts/catalog'
 import { acceptCatalogEntry, rebaseCatalogFields } from '@/features/catalog/catalog-form-state'
-import { Client, get } from '@/features/editor/services/api-client'
+import { Client, get } from '@/shared/admin/api-client'
 import { adminError } from '@/shared/admin/errors'
 
 export type CatalogState = CatalogFields & {

@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { SLUG } from '@/content/document'
 import { DocumentReader } from '@/features/reader/document'
-import { repository } from '@/server/context'
-import { documentMetadata } from '@/server/metadata'
-import { StructuredData } from '@/server/structured-data'
+import { documentMetadata } from '@/server/reader/metadata'
+import { StructuredData } from '@/server/reader/structured-data'
+import { repository } from '@/server/runtime/context'
 
 export default async function Page({
   params,

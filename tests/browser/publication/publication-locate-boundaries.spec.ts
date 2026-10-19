@@ -1,4 +1,4 @@
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { expect, test } from '~/tests/support/browser/test'
 import { expectCaptionTarget, locateTable, publicationTables, saveCaption } from './publication-locate-helpers'
 

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'

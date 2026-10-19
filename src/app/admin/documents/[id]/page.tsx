@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
 import { UUID } from '@/content/document'
-import { DynamicEditor } from '@/features/editor/ui/dynamic'
-import { repository, serverOwner, serverSessionToken } from '@/server/context'
+import { DynamicEditor } from '@/features/editor/workspace/dynamic'
+import { repository, serverOwner, serverSessionToken } from '@/server/runtime/context'
 
 export default async function Edit({
   params,

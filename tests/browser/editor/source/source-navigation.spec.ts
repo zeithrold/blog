@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
 import { emptyDocument } from '@/content/document'
+import { openDocumentSchema } from '@/contracts/documents'
 import { writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 
@@ -27,8 +27,11 @@ async function arrowSource(page: Page, type: 'math' | 'mermaid') {
   })
   const ack = await writeDocument(page, document)
   const body = page.getByLabel('Document body', { exact: true })
-  await body.locator('[data-content-type="paragraph"] .bn-inline-content').evaluate((element) => {
-    element.closest<HTMLElement>('[contenteditable="true"]')?.focus()
+  const paragraphInput = body.locator('[data-content-type="paragraph"] .bn-inline-content')
+  // Establish real pointer focus before placing the caret. ProseMirror repairs a
+  // synthetic focus's native selection asynchronously, which can race ArrowUp.
+  await paragraphInput.click()
+  await paragraphInput.evaluate((element) => {
     const range = window.document.createRange()
     range.selectNodeContents(element)
     range.collapse(true)

@@ -1,4 +1,4 @@
-import { EDITOR_STYLE_HASHES } from '@/server/editor-csp'
+import { EDITOR_STYLE_HASHES } from '@/server/security/editor-csp'
 
 export type SecurityContext = {
   nonce: string

@@ -1,4 +1,4 @@
-import { acknowledgementSchema } from '@/content/contracts'
+import { acknowledgementSchema } from '@/contracts/documents'
 import { horizontalBounds } from '~/tests/support/browser/layout'
 import { expect, test } from '~/tests/support/browser/test'
 import { labels } from './document-list-boundary-helpers'

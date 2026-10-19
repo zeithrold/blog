@@ -1,9 +1,9 @@
-import type { Acknowledgement } from '@/server/repository'
+import type { Acknowledgement } from '@/contracts/documents'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { emptyDocument } from '@/content/document'
-import { DraftCoordinator } from '@/features/editor/core/draft'
-import { APIError } from '@/features/editor/services/api-client'
+import { DraftCoordinator } from '@/features/editor/draft/draft'
+import { APIError } from '@/shared/admin/api-client'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 function initial(): Acknowledgement {

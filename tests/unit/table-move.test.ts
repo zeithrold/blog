@@ -7,7 +7,7 @@ import {
   canDropTableAxis,
   tableMoveTransaction,
   tableNode,
-} from '@/features/editor/core/table-move'
+} from '@/features/editor/blocks/table/table-move'
 
 function fixture(merged: 'row' | 'column' | null = null) {
   const id = crypto.randomUUID()

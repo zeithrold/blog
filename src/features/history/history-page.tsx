@@ -8,8 +8,6 @@ import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/ztd-me/client'
 import { validateDocument } from '@/content/document'
 import { publicationRequirements } from '@/content/publication-validation'
-import { background } from '@/features/editor/core/tasks'
-import { issueLabels } from '@/features/editor/ui/publication-issue-labels'
 import { HistoryConfirmation } from '@/features/history/history-confirmation'
 import { useHistoryPage } from '@/features/history/history-page-model'
 import { RevisionSelection, SelectedActions } from '@/features/history/history-selection'
@@ -17,6 +15,8 @@ import { HistorySidebar } from '@/features/history/history-sidebar'
 import { compareRevisions } from '@/features/history/revision-diff'
 import { RevisionDiffView } from '@/features/history/revision-diff-view'
 import { useBlogTranslation } from '@/i18n/use-translation'
+import { background } from '@/shared/admin/background'
+import { issueLabels } from '@/shared/admin/publication-issue-labels'
 import {
   utility1Class,
   utility2Class,

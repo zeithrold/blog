@@ -1,9 +1,9 @@
 import type { MediaAsset } from '@/features/media/media-types'
 import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
-import { Client } from '@/features/editor/services/api-client'
-import { uploadMedia } from '@/features/editor/services/media-service'
-import { mediaTransferSession } from '@/features/editor/services/media-transfer-session'
+import { uploadMedia } from '@/features/editor/media/media-service'
+import { mediaTransferSession } from '@/features/editor/media/media-transfer-session'
+import { Client } from '@/shared/admin/api-client'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 function descriptor(id: string, state: MediaAsset['state'] = 'ready'): MediaAsset {

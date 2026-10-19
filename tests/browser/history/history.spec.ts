@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
-import { historySchema, openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
+import { historySchema } from '@/contracts/history'
 import { mutate } from '~/tests/support/browser/api'
 import { expect, test } from '~/tests/support/browser/test'
 import { historyFixture } from './history-helpers'

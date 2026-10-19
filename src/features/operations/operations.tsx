@@ -1,13 +1,13 @@
 'use client'
 import type { ReactNode } from 'react'
 import type { z } from 'zod'
-import type { operationsSchema } from '@/content/service-contracts'
+import type { operationsSchema } from '@/contracts/operations'
 import { Activity, RefreshCw, ShieldCheck } from 'lucide-react'
 import { Button, useFrontendPreferences } from '@/components/ui/ztd-me/client'
-import { ConfirmDialog } from '@/features/editor/ui/confirm'
 import { useOperations } from '@/features/operations/operations-model'
 import { EditorText } from '@/i18n/labels'
 import { useEditorLabels } from '@/i18n/use-labels'
+import { ConfirmDialog } from '@/shared/admin/confirm-dialog'
 import { AdminFeedback } from '@/shared/admin/feedback'
 import {
   layout1Class,

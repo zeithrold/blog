@@ -3,7 +3,7 @@ import type { ListProps } from './document-list-types'
 import type { DocumentListCopy } from '@/features/documents/document-list-copy'
 import { LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/ztd-me/client'
-import { background } from '@/features/editor/core/tasks'
+import { background } from '@/shared/admin/background'
 import { layout17Class, layout18Class } from './document-list-layout'
 import { utility2Class } from './document-list-utilities'
 

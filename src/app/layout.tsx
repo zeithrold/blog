@@ -8,7 +8,7 @@ import {
   resolveInitialPreferences,
 } from '@/components/ui/ztd-me'
 import { BlogFrontend } from '@/i18n/frontend'
-import { HistoryBootstrap } from '@/server/history-bootstrap'
+import { HistoryBootstrap } from '@/server/runtime/history-bootstrap'
 import './styles.css'
 
 const utility1Class = [

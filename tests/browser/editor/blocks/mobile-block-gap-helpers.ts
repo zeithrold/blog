@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Block } from '@/content/document'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { bounds } from '~/tests/browser/editor/tables/table-overlay-helpers'
 import { withinViewport } from '~/tests/support/browser/layout'
 import { fixture } from './block-action-helpers'

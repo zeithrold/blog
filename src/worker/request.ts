@@ -1,7 +1,7 @@
-import type { Environment } from '@/server/environment'
+import type { Environment } from '@/server/runtime/environment'
 import type { SecurityContext } from '@/worker/security'
-import { requireOwner, trustedOrigin } from '@/server/auth'
-import { Problem } from '@/server/problem'
+import { requireOwner, trustedOrigin } from '@/server/auth/auth'
+import { Problem } from '@/server/http/problem'
 import { privatePath } from '@/worker/security'
 
 export async function requestContext(

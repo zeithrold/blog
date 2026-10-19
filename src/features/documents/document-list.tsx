@@ -19,7 +19,7 @@ import { hasDocumentFilters } from '@/content/document-list-query'
 import { documentListError, useDocumentListCopy } from '@/features/documents/document-list-copy'
 import { DocumentFiltersForm, DocumentListSummary } from '@/features/documents/document-list-filters'
 import { documentPublication, useDocuments } from '@/features/documents/document-list-model'
-import { background } from '@/features/editor/core/tasks'
+import { background } from '@/shared/admin/background'
 import { DocumentLoading, DocumentPagination } from './document-list-footer'
 import {
   layout1Class,

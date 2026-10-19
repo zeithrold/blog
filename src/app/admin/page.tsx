@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { DocumentList } from '@/features/documents/document-list'
-import { serverOwner, serverSessionToken } from '@/server/context'
+import { serverOwner, serverSessionToken } from '@/server/runtime/context'
 
 export default async function Admin(): Promise<ReactNode> {
   const owner = await serverOwner()

@@ -1,7 +1,7 @@
-import type { DepartureSource } from '@/features/editor/services/editor-departure'
+import type { DepartureSource } from '@/features/editor/workspace/editor-departure'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { EditorDeparture } from '@/features/editor/services/editor-departure'
+import { EditorDeparture } from '@/features/editor/workspace/editor-departure'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 function deferred<T>(): { promise: Promise<T>, resolve: (value: T) => void } {

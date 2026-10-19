@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { assetListSchema } from '@/content/service-contracts'
+import { assetListSchema } from '@/contracts/media'
 import { saved } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 import { editFirstImage } from './editor-media-flow-helpers'

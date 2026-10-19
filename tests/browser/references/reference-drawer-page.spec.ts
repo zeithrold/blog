@@ -1,6 +1,7 @@
 import process from 'node:process'
-import { acknowledgementSchema, sessionSchema } from '@/content/contracts'
 import { emptyDocument } from '@/content/document'
+import { acknowledgementSchema } from '@/contracts/documents'
+import { sessionSchema } from '@/contracts/session'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { writeDocument } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'

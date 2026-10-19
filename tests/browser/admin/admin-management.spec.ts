@@ -1,6 +1,7 @@
 import { captureState } from '@ztd-me/frontend-checks/playwright'
-import { sessionSchema } from '@/content/contracts'
-import { assetListSchema, catalogListSchema } from '@/content/service-contracts'
+import { catalogListSchema } from '@/contracts/catalog'
+import { assetListSchema } from '@/contracts/media'
+import { sessionSchema } from '@/contracts/session'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { expect, test } from '~/tests/support/browser/test'
 

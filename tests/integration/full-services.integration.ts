@@ -1,17 +1,14 @@
-import type { allocateAssetSchema } from '@/content/service-contracts'
+import type { allocateAssetSchema } from '@/contracts/media'
 import type { Runtime } from '~/tests/support/worker/runtime'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
-import { openDocumentSchema } from '@/content/contracts'
-import {
-  assetAllocationSchema,
-  assetDescriptorSchema,
-  catalogItemSchema,
-  scheduleAckSchema,
-} from '@/content/service-contracts'
-import { AssetGC } from '@/server/asset-gc'
-import { ScheduleRepository } from '@/server/schedules'
+import { catalogItemSchema } from '@/contracts/catalog'
+import { openDocumentSchema } from '@/contracts/documents'
+import { assetAllocationSchema, assetDescriptorSchema } from '@/contracts/media'
+import { scheduleAckSchema } from '@/contracts/publication'
+import { AssetGC } from '@/server/media/asset-gc'
+import { ScheduleRepository } from '@/server/publication/schedules'
 import { equal } from '~/tests/support/unit/assertions'
 import { json } from '~/tests/support/worker/responses'
 import { runtime } from '~/tests/support/worker/runtime'

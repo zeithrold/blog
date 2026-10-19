@@ -1,10 +1,10 @@
-import type { Acknowledgement, OpenDocument } from '@/features/editor/services/api-client'
+import type { Acknowledgement, OpenDocument } from '@/contracts/documents'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { emptyDocument, validateDocument } from '@/content/document'
-import { keepLocalRevision } from '@/features/editor/core/conflict-resolution'
-import { DraftCoordinator } from '@/features/editor/core/draft'
-import { APIError } from '@/features/editor/services/api-client'
+import { keepLocalRevision } from '@/features/editor/draft/conflict-resolution'
+import { DraftCoordinator } from '@/features/editor/draft/draft'
+import { APIError } from '@/shared/admin/api-client'
 import { equal } from '~/tests/support/unit/assertions'
 
 function initial(): OpenDocument {

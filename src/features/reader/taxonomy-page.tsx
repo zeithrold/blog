@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { SLUG } from '@/content/document'
 import { PostList, SiteAfterword } from '@/features/reader/post-list'
 import { SiteCount, SiteText } from '@/i18n/site-text'
-import { repository } from '@/server/context'
+import { repository } from '@/server/runtime/context'
 
 const utility1Class = [
   '[&_h2]:items-center [&_h2]:gap-3 [&_h2]:m-0 [&_h2]:text-[length:15px] [&_h2]:font-semibold',

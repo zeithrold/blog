@@ -1,4 +1,4 @@
-import { APIError } from '@/features/editor/services/api-client'
+import { APIError } from '@/shared/admin/api-client'
 
 export const apiErrorMessages: Record<string, string> = {
   TIMEZONE_INVALID:

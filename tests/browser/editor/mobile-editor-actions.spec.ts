@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
 import { emptyDocument } from '@/content/document'
+import { openDocumentSchema } from '@/contracts/documents'
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 

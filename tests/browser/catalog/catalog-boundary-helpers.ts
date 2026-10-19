@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { sessionSchema } from '@/content/contracts'
-import { catalogItemSchema } from '@/content/service-contracts'
+import { catalogItemSchema } from '@/contracts/catalog'
+import { sessionSchema } from '@/contracts/session'
 
 export type Kind = 'tag' | 'series'
 export type Entry = ReturnType<typeof catalogItemSchema.parse>

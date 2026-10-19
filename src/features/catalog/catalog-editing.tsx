@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import type { CatalogEntry, useCatalogManager } from '@/features/catalog/catalog-model'
 import { useRouter } from 'next/navigation'
 import { useCallback, useRef, useState } from 'react'
-import { ConfirmDialog } from '@/features/editor/ui/confirm'
 import { useEditorLabels } from '@/i18n/use-labels'
+import { ConfirmDialog } from '@/shared/admin/confirm-dialog'
 import { useInternalNavigationGuard } from '@/shared/admin/navigation-guard-context'
 
 type NavigationTarget = { href: string }

@@ -1,4 +1,4 @@
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { saved } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'

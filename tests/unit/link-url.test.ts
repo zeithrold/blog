@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { linkURLLimit, normalizeLinkURL } from '@/features/editor/core/link-url'
+import { linkURLLimit, normalizeLinkURL } from '@/features/editor/engine/link-url'
 
 test('link destinations retain paths, anchors and explicit protocols while completing bare hosts', () => {
   for (const [input, expected] of [

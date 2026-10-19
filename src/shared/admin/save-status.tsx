@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { DraftStatus } from '@/features/editor/core/draft'
+import type { DraftStatus } from '@/features/editor/draft/draft'
 import { Badge } from '@/components/ui/ztd-me/client'
 import { useEditorLabels } from '@/i18n/use-labels'
 

@@ -3,9 +3,9 @@ import type { HistoryModel } from '@/features/history/history-page-model'
 import type { BlogTranslator } from '@/i18n/instance'
 import { History, LoaderCircle } from 'lucide-react'
 import { Badge, Button, ScrollArea } from '@/components/ui/ztd-me/client'
-import { background } from '@/features/editor/core/tasks'
 import { RevisionSummary } from '@/features/history/revision-presentation'
 import { useSiteLocale } from '@/i18n/site-locale'
+import { background } from '@/shared/admin/background'
 
 const utility1Class = [
   'history-sidebar min-w-0 [&_.history-revisions]:max-h-none',

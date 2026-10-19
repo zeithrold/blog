@@ -1,0 +1,45 @@
+export const operations = {
+  'undefined': 'undefined',
+  'Workspace is writable': 'workspaceIsWritable',
+  'Publication and storage status from the current database.': 'publicationAndStorageStatusFromTheCurrentDatabase',
+  'A backup owns the maintenance lock. Writes resume when that backup finishes.':
+    'aBackupOwnsTheMaintenanceLockWritesResumeWhenThatBackupFinishes',
+  'Public generation': 'publicGeneration',
+  'Storage and content': 'storageAndContent',
+  'Publication and backup': 'publicationAndBackup',
+  'Ready media': 'readyMedia',
+  'revisions': 'revisions',
+  'assets': 'assets',
+  'searchable publications': 'searchablePublications',
+  'Publication is more than five minutes overdue.': 'publicationIsMoreThanFiveMinutesOverdue',
+  'Measured from the oldest pending publication.': 'measuredFromTheOldestPendingPublication',
+  'Last refreshed': 'lastRefreshed',
+  'Resume restored database writes': 'resumeRestoredDatabaseWrites',
+  'Could not resume writes. Refresh and review the current maintenance state.':
+    'couldNotResumeWritesRefreshAndReviewTheCurrentMaintenanceState',
+  'Resume writes after checking restored content, media and owner access?':
+    'resumeWritesAfterCheckingRestoredContentMediaAndOwnerAccess',
+  'The database reached its write limit. Review storage in Operations.':
+    'theDatabaseReachedItsWriteLimitReviewStorageInOperations',
+  'Operations': 'operations',
+  'Documents': 'documents',
+  'Refresh status': 'refreshStatus',
+  'Writes': 'writes',
+  'Paused for maintenance': 'pausedForMaintenance',
+  'Available': 'available',
+  'Database capacity': 'databaseCapacity',
+  'Canonical history': 'canonicalHistory',
+  'Pending schedules': 'pendingSchedules',
+  'Schedule lag': 'scheduleLag',
+  'Failed schedules': 'failedSchedules',
+  'Last completed backup': 'lastCompletedBackup',
+  'Workspace': 'workspace',
+  'Normal capacity': 'normalCapacity',
+  'Approaching capacity': 'approachingCapacity',
+  'Capacity critical': 'capacityCritical',
+  'Encrypted backups are exported with the owner backup command. A completed export records its timestamp here.':
+    'encryptedBackupsAreExportedWithTheOwnerBackupCommandACompletedExport',
+  'No completed backup recorded': 'noCompletedBackupRecorded',
+  'Review storage, publication jobs and recovery before making operational changes.':
+    'reviewStoragePublicationJobsAndRecoveryBeforeMaking',
+} as const

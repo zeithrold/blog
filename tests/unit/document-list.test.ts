@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
 import { defaultDocumentFilters, documentListPath } from '@/content/document-list-query'
 import { DocumentsController } from '@/features/documents/document-list-model'
-import { listCursor, readDocumentListQuery } from '@/server/document-list-query'
-import { Problem } from '@/server/problem'
+import { listCursor, readDocumentListQuery } from '@/server/documents/document-list-query'
+import { Problem } from '@/server/http/problem'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 function checked(name: string, run: () => Promise<void> | void): void {

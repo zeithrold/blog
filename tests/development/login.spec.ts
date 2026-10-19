@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { saved } from '~/tests/support/browser/document'
 
 test('development login keeps authentication and CSRF guards', async ({ page, request }) => {

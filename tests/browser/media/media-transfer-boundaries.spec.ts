@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { assetListSchema } from '@/content/service-contracts'
+import { assetListSchema } from '@/contracts/media'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { expect, test } from '~/tests/support/browser/test'
 import { interruptTransfer } from './media-transfer-helpers'

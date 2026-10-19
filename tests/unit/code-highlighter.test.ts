@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CODE_LANGUAGES, highlightCodeLanguage } from '@/content/code-languages'
-import { createCodeHighlighter } from '@/features/editor/core/code-highlighter'
+import { createCodeHighlighter } from '@/features/editor/blocks/code/code-highlighter'
 
 test('highlighting resolves known code aliases and leaves legacy/plain languages untouched', () => {
   assert.ok(highlightCodeLanguage('python') === 'python')

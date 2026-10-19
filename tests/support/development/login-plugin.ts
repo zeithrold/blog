@@ -21,7 +21,7 @@ export async function developmentLogin(): Promise<DevelopmentLogin> {
   const jwk = { ...(await exportJWK(publicKey)), kid: 'blog-dev-key', alg: 'RS256', use: 'sig' }
   let origin = 'http://127.0.0.1:8800'
   const aliases = Object.fromEntries(['access-keyset', 'security'].map(name => [
-    name === 'security' ? '@/worker/security' : '@/server/access-keyset',
+    name === 'security' ? '@/worker/security' : '@/server/auth/access-keyset',
     fileURLToPath(new URL(`./${name}.ts`, import.meta.url)),
   ]))
   const vars = {

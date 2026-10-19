@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
-import type { Recovery } from '@/features/editor/core/recovery'
+import type { Recovery } from '@/features/editor/draft/recovery'
 import { expect } from '@playwright/test'
-import { acknowledgementSchema, sessionSchema } from '@/content/contracts'
+import { acknowledgementSchema } from '@/contracts/documents'
+import { sessionSchema } from '@/contracts/session'
 import { writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'
 

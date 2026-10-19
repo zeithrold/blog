@@ -1,6 +1,6 @@
 import type { JWK, JWTPayload } from 'jose'
 import type { DispatchFetch, V4FetchHandler } from 'miniflare'
-import type { Environment } from '@/server/environment'
+import type { Environment } from '@/server/runtime/environment'
 import assert from 'node:assert/strict'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -13,7 +13,7 @@ import {
   V4WorkerOptionsSchema,
 } from 'miniflare'
 import { unstable_getMiniflareWorkerOptions, unstable_splitSqlQuery } from 'wrangler'
-import { sessionSchema } from '@/content/contracts'
+import { sessionSchema } from '@/contracts/session'
 
 export type Runtime = {
   fixture: Miniflare

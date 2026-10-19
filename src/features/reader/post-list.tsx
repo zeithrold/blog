@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { PublicItem } from '@/server/public-repository'
+import type { PublicItem } from '@/server/reader/public-repository'
 import { ArrowRight, ArrowUp, PenLine } from 'lucide-react'
 import Link from 'next/link'
 import { SiteDate, SiteText } from '@/i18n/site-text'

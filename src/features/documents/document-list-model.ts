@@ -1,12 +1,12 @@
 import type { DocumentFilters } from '@/content/document-list-query'
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
-import { documentListSchema } from '@/content/contracts'
 import {
   defaultDocumentFilters,
   documentFiltersSchema,
   documentListPath,
 } from '@/content/document-list-query'
-import { APIError, Client, get } from '@/features/editor/services/api-client'
+import { documentListSchema } from '@/contracts/documents'
+import { APIError, Client, get } from '@/shared/admin/api-client'
 
 export type DocumentEntry = ReturnType<typeof documentListSchema.parse>['items'][number]
 type Failure = 'load' | 'more' | 'article' | 'page' | 'restore' | null

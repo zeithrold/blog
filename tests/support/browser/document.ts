@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
 import type { Document } from '@/content/document'
 import { expect } from '@playwright/test'
-import { acknowledgementSchema, sessionSchema } from '@/content/contracts'
+import { acknowledgementSchema } from '@/contracts/documents'
+import { sessionSchema } from '@/contracts/session'
 
 export async function saved(page: Page): Promise<void> {
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible({

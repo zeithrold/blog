@@ -1,4 +1,4 @@
-import { openDocumentSchema } from '@/content/contracts'
+import { openDocumentSchema } from '@/contracts/documents'
 import { writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'
 import { horizontalBounds } from '~/tests/support/browser/layout'

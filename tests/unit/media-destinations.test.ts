@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { MediaDestinations } from '@/features/editor/services/media-destinations'
+import { MediaDestinations } from '@/features/editor/media/media-destinations'
 import { deepEqual } from '~/tests/support/unit/assertions'
 
 function file(): File {

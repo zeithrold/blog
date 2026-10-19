@@ -1,4 +1,4 @@
-import { catalogItemSchema } from '@/content/service-contracts'
+import { catalogItemSchema } from '@/contracts/catalog'
 import { expect, test } from '~/tests/support/browser/test'
 import { fixture, writeCatalog } from './catalog-boundary-helpers'
 

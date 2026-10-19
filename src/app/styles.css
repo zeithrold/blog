@@ -6,12 +6,12 @@
 @import '@blocknote/react/style.css' layer(editor-vendor);
 @import './styles/base.css' layer(base);
 @import './styles/public.css' layer(components);
-@import './styles/reader.css' layer(components);
+@import '../features/reader/reader.css' layer(components);
 @import './styles/admin.css' layer(components);
-@import './styles/editor.css' layer(components);
-@import './styles/editor-formatting.css' layer(components);
-@import './styles/editor-notices.css' layer(components);
-@import './styles/history.css' layer(components);
+@import '../features/editor/workspace/editor.css' layer(components);
+@import '../features/editor/controls/formatting/formatting.css' layer(components);
+@import '../features/editor/draft/notices.css' layer(components);
+@import '../features/history/history.css' layer(components);
 @import './styles/responsive.css' layer(components);
 
 @source '../components/ui/ztd-me';

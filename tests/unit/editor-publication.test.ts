@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { emptyDocument } from '@/content/document'
+import { publicationPath } from '@/content/publication-path'
 import { publicationProblems, publicationRequirements } from '@/content/publication-validation'
-import { nodeItem, nodes, sameNode } from '@/features/editor/core/native'
-import { publicationIssues, publicationPath } from '@/features/editor/core/publication-model'
+import { nodeItem, nodes, sameNode } from '@/features/editor/engine/native'
+import { publicationIssues } from '@/features/editor/publication/publication-model'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 test('empty citation and footnote selection changes invalidate the publication index', () => {

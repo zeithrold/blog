@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
-import { acknowledgementSchema } from '@/content/contracts'
-import { Client } from '@/features/editor/services/api-client'
+import { acknowledgementSchema } from '@/contracts/documents'
+import { Client } from '@/shared/admin/api-client'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 test('owner-bound mutations do not retry with credentials belonging to another owner', async () => {

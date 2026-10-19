@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
-import { assetListSchema } from '@/content/service-contracts'
+import { assetListSchema } from '@/contracts/media'
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'
 import { expect, test } from '~/tests/support/browser/test'

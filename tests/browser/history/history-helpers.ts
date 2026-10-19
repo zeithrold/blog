@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { acknowledgementSchema } from '@/content/contracts'
+import type { acknowledgementSchema } from '@/contracts/documents'
 import { expect } from '@playwright/test'
 import { emptyDocument } from '@/content/document'
 import { mutate } from '~/tests/support/browser/api'

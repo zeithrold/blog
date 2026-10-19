@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { UUID } from '@/content/document'
 import { DocumentReader } from '@/features/reader/document'
 import { SiteText } from '@/i18n/site-text'
-import { repository, serverOwner } from '@/server/context'
+import { repository, serverOwner } from '@/server/runtime/context'
 
 const utility1Class = [
   'w-[min(var(--blog-reading-width),_calc(100%_-_48px))] mt-6 mx-auto mb-0 border-transparent',

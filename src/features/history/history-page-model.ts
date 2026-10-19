@@ -1,12 +1,13 @@
 import type { Document } from '@/content/document'
 import type { PublicationIssue } from '@/content/publication-issues'
-import type { Acknowledgement, OpenDocument } from '@/features/editor/services/api-client'
+import type { Acknowledgement, OpenDocument } from '@/contracts/documents'
 import { useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
-import { historySchema, openDocumentSchema } from '@/content/contracts'
 import { UUID, validateDocument } from '@/content/document'
-import { publicationPath } from '@/features/editor/core/publication-model'
-import { APIError, Client, get } from '@/features/editor/services/api-client'
+import { publicationPath } from '@/content/publication-path'
+import { openDocumentSchema } from '@/contracts/documents'
+import { historySchema } from '@/contracts/history'
+import { APIError, Client, get } from '@/shared/admin/api-client'
 
 const revisionSchema = z.strictObject({
   revisionId: UUID,

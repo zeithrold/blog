@@ -66,6 +66,8 @@ for (const width of [
     await page.getByRole('button', { name: 'Add reference', exact: true }).click()
     const reference = page.getByRole('dialog', { name: 'Add reference', exact: true })
     await reference.getByLabel('Reference title', { exact: true }).fill('Parent draft stays')
+    await expect(reference.getByLabel('Reference title', { exact: true })).toHaveValue('Parent draft stays')
+    await expect(reference.locator('input[name="doi"]')).toHaveValue('')
     await replaceAuthors(reference, ['Ada Lovelace', 'Grace Hopper'])
     await expect(reference.locator('[data-slot="reference-authors"] input, [data-slot="reference-authors"] textarea'))
       .toHaveCount(0)
