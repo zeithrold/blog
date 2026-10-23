@@ -3,6 +3,7 @@ import { Problem, problemResponse } from '@/server/http/problem'
 import { AssetGC } from '@/server/media/asset-gc'
 import { ScheduleRepository } from '@/server/publication/schedules'
 import { dispatch } from '@/worker/dispatch'
+import { earlyHistory } from '@/worker/history'
 import { requestContext } from '@/worker/request'
 import { security } from '@/worker/security'
 
@@ -17,7 +18,10 @@ export default {
     try {
       const context = await requestContext(request, env, nonce)
       const result = await dispatch(context.request, env)
-      return security(result.response, context.security, result.policy)
+      const response = !context.security.head && result.policy === undefined
+        ? earlyHistory(result.response, nonce)
+        : result.response
+      return security(response, context.security, result.policy)
     }
     catch (error) {
       if (

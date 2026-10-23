@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { openDocumentSchema } from '@/contracts/documents'
+import { historyPosition } from '@/shared/admin/history-navigation'
 import { saved } from '~/tests/support/browser/document'
 
 test('development login keeps authentication and CSRF guards', async ({ page, request }) => {
@@ -15,6 +16,7 @@ test('development login keeps authentication and CSRF guards', async ({ page, re
   expect((await request.get('/__fixture/login', { headers: { host: 'example.com' } })).status()).toBe(403)
   await page.goto('/__fixture/login')
   await expect(page.getByRole('heading', { name: 'Documents', exact: true })).toBeVisible()
+  expect(historyPosition(await page.evaluate((): unknown => history.state))).not.toBeNull()
   expect((await page.request.get('/api/admin/session')).status()).toBe(200)
   expect((await page.request.post('/api/admin/documents', { data: {} })).status()).toBe(403)
   const cookies = await page.context().cookies()

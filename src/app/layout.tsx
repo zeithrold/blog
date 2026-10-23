@@ -8,7 +8,6 @@ import {
   resolveInitialPreferences,
 } from '@/components/ui/ztd-me'
 import { BlogFrontend } from '@/i18n/frontend'
-import { HistoryBootstrap } from '@/server/runtime/history-bootstrap'
 import './styles.css'
 
 const utility1Class = [
@@ -42,7 +41,6 @@ export default async function Layout({
     <html {...frontendRootAttributes(initial)}>
       <head>
         <meta name="cms-nonce" content={requestHeaders.get('x-blog-nonce') ?? ''} />
-        <HistoryBootstrap nonce={requestHeaders.get('x-blog-nonce') ?? ''} />
       </head>
       <body className={utility1Class}>
         <BlogFrontend
