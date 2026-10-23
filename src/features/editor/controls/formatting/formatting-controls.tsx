@@ -39,7 +39,7 @@ export function EditorFormattingControls({ disabled, composingRef, portalElement
           table={table}
           portalElement={portalElement}
         />
-        <FormattingOptionsDrawer />
+        {compact && <FormattingOptionsDrawer />}
         <LinkToolbarController linkToolbar={EditorLinkToolbar} portalElement={portalElement ?? undefined} />
       </FormattingOptionsContext>
     </EditorLinkCommands>

@@ -33,9 +33,11 @@ export function BlockActionsDrawer({ compact, children }: BlockActionsProps): Re
   return (
     <BlockActionsContext value={model.context}>
       {children}
-      <Drawer open={model.open} onOpenChange={model.setOpen}>
-        <BlockDrawerContent model={model} />
-      </Drawer>
+      {compact && (
+        <Drawer open={model.open} onOpenChange={model.setOpen}>
+          <BlockDrawerContent model={model} />
+        </Drawer>
+      )}
     </BlockActionsContext>
   )
 }

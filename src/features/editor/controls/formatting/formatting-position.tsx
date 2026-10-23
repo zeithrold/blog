@@ -31,8 +31,12 @@ type Props = {
 }
 
 export function EditorFormattingToolbarController(props: Props): ReactNode {
+  return isTouchDevice() ? <TouchFormattingToolbar {...props} /> : <FloatingFormattingToolbar {...props} />
+}
+
+function TouchFormattingToolbar(props: Props): ReactNode {
   const keyboardOpen = useVirtualKeyboard()
-  return isTouchDevice() && keyboardOpen
+  return keyboardOpen
     ? <MobileFormattingToolbarController formattingToolbar={props.formattingToolbar} />
     : <FloatingFormattingToolbar {...props} />
 }
