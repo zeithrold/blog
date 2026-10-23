@@ -1,10 +1,8 @@
 import { ArrowLeft } from 'lucide-react'
+import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteText } from '@/i18n/site-text'
 
-const utility1Class = [
-  '[&_h1]:text-[length:clamp(40px,_6vw,_56px)] [&_>_p:not(.eyebrow)]:my-6',
-  '[&_>_p:not(.eyebrow)]:mx-0',
-].join(' ')
+const utility1Class = ['[&_>_p:not(.eyebrow)]:my-6', '[&_>_p:not(.eyebrow)]:mx-0'].join(' ')
 
 const utility2Class = ['[&_>_p:not(.eyebrow)]:text-muted-foreground [&_>_p:not(.eyebrow)]:text-[length:15px]'].join(' ')
 
@@ -32,11 +30,6 @@ const layout2Class = [
   '[&_>_a:hover]:text-accent-foreground',
 ].join(' ')
 
-const layout3Class = [
-  'm-0 text-[clamp(44px,6vw,68px)] font-medium tracking-[-0.045em] leading-[1.08]',
-  '[html:lang(zh-CN)_&]:tracking-[-0.02em] [html:lang(zh-CN)_&]:leading-[1.2]',
-].join(' ')
-
 export default function NotFound(): React.ReactNode {
   return (
     <div className={layout1Class}>
@@ -44,7 +37,7 @@ export default function NotFound(): React.ReactNode {
         <p className={[utility4Class, 'uppercase'].join(' ')}>
           404
         </p>
-        <h1 className={layout3Class} id="not-found-heading"><SiteText value="Not found" /></h1>
+        <PublicPageTitle variant="utility" id="not-found-heading"><SiteText value="Not found" /></PublicPageTitle>
         <p><SiteText value="This page is unavailable." /></p>
         <a href="/">
           <ArrowLeft size={16} aria-hidden="true" />

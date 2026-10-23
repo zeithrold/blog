@@ -3,6 +3,7 @@ import { ArrowDown, ArrowLeft, Hash, Layers } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { SLUG } from '@/content/document'
 import { PostList, SiteAfterword } from '@/features/reader/post-list'
+import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteCount, SiteText } from '@/i18n/site-text'
 import { repository } from '@/server/runtime/context'
 
@@ -24,9 +25,7 @@ const utility4Class = [
   '[&_.back-link]:mb-5',
 ].join(' ')
 
-const utility5Class = [
-  '[&_.back-link]:ml-[-2px] [&_h1]:text-[length:clamp(36px,_5vw,_54px)] [&_h1]:wrap-anywhere',
-].join(' ')
+const utility5Class = ['[&_.back-link]:ml-[-2px]'].join(' ')
 
 const utility6Class = [
   'back-link inline-flex items-center gap-2 min-h-11 text-muted-foreground text-help font-medium',
@@ -68,11 +67,6 @@ const layout5Class = [
 const layout6Class = [
   utility7Class,
   'leading-[1.6] uppercase flex items-center gap-[10px] mt-0 mx-0 mb-[22px]',
-].join(' ')
-
-const layout7Class = [
-  'm-0 text-[clamp(44px,6vw,68px)] font-medium tracking-[-0.045em] leading-[1.08]',
-  '[html:lang(zh-CN)_&]:tracking-[-0.02em] [html:lang(zh-CN)_&]:leading-[1.2]',
 ].join(' ')
 
 export async function TaxonomyPage({
@@ -141,7 +135,7 @@ function TaxonomyIntro({ kind, label }: { kind: 'tag' | 'series', label: string 
         <Icon className="intro-mark text-accent-foreground" size={16} aria-hidden="true" />
         <SiteText value={kind === 'tag' ? 'Tag' : 'Series'} />
       </p>
-      <h1 className={layout7Class} id="taxonomy-heading">{label}</h1>
+      <PublicPageTitle id="taxonomy-heading">{label}</PublicPageTitle>
     </section>
   )
 }

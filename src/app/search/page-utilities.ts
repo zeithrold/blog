@@ -3,16 +3,14 @@ export const utility1Class = [
   '[&_.back-link]:mb-5',
 ].join(' ')
 
-export const utility2Class = [
-  '[&_.back-link]:ml-[-2px] [&_h1]:text-[length:clamp(36px,_5vw,_54px)] [&_h1]:wrap-anywhere',
-].join(' ')
+export const utility2Class = ['[&_.back-link]:ml-[-2px]'].join(' ')
 
 export const utility3Class = [
   'eyebrow intro-eyebrow m-0 text-muted-foreground text-help font-medium tracking-[0.14em]',
 ].join(' ')
 
 export const utility4Class = [
-  'search-form relative flex gap-2 max-w-160 mt-7 p-[6px] border border-border rounded-[14px]',
+  'search-form relative flex gap-2 max-w-160 mt-7 p-[6px] border border-border rounded-md',
   'bg-card',
 ].join(' ')
 
@@ -43,37 +41,33 @@ export const utility10Class = [
 ].join(' ')
 
 export const utility11Class = [
-  'post-entry search-entry grid gap-8 items-center py-[26px] px-7 border border-border',
-  'rounded-[16px]',
+  'post-entry search-entry group grid gap-8 items-center py-7 border-t border-border',
 ].join(' ')
 
 export const utility12Class = [
-  'bg-card text-inherit no-underline [transition:border-color_0.2s,_box-shadow_0.2s]',
+  'text-inherit no-underline transition-colors duration-200 motion-reduce:transition-none',
 ].join(' ')
 
-export const utility13Class = [
-  'hover:shadow-[0_8px_32px_var(--blog-shadow-hover)] grid-cols-[minmax(0,_1fr)_40px]',
-].join(' ')
+export const utility13Class = ['grid-cols-[minmax(0,_1fr)_32px]'].join(' ')
 
-export const utility14Class = [
-  '[&:hover_.post-arrow]:bg-primary [&:hover_.post-arrow]:text-[var(--ztd-action-foreground)]',
-].join(' ')
+export const utility14Class = ['hover:bg-muted/40'].join(' ')
 
 export const utility15Class = [
-  'max-[960px]:grid-cols-[minmax(0,_1fr)_40px] max-[701px]:grid-cols-[minmax(0,_1fr)]',
+  'max-[701px]:grid-cols-[minmax(0,_1fr)_24px] max-[701px]:gap-3 max-[701px]:py-6',
 ].join(' ')
 
 export const utility16Class = [
-  'post-title m-0 text-[length:22px] font-medium tracking-[-0.02em] leading-[1.3] wrap-anywhere',
+  'post-title m-0 text-[length:21px] font-medium tracking-[-.025em] leading-[1.4] wrap-anywhere',
 ].join(' ')
 
 export const utility17Class = [
-  'post-arrow flex items-center justify-center w-10 h-10 rounded-full bg-muted',
+  'post-arrow grid place-items-center size-8 max-[701px]:size-6',
   'text-muted-foreground',
 ].join(' ')
 
 export const utility18Class = [
-  '[transition:background-color_0.2s,_color_0.2s,_transform_0.2s] max-[701px]:hidden',
+  'transition-transform duration-200 group-hover:translate-x-1 group-hover:text-foreground',
+  'motion-reduce:transition-none',
 ].join(' ')
 
 export const utility19Class = [
@@ -81,7 +75,7 @@ export const utility19Class = [
 ].join(' ')
 
 export const utility20Class = [
-  '[&_p]:m-0 [&_p]:text-muted-foreground [&_p]:text-help [&_p]:leading-[1.7]',
+  '[&_p]:m-0 [&_p]:text-muted-foreground [&_p]:text-control [&_p]:leading-[1.7]',
   '[&_.empty-title]:mt-0',
 ].join(' ')
 
@@ -94,7 +88,7 @@ export const utility22Class = [
 ].join(' ')
 
 export const utility23Class = [
-  'post-description max-w-[62ch] mt-2 mx-0 mb-0 text-muted-foreground text-help leading-[1.75]',
+  'post-description max-w-[62ch] mt-2 mx-0 mb-0 text-muted-foreground text-body leading-[1.8]',
 ].join(' ')
 
 export const utility24Class = [

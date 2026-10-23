@@ -1,4 +1,5 @@
 import { ArrowUpRight, FileText, Scale } from 'lucide-react'
+import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteText } from '@/i18n/site-text'
 
 const utility1Class = [
@@ -6,16 +7,14 @@ const utility1Class = [
   '[&_.back-link]:mb-5',
 ].join(' ')
 
-const utility2Class = [
-  '[&_.back-link]:ml-[-2px] [&_h1]:text-[length:clamp(36px,_5vw,_54px)] [&_h1]:wrap-anywhere',
-].join(' ')
+const utility2Class = ['[&_.back-link]:ml-[-2px]'].join(' ')
 
 const utility3Class = [
   'eyebrow intro-eyebrow m-0 text-muted-foreground text-help font-medium tracking-[0.14em]',
 ].join(' ')
 
 const utility4Class = [
-  'link-list my-6 mx-0 p-0 overflow-hidden border border-border rounded-[14px] bg-card list-none',
+  'link-list my-6 mx-0 p-0 overflow-hidden border-y border-border list-none text-control',
 ].join(' ')
 
 const utility5Class = [
@@ -47,11 +46,6 @@ const layout2Class = [
 const layout3Class = [
   utility3Class,
   'leading-[1.6] uppercase flex items-center gap-[10px] mt-0 mx-0 mb-[22px]',
-].join(' ')
-
-const layout4Class = [
-  'm-0 text-[clamp(44px,6vw,68px)] font-medium tracking-[-0.045em] leading-[1.08]',
-  '[html:lang(zh-CN)_&]:tracking-[-0.02em] [html:lang(zh-CN)_&]:leading-[1.2]',
 ].join(' ')
 
 const layout5Class = [
@@ -104,12 +98,14 @@ export default function Licenses(): React.ReactNode {
           <Scale className="intro-mark text-accent-foreground" size={16} aria-hidden="true" />
           <SiteText value="Licenses" />
         </p>
-        <h1 className={layout4Class} id="licenses-heading"><SiteText value="Third-party licenses" /></h1>
+        <PublicPageTitle variant="utility" id="licenses-heading">
+          <SiteText value="Third-party licenses" />
+        </PublicPageTitle>
         <p className={utility8Class}>
           <SiteText value="Open source notices and corresponding sources for the code this site ships." />
         </p>
       </section>
-      <section className="license-content max-w-190 pb-18 text-help leading-[1.8]" lang="en">
+      <section className="license-content max-w-190 pb-18 text-body leading-[1.8]" lang="en">
         <p>
           BlockNote core and React 0.55.0 are licensed under MPL 2.0. These packages are used
           without source modifications.

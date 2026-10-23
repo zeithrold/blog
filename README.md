@@ -129,7 +129,9 @@ measurement boundaries, and the other performance budgets remain the same across
 
 The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI,
 ruled article rows and real publication metadata. Display type caps at 50px on wide layouts and
-36px on narrow layouts. Shared body/control/help roles remain 15/13/12px; reading and editable
+36px on narrow layouts. Secondary public titles share the Serif section scale at 40/32px;
+recovery and license titles use 32/26px. Search results follow the same ruled rows as the index,
+with body-sized excerpts. Shared body/control/help roles remain 15/13/12px; reading and editable
 roles remain 17/16px. Compact UI text retains reachable controls and visible keyboard focus.
 
 Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before

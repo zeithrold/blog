@@ -3,6 +3,7 @@ import { ArrowDown, ArrowRight, Search as SearchIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Button, Input } from '@/components/ui/ztd-me/client'
 import { SiteAfterword } from '@/features/reader/post-list'
+import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteCount, SiteText } from '@/i18n/site-text'
 import { repository } from '@/server/runtime/context'
 import {
@@ -49,16 +50,11 @@ const layout3Class = [
   'leading-[1.6] uppercase flex items-center gap-[10px] mt-0 mx-0 mb-[22px]',
 ].join(' ')
 
-const layout4Class = [
-  'm-0 text-[clamp(44px,6vw,68px)] font-medium tracking-[-0.045em] leading-[1.08]',
-  '[html:lang(zh-CN)_&]:tracking-[-0.02em] [html:lang(zh-CN)_&]:leading-[1.2]',
-].join(' ')
-
 const layout5Class = [
   utility4Class,
   utility5Class,
   '[&_input]:min-w-0 [&_input]:pl-10 [&_input]:border-0 [&_input]:bg-transparent',
-  '[&_input]:text-[length:15px] [&_input:focus-visible]:[outline:none]',
+  '[&_input]:text-editable [&_input:focus-visible]:[outline:none]',
 ].join(' ')
 
 const layout6Class = [utility6Class, 'whitespace-nowrap border-0'].join(' ')
@@ -85,12 +81,9 @@ const layout10Class = [
 const layout11Class = [
   utility11Class,
   utility12Class,
-  'hover:border-[color-mix(in_srgb,_var(--ztd-accent)_45%,_var(--ztd-border))]',
   utility13Class,
   utility14Class,
-  '[&:hover_.post-arrow]:transform-[translateX(2px)] max-[960px]:gap-6',
   utility15Class,
-  'max-[701px]:gap-[10px] max-[701px]:p-5',
 ].join(' ')
 
 const layout12Class = [utility16Class, 'max-[701px]:text-[length:19px]'].join(' ')
@@ -133,7 +126,7 @@ function SearchIntro({ query }: { query: string }): ReactNode {
         <SearchIcon className="intro-mark text-accent-foreground" size={16} aria-hidden="true" />
         <SiteText value="Search" />
       </p>
-      <h1 className={layout4Class} id="search-heading"><SiteText value="Search published writing" /></h1>
+      <PublicPageTitle id="search-heading"><SiteText value="Search published writing" /></PublicPageTitle>
       <p className={utility22Class}><SiteText value="Find posts by title or text." /></p>
       <form action="/search" role="search" className={layout5Class}>
         <label htmlFor="search-query" className={layout6Class}>
@@ -190,7 +183,7 @@ function SearchResults({
 
 function ResultList({ items }: { items: SearchResult['items'] }): ReactNode {
   return (
-    <ol className="post-list grid gap-[14px] m-0 p-0 list-none">
+    <ol className="post-list grid m-0 p-0 list-none border-b border-border">
       {items.map(item => (
         <li key={item.path}>
           <Link href={item.path} className={layout11Class}>
