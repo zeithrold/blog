@@ -138,6 +138,31 @@ font family is not rendering evidence; check the loaded and rendered fonts in th
 Run-specific screenshots and measurements belong in the system temporary artifacts directory.
 Local source, production-build checks and live deployment are separate evidence.
 
+## Shared development Skills
+
+`zt.json` explicitly selects five development Skills from Tools
+`405d732ed93488ff08568751e522c42537480752`. Complete directories, references and licenses live under
+`.agents/skills`; `zt.lock.json` records their module version and directory hashes.
+The root module declaration supports read-only discovery. The native `pnpm check`
+command continues to own static checks, build, integration, both browser suites,
+performance and development verification.
+
+For UI work, read the public reading design above and the installed
+[UI foundation](.agents/skills/ui-foundation/SKILL.md), including its
+[eight-dimension visual review](.agents/skills/ui-foundation/references/visual-design.md).
+Keep Blog's reading/editor role budgets, content, authentication and native verification
+local. The Skills do not own application components or publication policy.
+
+Reproduce or review the managed delivery with the pinned CLI:
+
+```sh
+go install github.com/zeithrold/tools/cmd/zt@405d732ed93488ff08568751e522c42537480752
+zt sync --root . --plan
+zt sync --root .
+```
+
+Sync protects unmanaged Skills and local edits; review its plan before applying updates.
+
 ## Source organization
 
 `src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
