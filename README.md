@@ -143,7 +143,7 @@ Local source, production-build checks and live deployment are separate evidence.
 ## Shared development Skills
 
 `zt.json` explicitly selects five development Skills from Tools
-`405d732ed93488ff08568751e522c42537480752`. Complete directories, references and licenses live under
+`880e26363c8a3ec35c1e316edb30780c33bcecbc`. Complete directories, references and licenses live under
 `.agents/skills`; `zt.lock.json` records their module version and directory hashes.
 The root module declaration supports read-only discovery. The native `pnpm check`
 command continues to own static checks, build, integration, both browser suites,
@@ -158,7 +158,7 @@ local. The Skills do not own application components or publication policy.
 Reproduce or review the managed delivery with the pinned CLI:
 
 ```sh
-go install github.com/zeithrold/tools/cmd/zt@405d732ed93488ff08568751e522c42537480752
+go install github.com/zeithrold/tools/cmd/zt@880e26363c8a3ec35c1e316edb30780c33bcecbc
 zt sync --root . --plan
 zt sync --root .
 ```
