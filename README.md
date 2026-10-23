@@ -47,6 +47,8 @@ only; `pnpm test:editor-performance` runs the performance project separately, an
 `pnpm test:development` runs development server tests. `pnpm test:a11y` selects the accessibility
 scanner cases from the functional suite. CI runs `pnpm check` once, covering static checks, unit
 tests, the build, integration tests, both browsers, performance tests, and development server tests.
+The check has its own deadline within the job budget, leaving time to upload failure evidence.
+CI retains the native check log, browser reports, screenshots, traces and videos for seven days.
 
 Tests against the build output reset their disposable Worker and local D1/R2 instances before each
 case through an automatic Playwright fixture. The single-worker configuration keeps the reset isolated
@@ -124,6 +126,8 @@ pnpm test:integration
 Preview P95 budgets are 500 ms for the 100- and 500-block scenarios at 1× CPU, 2000 ms for
 2000 blocks at 1× CPU, and 750 ms for 500 blocks at 4× CPU. CPU throttling, sample counts,
 measurement boundaries, and the other performance budgets remain the same across runs.
+Virtual-keyboard tracking mounts only on touch devices. Mobile formatting and block-action drawers
+mount within their breakpoint so desktop initialization avoids their closed-overlay layout reads.
 
 ## Public reading design
 
@@ -143,7 +147,7 @@ Local source, production-build checks and live deployment are separate evidence.
 ## Shared development Skills
 
 `zt.json` explicitly selects five development Skills from Tools
-`880e26363c8a3ec35c1e316edb30780c33bcecbc`. Complete directories, references and licenses live under
+`7fd78ba96830452502adbda07575bb250af914ba`. Complete directories, references and licenses live under
 `.agents/skills`; `zt.lock.json` records their module version and directory hashes.
 The root module declaration supports read-only discovery. The native `pnpm check`
 command continues to own static checks, build, integration, both browser suites,
@@ -158,7 +162,7 @@ local. The Skills do not own application components or publication policy.
 Reproduce or review the managed delivery with the pinned CLI:
 
 ```sh
-go install github.com/zeithrold/tools/cmd/zt@880e26363c8a3ec35c1e316edb30780c33bcecbc
+go install github.com/zeithrold/tools/cmd/zt@7fd78ba96830452502adbda07575bb250af914ba
 zt sync --root . --plan
 zt sync --root .
 ```
@@ -168,7 +172,10 @@ Sync protects unmanaged Skills and local edits; review its plan before applying 
 ## Source organization
 
 `src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
-Worker security. `src/server` groups HTTP handling, authentication, document persistence, media,
+Worker security. Its HTML response path installs the nonce-bearing history bridge before router
+scripts can capture native History methods. The built Worker integration test checks that first-script
+ordering and JSON/HEAD behavior; custom-policy responses bypass this insertion. `src/server` groups HTTP handling,
+authentication, document persistence, media,
 catalogs, publication, public reading, reference lookup, operations, and runtime bindings. Repository
 inheritance and request behavior are unchanged by this grouping.
 

@@ -11,7 +11,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -21,4 +21,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium webkit
       - name: Check source, build, integration, browsers, performance and development
-        run: pnpm check
+        timeout-minutes: 160
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm check 2>&1 | tee "$RUNNER_TEMP/cms-check.log"
+      - name: Retain native verification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: frontend-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/cms-check.log
+            /tmp/blog-tests/
+          retention-days: 7
+          if-no-files-found: error
