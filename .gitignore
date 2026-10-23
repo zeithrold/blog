@@ -36,6 +36,7 @@ tsconfig.tsbuildinfo
 # Verification output
 test-results
 playwright-report
+tests/browser/journeys/__screenshots__/
 
 # Local Worker secrets
 .dev.vars

@@ -17,11 +17,45 @@ type SourceEvents = {
   beforeinput: (event: InputEvent) => void
 }
 
-function sourceTarget(event: Event, editor: Editor, blockId: string): boolean {
+function editorInputTarget(event: Event, editor: Editor): boolean {
   const target = event.target
   return editor.isEditable && target instanceof HTMLElement && target.isContentEditable
     && editor.prosemirrorView.dom.contains(target) && target.closest('button,input,textarea,select') === null
+}
+
+function sourceTarget(event: Event, editor: Editor, blockId: string): boolean {
+  return editorInputTarget(event, editor)
     && editor.getTextCursorPosition().block.id === blockId && sourceSelection(editor)
+}
+
+function plainArrowUp(event: KeyboardEvent): boolean {
+  return event.key === 'ArrowUp' && ![
+    event.altKey,
+    event.ctrlKey,
+    event.metaKey,
+    event.shiftKey,
+    event.isComposing,
+  ].some(Boolean)
+}
+
+function sourceArrowUp(event: KeyboardEvent, editor: Editor, blockId: string, popup: SourcePopup): boolean {
+  if (!plainArrowUp(event) || !editorInputTarget(event, editor) || editor.prosemirrorView.composing) {
+    return false
+  }
+  const selection = editor.prosemirrorState.selection
+  if (!(selection instanceof TextSelection) || !selection.empty || selection.$from.parentOffset !== 0) {
+    return false
+  }
+  const current = editor.getTextCursorPosition().block
+  if (editor.getPrevBlock(current.id)?.id !== blockId) {
+    return false
+  }
+  // WebKit's visual ArrowUp can stop at a noneditable diagram iframe. Enter
+  // the adjacent source explicitly, regardless of the preview's loading height.
+  event.preventDefault()
+  event.stopPropagation()
+  popup.open()
+  return true
 }
 
 function revealBeforeNativeInput(reveal: () => void): void {
@@ -84,6 +118,9 @@ function inputAtBoundary(event: InputEvent, editor: Editor): boolean {
 export function sourceInputEvents(editor: Editor, blockId: string, popup: SourcePopup): SourceEvents {
   return {
     keydown: (event) => {
+      if (sourceArrowUp(event, editor, blockId, popup)) {
+        return
+      }
       if (sourceTarget(event, editor, blockId) && !event.isComposing && !editor.prosemirrorView.composing) {
         sourceKeys(event, editor, popup)
       }

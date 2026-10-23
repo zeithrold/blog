@@ -145,3 +145,34 @@ test('a publication lock prevents edits in an already visible source', async ({ 
   }
   await expect(body).toHaveAttribute('contenteditable', 'true')
 })
+
+test('a late diagram preview preserves boundary ArrowUp and the following composition range', async ({ page }) => {
+  let release: () => void = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route('**/render/mermaid', async (route) => {
+    await gate
+    await route.continue()
+  })
+  try {
+    const { body, block, popup, position } = await arrowSource(page, 'mermaid')
+    release()
+    await expect(page.frameLocator('iframe[title="Live diagram"]').locator('svg')).toBeVisible({ timeout: 15000 })
+    await expect(popup).toHaveAttribute('data-open', 'true')
+    expect(await selectionPosition(body)).toEqual(position)
+    const prevented = await body.evaluate((element) => {
+      const event = new CompositionEvent('compositionstart', { bubbles: true, cancelable: true, data: '' })
+      element.dispatchEvent(event)
+      return event.defaultPrevented
+    })
+    expect(prevented).toBe(false)
+    expect(await selectionPosition(body)).toEqual(position)
+    await page.keyboard.insertText('汉')
+    await body.dispatchEvent('compositionend', { data: '汉' })
+    await expect(block.locator('code[aria-label]')).toContainText('汉')
+  }
+  finally {
+    release()
+  }
+})

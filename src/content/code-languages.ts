@@ -30,7 +30,9 @@ export function codeLanguageName(language: string): string {
   return CODE_LANGUAGES.find(item => item.value === language)?.name ?? language
 }
 
-export function highlightCodeLanguage(language: string): string | undefined {
+type HighlightLanguage = Exclude<(typeof CODE_LANGUAGES)[number]['value'], 'text'>
+
+export function highlightCodeLanguage(language: string): HighlightLanguage | undefined {
   const known = CODE_LANGUAGES.find((item) => {
     const aliases: readonly string[] = 'aliases' in item ? item.aliases : []
     return item.value === language || aliases.includes(language)

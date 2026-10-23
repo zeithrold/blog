@@ -186,6 +186,9 @@ test.describe('accessibility scanner', () => {
     page,
   }, info) => {
     await page.goto('/__fixture/login')
+    // The combobox is present in SSR HTML before its client handlers mount. This
+    // measurement is installed by the admin shell's mount effect, not a timer.
+    await expect(page.locator('.ztd-application')).toHaveAttribute('style', /--admin-appbar-height:/)
     await page.getByRole('combobox', { name: 'Language', exact: true }).click()
     await page.getByRole('option', { name: '简体中文', exact: true }).click()
     await page.getByRole('button', { name: '外观', exact: true }).click()

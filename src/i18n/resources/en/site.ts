@@ -56,4 +56,11 @@ export const site = {
   'footnotes': 'Footnotes',
   'references': 'References',
   'returnFromFootnote': 'Return from footnote {{number}}',
+  'diagramPreview': 'Diagram preview',
+  'diagramLoading': 'Loading diagram…',
+  'diagramUnsupported': 'This diagram uses an unsupported directive.',
+  'diagramUnavailable': 'Diagram could not be loaded.',
+  'diagramTimeout': 'Diagram timed out.',
+  'diagramRenderFailed': 'Diagram could not be rendered.',
+  'diagramRetry': 'Retry diagram',
 } as const

@@ -48,11 +48,12 @@ const utility11Class = [
 const utility12Class = ['[&_img]:rounded-[12px] [&_video]:h-auto [&_video]:rounded-[12px] [&_audio]:w-full'].join(' ')
 
 const utility13Class = [
-  '[&_iframe]:w-full [&_iframe]:border [&_iframe]:border-border [&_iframe]:rounded-[12px]',
+  '[&_iframe]:w-full [&_iframe:not(.diagram-frame)]:border',
+  '[&_iframe:not(.diagram-frame)]:border-border [&_iframe:not(.diagram-frame)]:rounded-[12px]',
 ].join(' ')
 
 const utility14Class = [
-  '[&_figcaption]:mt-[10px] [&_figcaption]:text-muted-foreground [&_figcaption]:text-help',
+  '[&_figcaption:not(.diagram-caption)]:mt-[10px] [&_figcaption]:text-muted-foreground [&_figcaption]:text-help',
 ].join(' ')
 
 const utility15Class = [

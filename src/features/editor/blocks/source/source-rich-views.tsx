@@ -72,13 +72,14 @@ ReactCustomBlockRenderProps<typeof configs.mermaidConfig>): ReactNode {
       editor={editor}
       blockId={block.id}
       label={text('editDiagram')}
+      compact
       contentRef={contentRef}
       source={source}
       sourcePlaceholder={text('diagramSource')}
       emptySourcePlaceholder={text('emptyDiagram')}
       preview={(
         <Suspense fallback={<PreviewLoading>{text('loadingDiagram')}</PreviewLoading>}>
-          <DiagramPreview source={source} description={block.props.description} autoRender showSource={false} />
+          <DiagramPreview source={source} description={block.props.description} />
         </Suspense>
       )}
     >

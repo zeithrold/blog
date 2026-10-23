@@ -59,7 +59,6 @@ function TableControls({
   compact: boolean
   cell: HTMLTableCellElement | null
 }): ReactNode {
-  const text = useBlogTranslation('editor').t
   const geometry = useTableGeometry(target)
   const hoverOrFocus = useTableActivity(target)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -90,13 +89,28 @@ function TableControls({
       <TableScrollbar target={target} geometry={geometry} />
       <TableCaption workspace={workspace} target={target} width={geometry.viewportWidth} />
       <TableDragPreview store={drag.store} portalElement={portalElement} />
-      <span className="sr-only" role="status" aria-live="polite">
-        {drag.active && text('tableDragging')}
-        {!drag.active && drag.selected !== null && text(
-          drag.selected.orientation === 'row' ? 'tableRowMoved' : 'tableColumnMoved',
-          { number: drag.selected.from + 1 },
-        )}
-      </span>
+      <TableAnnouncement drag={drag} portalElement={portalElement} />
     </div>
   )
+}
+
+function TableAnnouncement({ drag, portalElement }: {
+  drag: ReturnType<typeof useTableDrag>
+  portalElement: HTMLElement | null
+}): ReactNode {
+  const text = useBlogTranslation('editor').t
+  // aria-hidden preserves live regions. Keeping one inside ProseMirror makes
+  // modal menus hide individual document blocks, invalidating their node views.
+  return portalElement === null
+    ? null
+    : createPortal(
+        <span className="sr-only" role="status" aria-live="polite">
+          {drag.active && text('tableDragging')}
+          {!drag.active && drag.selected !== null && text(
+            drag.selected.orientation === 'row' ? 'tableRowMoved' : 'tableColumnMoved',
+            { number: drag.selected.from + 1 },
+          )}
+        </span>,
+        portalElement,
+      )
 }

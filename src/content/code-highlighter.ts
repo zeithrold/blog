@@ -1,7 +1,7 @@
 import { createBundledHighlighter } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
 
-// Load only a selected grammar, with no WASM or remote code in the browser.
+// Shared by the editor and reader. Load only selected grammars, without WASM or remote code.
 const createHighlighter = createBundledHighlighter({
   langs: {
     bash: async () => await import('shiki/langs/bash.mjs'),

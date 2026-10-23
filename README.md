@@ -25,6 +25,8 @@ pnpm test:unit
 pnpm build
 pnpm test:integration
 pnpm test:e2e
+pnpm test:journeys
+pnpm test:controls
 pnpm test:editor-performance
 pnpm test:development
 ```
@@ -52,7 +54,8 @@ from other cases. Production quotas and data constraints remain active. Set `BLO
 an isolated port. Development server tests use the local development database and accept
 `BLOG_DEV_TEST_PORT` for the port. Browser screenshots, traces, and reports are written to `blog-tests`
 under the operating system's temporary directory. They do not create an `artifacts` directory in the
-repository. `pnpm preview` serves the build output and requires a real Access configuration.
+repository. The performance script uses a `performance` subdirectory so its report cannot replace
+the functional results during `pnpm check`. `pnpm preview` requires a real Access configuration.
 
 ## Test organization
 
@@ -66,6 +69,45 @@ revision history belong to `history`; scheduling belongs to `publication`; media
 fixtures, and measurements. `tests/support` separates unit rendering/assertions, shared browser
 operations, disposable Worker infrastructure, and development-only login support. Scenario-specific
 helpers stay with their scenarios. There are no barrel exports or additional test configurations.
+
+`pnpm test:journeys` runs four uninterrupted business tasks plus the presentation journeys in
+`tests/browser/journeys`. Each task uses `test.step` boundaries and one disposable database; stages do
+not reset the environment. Checkpoints compare an independently maintained expected native document
+against the saved API response, capture layouts, and retain fault/step evidence in `journey.json`.
+The tasks cover publication and trash, all native content types and media, two-tab conflicts and real
+IndexedDB recovery, and scheduled publication plus maintenance recovery. They have no minimum duration.
+
+Presentation journeys use 12 pairwise combinations of Chromium/WebKit, English/Chinese, light/dark,
+and 320/390/1440px. They assert readable typography, usable hit targets, focus ownership, scroll-lock
+cleanup and overlay bounds. Action menus, previews and reader content are measured before and after
+navigation within the same task; unchanged regions must retain their dimensions and computed styles.
+They also scan accessibility and reject observed controls missing from the semantic inventory.
+On macOS WebKit, keyboard traversal uses Option+Tab/Option+Shift+Tab to include buttons regardless
+of the host's Keyboard Navigation preference; the expected focus targets are identical in both browsers.
+The selected gesture is recorded in `environment.json` ([Playwright platform behavior](https://github.com/microsoft/playwright/issues/41808)).
+
+There are no persistent PNG baselines or snapshot-update steps. Screenshots, layout measurements,
+expected/actual documents and failure traces are diagnostic artifacts in the system temporary directory.
+These checks detect explicit layout/interaction regressions, not every possible pixel-level visual change.
+The mixed-document fixture checks coexistence and preservation of all schema types; insertion and
+per-block settings are exercised by the linked editor suites rather than inferred from fixture rendering.
+For an existing remote Playwright browser service, set `BLOG_PLAYWRIGHT_WS_ENDPOINT`; loopback traffic
+is forwarded to the local disposable Worker. Presentation contexts permit axe style injection; the four
+business tasks retain normal CSP.
+Native drag cancellations require recorded detached audio/video clones, matching page/URL/time and
+clone counts, and connected healthy original media. Their attribution is retained in `journey.json`;
+other resource failures and failed mutations still fail the task.
+
+`pnpm test:controls` runs the full functional suite and requires every inventory contract's linked
+suites' applicable cases to pass in both browsers, without retries or skipped evidence. The reporter always writes
+`control-coverage.json` with missing contracts, actual test results, revision and source fingerprint;
+focused runs explicitly report incomplete coverage. Passing the inventory validates the registered
+contracts, not every theoretical input permutation. Set `BLOG_TEST_RUN_ID` to a distinct output folder
+name and `BLOG_TEST_PORT` to a distinct port when running independent instances.
+
+Pre-existing physical-touch cases that require Chromium CDP remain listed as platform limitations.
+Only their exact annotated WebKit skips may be excluded, and only when the identical Chromium case
+passes; all applicable WebKit pointer/keyboard cases must still pass. Other skips fail coverage.
 
 All test modules use TypeScript. Use `@/*` for application imports, `~/tests/*` for imports across test
 directories, and relative imports within one directory. `~/*` resolves from the repository root through
@@ -82,6 +124,19 @@ pnpm test:integration
 Preview P95 budgets are 500 ms for the 100- and 500-block scenarios at 1× CPU, 2000 ms for
 2000 blocks at 1× CPU, and 750 ms for 500 blocks at 4× CPU. CPU throttling, sample counts,
 measurement boundaries, and the other performance budgets remain the same across runs.
+
+## Public reading design
+
+The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI,
+ruled article rows and real publication metadata. Display type caps at 50px on wide layouts and
+36px on narrow layouts. Shared body/control/help roles remain 15/13/12px; reading and editable
+roles remain 17/16px. Compact UI text retains reachable controls and visible keyboard focus.
+
+Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before
+the bundled declarations. Keep Noto language coverage and the existing font CSP. A declared
+font family is not rendering evidence; check the loaded and rendered fonts in the browser.
+Run-specific screenshots and measurements belong in the system temporary artifacts directory.
+Local source, production-build checks and live deployment are separate evidence.
 
 ## Source organization
 

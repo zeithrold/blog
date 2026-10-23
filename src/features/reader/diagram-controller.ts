@@ -1,7 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { validDiagram } from '@/content/diagram-policy'
 
+export type DiagramStatus = '' | 'diagramLoading' | 'diagramUnsupported'
+  | 'diagramUnavailable' | 'diagramTimeout' | 'diagramRenderFailed'
 const active = new Set<string>()
+const pending = new Map<string, () => void>()
 async function template(): Promise<string> {
   const response = await fetch('/render/mermaid', {
     credentials: 'same-origin',
@@ -34,47 +37,65 @@ class DiagramSession {
 
   close(): void {
     this.generation++
-    active.delete(this.channel)
+    pending.delete(this.channel)
+    this.release()
   }
 
-  async show(
+  release(): void {
+    active.delete(this.channel)
+    const next = pending.entries().next().value
+    if (active.size < 2 && next !== undefined) {
+      pending.delete(next[0])
+      next[1]()
+    }
+  }
+
+  show(
     source: string,
     setHTML: (value: string) => void,
-    setStatus: (value: string) => void,
-  ): Promise<void> {
+    setStatus: (value: DiagramStatus) => void,
+  ): void {
     if (!validDiagram(source)) {
-      setStatus('Unsupported diagram directive.')
+      setStatus('diagramUnsupported')
       return
+    }
+    const current = ++this.generation
+    setStatus('diagramLoading')
+    const start = (): void => {
+      if (this.generation !== current) {
+        return
+      }
+      active.add(this.channel)
+      template().then((html) => {
+        if (this.generation === current) {
+          setHTML(html)
+        }
+      }).catch(() => {
+        if (this.generation === current) {
+          this.close()
+          setStatus('diagramUnavailable')
+        }
+      })
     }
     if (active.size >= 2) {
-      setStatus('Close another diagram first.')
-      return
+      pending.set(this.channel, start)
     }
-    active.add(this.channel)
-    setStatus('Loading diagram…')
-    const current = ++this.generation
-    try {
-      const html = await template()
-      if (this.generation === current) {
-        setHTML(html)
-        setStatus('')
-      }
-    }
-    catch {
-      if (this.generation === current) {
-        this.close()
-        setStatus('Diagram could not be loaded.')
-      }
+    else {
+      start()
     }
   }
 
-  send(source: string): void {
-    this.frame?.contentWindow?.postMessage({ channel: this.channel, source }, '*')
+  send(source: string, mode: 'light' | 'dark'): void {
+    this.frame?.contentWindow?.postMessage({
+      channel: this.channel,
+      source,
+      theme: mode === 'dark' ? 'dark' : 'neutral',
+    }, '*')
   }
 }
 type DiagramModel = {
   open: boolean
-  status: string
+  status: DiagramStatus
   height: number
   html: string
   frame: (element: HTMLIFrameElement | null) => void
@@ -83,15 +104,19 @@ type DiagramModel = {
   send: () => void
 }
 
-export function useDiagram(source: string, automatic = false): DiagramModel {
+export function useDiagram(
+  source: string,
+  automatic = false,
+  mode: 'light' | 'dark' = 'light',
+): DiagramModel {
   const [html, setHTML] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState<DiagramStatus>('')
   const [height, setHeight] = useState(240)
   const channelId = useId()
   const session = useMemo(() => new DiagramSession(channelId), [channelId])
   useEffect(() => {
     if (automatic && source.trim() !== '') {
-      session.show(source, setHTML, setStatus).catch(() => setStatus('Diagram failed.'))
+      session.show(source, setHTML, setStatus)
     }
   }, [
     automatic,
@@ -118,9 +143,9 @@ export function useDiagram(source: string, automatic = false): DiagramModel {
       setHTML('')
     },
     show: () => {
-      session.show(source, setHTML, setStatus).catch(() => setStatus('Diagram failed.'))
+      session.show(source, setHTML, setStatus)
     },
-    send: () => session.send(source),
+    send: () => session.send(source, mode),
   }
 }
 function message(
@@ -144,7 +169,7 @@ function useMessages(input: {
   session: DiagramSession
   html: string
   setHTML: (value: string) => void
-  setStatus: (value: string) => void
+  setStatus: (value: DiagramStatus) => void
   setHeight: (value: number) => void
 }): void {
   const { session, html, setHTML, setStatus, setHeight } = input
@@ -155,7 +180,7 @@ function useMessages(input: {
     const current = session.frame?.contentWindow
     const timeout = setTimeout(() => {
       session.close()
-      setStatus('Diagram timed out.')
+      setStatus('diagramTimeout')
       setHTML('')
     }, 5000)
     const receive = (event: MessageEvent<unknown>): void => {
@@ -167,12 +192,16 @@ function useMessages(input: {
         return
       }
       clearTimeout(timeout)
+      if (data.state === 'ready') {
+        session.release()
+        setStatus('')
+      }
       if (data.height !== undefined) {
         setHeight(Math.min(2000, Math.max(120, data.height)))
       }
       if (data.state === 'error') {
         session.close()
-        setStatus('Diagram could not be rendered.')
+        setStatus('diagramRenderFailed')
         setHTML('')
       }
     }

@@ -3,17 +3,19 @@ import { validDiagram } from '@/content/diagram-policy'
 
 const nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
 
-mermaid.initialize({
-  startOnLoad: false,
-  securityLevel: 'strict',
-  maxTextSize: 16384,
-  maxEdges: 200,
-  htmlLabels: false,
-  theme: 'neutral',
-  flowchart: {
+function initialize(theme: 'dark' | 'neutral'): void {
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    maxTextSize: 16384,
+    maxEdges: 200,
     htmlLabels: false,
-  },
-})
+    theme,
+    flowchart: {
+      htmlLabels: false,
+    },
+  })
+}
 const parentOrigin = document.querySelector<HTMLMetaElement>(
   'meta[name="parent-origin"]',
 )?.content
@@ -21,6 +23,11 @@ let running = false
 type DiagramRequest = {
   channel: string
   source: string
+  theme: 'dark' | 'neutral'
+}
+
+function validTheme(value: unknown): value is 'dark' | 'neutral' {
+  return value === 'dark' || value === 'neutral'
 }
 
 function request(value: unknown): DiagramRequest | null {
@@ -36,12 +43,15 @@ function request(value: unknown): DiagramRequest | null {
     typeof value.channel !== 'string'
     || typeof value.source !== 'string'
     || !validDiagram(value.source)
+    || !('theme' in value)
+    || !validTheme(value.theme)
   ) {
     return null
   }
   return {
     channel: value.channel,
     source: value.source,
+    theme: value.theme,
   }
 }
 async function render(event: MessageEvent<unknown>): Promise<void> {
@@ -54,6 +64,8 @@ async function render(event: MessageEvent<unknown>): Promise<void> {
   }
   running = true
   try {
+    initialize(data.theme)
+    document.documentElement.style.colorScheme = data.theme === 'dark' ? 'dark' : 'light'
     const { svg } = await mermaid.render('cms-generated-diagram', data.source)
     const container = document.getElementById('diagram')
     if (container !== null) {

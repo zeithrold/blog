@@ -55,4 +55,11 @@ export const site = {
   'footnotes': '脚注',
   'references': '参考文献',
   'returnFromFootnote': '从脚注 {{number}} 返回正文',
+  'diagramPreview': '图表预览',
+  'diagramLoading': '正在加载图表…',
+  'diagramUnsupported': '图表使用了不支持的指令。',
+  'diagramUnavailable': '图表加载失败。',
+  'diagramTimeout': '图表渲染超时。',
+  'diagramRenderFailed': '图表无法渲染。',
+  'diagramRetry': '重试图表',
 } satisfies Record<keyof typeof english, string>

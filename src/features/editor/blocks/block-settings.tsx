@@ -23,13 +23,25 @@ const utility1Class = [
 
 const layout1Class = [utility1Class, 'p-5 font-sans shadow-menu'].join(' ')
 
-type SettingsProps = { title: string, children: ReactNode, disabled?: boolean, initialOpen?: boolean }
-export function BlockSettings({ title, children, disabled = false, initialOpen = false }: SettingsProps): ReactNode {
+type SettingsProps = {
+  title: string
+  children: ReactNode
+  disabled?: boolean
+  initialOpen?: boolean
+  trigger?: React.ReactElement
+}
+export function BlockSettings({
+  title,
+  children,
+  disabled = false,
+  initialOpen = false,
+  trigger: customTrigger,
+}: SettingsProps): ReactNode {
   const compact = useCompactLayout(700)
   const portal = usePortalContainer()
   const [open, setOpen] = useState(() => initialOpen && !disabled)
   const text = useBlogTranslation('editor').t
-  const trigger = (
+  const trigger = customTrigger ?? (
     <Button type="button" variant="ghost" size="icon" aria-label={title} disabled={disabled}>
       <Pencil size={16} aria-hidden="true" />
     </Button>

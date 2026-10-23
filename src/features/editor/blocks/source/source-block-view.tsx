@@ -171,6 +171,7 @@ export function SourceBlockView({
   label,
   children,
   className = '',
+  compact = false,
   ...source
 }: SourceWithPreviewProps & {
   editor: Editor
@@ -178,17 +179,26 @@ export function SourceBlockView({
   label: string
   children?: ReactNode
   className?: string
+  compact?: boolean
 }): ReactNode {
   const text = useBlogTranslation('editor').t
   const popup = useSourcePopup(editor, blockId)
+  const compactHeader = compact ? 'absolute end-2 top-2 z-10' : ''
   return (
-    <div className={`${layout1Class} ${className}`} data-source-focused={popup.focused}>
-      <div contentEditable={false} className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>{label}</span>
+    <div
+      className={`${layout1Class} ${compact ? 'source-compact' : ''} ${className}`}
+      data-source-focused={popup.focused}
+    >
+      <div
+        contentEditable={false}
+        className={`flex items-center justify-between gap-3 text-xs text-muted-foreground ${compactHeader}`}
+      >
+        <span className={compact ? 'sr-only' : undefined}>{label}</span>
         <Button
           type="button"
           variant="ghost"
           size="icon"
+          className={compact ? 'border-border bg-surface' : undefined}
           aria-label={label}
           data-publication-editor=""
           disabled={!editor.isEditable}

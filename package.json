@@ -17,10 +17,12 @@
     "test:unit": "node --import tsx --test 'tests/unit/*.test.ts'",
     "test:integration": "node --import tsx --test --test-concurrency=1 'tests/integration/*.integration.ts'",
     "test:e2e": "playwright test --project=chromium --project=webkit",
+    "test:journeys": "playwright test tests/browser/journeys --project=chromium --project=webkit",
+    "test:controls": "BLOG_CONTROL_COVERAGE=1 playwright test --project=chromium --project=webkit",
     "test:development": "playwright test --config playwright.development.config.ts",
     "check": "pnpm lint && pnpm check:css && pnpm typecheck && pnpm test:unit && pnpm build && pnpm test:integration && pnpm test:e2e && pnpm test:editor-performance && pnpm test:development",
     "test:a11y": "playwright test --project=chromium --project=webkit --grep \"accessibility scanner\"",
-    "test:editor-performance": "playwright test --project=performance"
+    "test:editor-performance": "BLOG_TEST_ARTIFACT_SCOPE=performance playwright test --project=performance"
   },
   "dependencies": {
     "@blocknote/core": "0.55.0",

@@ -1,4 +1,5 @@
 import type { Block, Document, Inline } from '@/content/document'
+import { referenceOrder } from '@/content/reference-order'
 import { allBlocks, inlineArrays } from '@/content/tree'
 
 export type ReaderContext = {
@@ -10,15 +11,6 @@ export type ReaderContext = {
   footnotes: Block[]
 }
 
-function* bodyBlocks(blocks: Block[]): Generator<Block> {
-  for (const block of blocks) {
-    if (block.type === 'footnote') {
-      continue
-    }
-    yield block
-    yield* bodyBlocks(block.children)
-  }
-}
 function reference(item: Inline, anchor: string, context: ReaderContext): void {
   if (item.type === 'citation' && item.props.referenceId !== '') {
     if (!context.citations.has(item.props.referenceId)) {
@@ -46,13 +38,7 @@ export function readerContext(document: Document, privatePreview: boolean): Read
     notes: new Map(),
     noteReturns: new Map(),
   }
-  const ordered = [
-    ...bodyBlocks(document.blocks),
-    ...footnotes.flatMap(note => [
-      note,
-      ...bodyBlocks(note.children),
-    ]),
-  ]
+  const ordered = referenceOrder(document.blocks, footnotes)
   for (const block of ordered) {
     let offset = 0
     for (const items of inlineArrays(block)) {

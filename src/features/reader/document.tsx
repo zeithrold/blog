@@ -18,15 +18,16 @@ const utility3Class = [
 ].join(' ')
 
 const utility4Class = [
-  '[&_h2]:mx-0 [&_h2]:mb-[0.7em] [&_h2]:text-[length:1.55em] [&_h3]:mt-[1.9em] [&_h3]:mx-0',
+  '[&_h2]:mx-0 [&_h2]:mb-[0.7em] [&_h2]:text-[length:1.75em] [&_h3]:mt-[1.9em] [&_h3]:mx-0',
 ].join(' ')
 
 const utility5Class = [
-  '[&_h3]:mb-[0.6em] [&_h3]:text-[length:1.25em] [&_h4]:mt-[1.6em] [&_h4]:mx-0 [&_h4]:mb-[0.5em]',
+  '[&_h3]:mb-[0.6em] [&_h3]:text-[length:1.4em] [&_h4]:mt-[1.6em] [&_h4]:mx-0 [&_h4]:mb-[0.5em]',
 ].join(' ')
 
 const utility6Class = [
-  '[&_sup_a]:no-underline [&_ul]:mt-0 [&_ul]:mx-0 [&_ul]:mb-[1.1em] [&_ul]:pl-[1.4em] [&_ol]:mt-0',
+  '[&_sup_a]:no-underline [&_ul]:mt-0 [&_ul]:mx-0 [&_ul]:mb-[1.1em] [&_ul:not(.task-list)]:pl-[1.4em]',
+  '[&_ol]:mt-0',
 ].join(' ')
 
 const utility7Class = ['[&_li::marker]:text-muted-foreground [&_li_>_p]:m-0 [&_:not(pre)_>_code]:py-[0.15em]'].join(' ')
@@ -36,9 +37,7 @@ const utility8Class = [
   '[&_:not(pre)_>_code]:bg-muted',
 ].join(' ')
 
-const utility9Class = [
-  '[&_:not(pre)_>_code]:font-[var(--blog-font-mono)] [&_:not(pre)_>_code]:text-[length:0.86em]',
-].join(' ')
+const utility9Class = ['[&_:not(pre)_>_code]:font-mono [&_:not(pre)_>_code]:text-[length:0.86em]'].join(' ')
 
 const utility10Class = [
   '[&_pre]:my-[1.6em] [&_pre]:mx-0 [&_pre]:py-[18px] [&_pre]:px-5 [&_pre]:overflow-x-auto',
@@ -98,18 +97,19 @@ const layout1Class = [
   utility3Class,
   utility4Class,
   utility5Class,
-  '[&_h4]:text-[length:1.05em]',
+  '[&_h4]:text-[length:1.2em] [&_:is(h2,h3,h4)]:font-sans [&_:is(h2,h3,h4)]:leading-[1.35]',
   '[&_a]:[text-decoration-color:color-mix(in_srgb,_var(--ztd-accent)_55%,_transparent)]',
   '[&_a]:[text-decoration-thickness:1px] [&_a]:underline-offset-[0.22em]',
   '[&_a]:[transition:text-decoration-color_0.15s] [&_sup_a]:text-accent-foreground',
   utility6Class,
+  '[&_ul:not(.task-list)]:list-disc [&_ol]:list-decimal',
   '[&_ol]:mx-0 [&_ol]:mb-[1.1em] [&_ol]:pl-[1.4em] [&_li]:my-[0.3em] [&_li]:mx-0',
   utility7Class,
   utility8Class,
   utility9Class,
   utility10Class,
   '[&_pre]:border [&_pre]:border-border [&_pre]:rounded-[12px] [&_pre]:bg-card',
-  '[&_pre]:font-[var(--blog-font-mono)] [&_pre]:text-help [&_pre]:leading-[1.7]',
+  '[&_pre]:font-mono [&_pre]:text-sm [&_pre]:leading-[1.7]',
   '[&_pre]:[overflow-wrap:normal] [&_blockquote]:my-[1.6em] [&_blockquote]:mx-0',
   utility11Class,
   '[&_blockquote]:border-l-[3px] [&_blockquote]:border-accent-foreground',

@@ -4,6 +4,7 @@ import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import process from 'node:process'
 import { runtime } from './runtime'
+import { scenario } from './scenario'
 
 // This disposable Access gateway is only a test entry point and is absent from the Worker build.
 function gatewayHeaders(incoming: IncomingMessage, token: string) {
@@ -64,6 +65,13 @@ async function main() {
   })
   let context = await fresh()
   const server = createServer((incoming, outgoing) => {
+    if (incoming.url === '/__fixture/scenario') {
+      scenario(context, incoming, outgoing).catch((error: unknown) => {
+        console.error(error)
+        outgoing.writeHead(500).end('Local scenario failed')
+      })
+      return
+    }
     if (incoming.url === '/__fixture/reset') {
       if (incoming.method !== 'POST' || incoming.headers.host !== `127.0.0.1:${port}`
         || incoming.headers['sec-fetch-site'] === 'cross-site') {

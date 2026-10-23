@@ -25,7 +25,8 @@ export async function diagramFrame(env: Environment, origin: string): Promise<Re
   ].join('; ')
   const template = `<!doctype html><html><head><meta charset="utf-8"><meta name="parent-origin" content="${origin}">
     <meta http-equiv="Content-Security-Policy" content="${csp}">
-    <style nonce="CMS_NONCE_PLACEHOLDER">body{margin:0;padding:8px}svg{max-width:100%;height:auto}</style>
+    <style nonce="CMS_NONCE_PLACEHOLDER">body{margin:0;padding:8px}
+    #diagram{display:flex;justify-content:center}svg{max-width:100%;height:auto}</style>
     </head><body><div id="diagram"></div><script nonce="CMS_NONCE_PLACEHOLDER">${diagramPrelude}</script>
     <script nonce="CMS_NONCE_PLACEHOLDER">${code}</script></body></html>`
   return new Response(template, {

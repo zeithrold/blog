@@ -4,33 +4,53 @@ import type { ReactNode } from 'react'
 import type * as configs from '@/features/editor/blocks/rich-config'
 import { use, useId, useState } from 'react'
 import { ChoiceSelect } from '@/components/ui/choice-select'
-import { Input, Label } from '@/components/ui/ztd-me/client'
+import { Button, Input, Label } from '@/components/ui/ztd-me/client'
+import { BlockSettings } from '@/features/editor/blocks/block-settings'
 import { RichMetadataContext } from '@/features/editor/blocks/rich-context'
+import { useRichEditor } from '@/features/editor/engine/use-rich-editor'
 import { matchingReferences } from '@/features/editor/references/citation-search'
 import { useBlogTranslation } from '@/i18n/use-translation'
 
-const utility1Class = [
-  'citation-editor inline-flex flex-wrap items-center max-w-full gap-[6px]',
-  '[vertical-align:middle]',
+const markerClass = [
+  'inline-reference-marker min-h-0 min-w-0 rounded px-1 py-0 align-baseline [font-family:inherit] text-inherit',
+  'leading-[inherit] pointer-coarse:min-h-0 text-primary underline-offset-2 hover:underline',
 ].join(' ')
 
-const utility2Class = [
-  '[&_>_.ztd-select]:flex-[1_1_160px] [&_>_.ztd-select]:w-40 [&_>_.ztd-select]:max-w-full',
-].join(' ')
-
-const utility3Class = ['[&_>_.ztd-input]:flex-[0_1_96px] [&_>_.ztd-input]:w-24 [&_>_.ztd-input]:max-w-full'].join(' ')
-
-const utility4Class = [
-  'visually-hidden absolute w-px h-px m-[-1px] p-0 overflow-hidden [clip-path:inset(50%)]',
-].join(' ')
-
-const layout1Class = [
-  utility1Class,
-  utility2Class,
-  utility3Class,
-].join(' ')
-
-const layout2Class = [utility4Class, 'whitespace-nowrap border-0'].join(' ')
+function ReferenceSettings({ title, marker, missing, children }: {
+  title: string
+  marker: ReactNode
+  missing: boolean
+  children: ReactNode
+}): ReactNode {
+  const editor = useRichEditor()
+  return (
+    <span contentEditable={false} className="inline-reference inline whitespace-nowrap">
+      <BlockSettings
+        title={title}
+        disabled={!editor.isEditable}
+        initialOpen={missing && editor.isFocused()}
+        trigger={(
+          <Button
+            type="button"
+            variant="ghost"
+            className={markerClass}
+            aria-label={title}
+            aria-invalid={missing || undefined}
+            disabled={!editor.isEditable}
+          >
+            <span className="inline-block max-w-36 truncate" title={typeof marker === 'string' ? marker : undefined}>
+              {marker}
+            </span>
+          </Button>
+        )}
+      >
+        <fieldset disabled={!editor.isEditable} className="m-0 grid min-w-0 gap-5 border-0 p-0">
+          {children}
+        </fieldset>
+      </BlockSettings>
+    </span>
+  )
+}
 
 export function CitationView({
   inlineContent,
@@ -40,11 +60,21 @@ export function CitationView({
   StyleSchema
 >): ReactNode {
   const { t } = useBlogTranslation('editor')
+  const metadata = use(RichMetadataContext)
+  const editor = useRichEditor()
+  const number = metadata.citationNumbers.get(inlineContent.props.referenceId)
+  const found = metadata.references.some(reference => reference.id === inlineContent.props.referenceId)
+  const locator = inlineContent.props.locator
+  const marker = `[${found ? number ?? '?' : '?'}${locator !== '' ? `, ${locator}` : ''}]`
   return (
-    <span contentEditable={false} className={layout1Class}>
+    <ReferenceSettings
+      title={t('citationReference')}
+      missing={!found}
+      marker={marker}
+    >
       <CitationPicker
         referenceId={inlineContent.props.referenceId}
-        select={referenceId => updateInlineContent({
+        select={referenceId => editor.isEditable && updateInlineContent({
           type: 'citation',
           props: { ...inlineContent.props, referenceId },
         })}
@@ -54,7 +84,7 @@ export function CitationView({
         value={inlineContent.props.locator}
         maxLength={100}
         onChange={event =>
-          updateInlineContent({
+          editor.isEditable && updateInlineContent({
             type: 'citation',
             props: {
               ...inlineContent.props,
@@ -62,7 +92,7 @@ export function CitationView({
             },
           })}
       />
-    </span>
+    </ReferenceSettings>
   )
 }
 
@@ -77,8 +107,8 @@ function CitationPicker({ referenceId, select }: { referenceId: string, select: 
   const missing = referenceId !== '' && selected === undefined
   return (
     <>
-      <Label className="grid gap-2 citation-search flex-[1_1_180px] min-w-0">
-        <span className={layout2Class}>
+      <Label className="grid min-w-0 gap-2 citation-search">
+        <span className="sr-only">
           {t('searchReferences')}
         </span>
         <Input
@@ -128,16 +158,21 @@ export function FootnoteReferenceView({
 >): ReactNode {
   const { t } = useBlogTranslation('editor')
   const metadata = use(RichMetadataContext)
+  const editor = useRichEditor()
   const noteId = inlineContent.props.noteId
   const missing = noteId !== '' && !metadata.footnotes.some(note => note.id === noteId)
   return (
-    <span contentEditable={false}>
+    <ReferenceSettings
+      title={t('footnoteReference')}
+      missing={noteId === '' || missing}
+      marker={<sup>{missing ? '?' : metadata.noteNumbers.get(noteId) ?? '?'}</sup>}
+    >
       <ChoiceSelect
         label={t('footnoteReference')}
         aria-invalid={missing || undefined}
         value={inlineContent.props.noteId}
         onValueChange={value =>
-          updateInlineContent({
+          editor.isEditable && updateInlineContent({
             type: 'footnoteRef',
             props: {
               noteId: value,
@@ -153,7 +188,7 @@ export function FootnoteReferenceView({
           ...metadata.footnotes.map(note => ({ value: note.id, label: note.label })),
         ]}
       />
-    </span>
+    </ReferenceSettings>
   )
 }
 export { InlineMathView } from '@/features/editor/blocks/source/inline-math-view'

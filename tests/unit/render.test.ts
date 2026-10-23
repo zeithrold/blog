@@ -10,9 +10,10 @@ test('reader escapes native text and preserves false task status', () => {
   document.meta.title = '<script>alert(1)</script>'
   document.meta.slug = 'safe-reader'
   document.meta.seo.noindex = true
+  const taskId = crypto.randomUUID()
   document.blocks = [
     {
-      id: crypto.randomUUID(),
+      id: taskId,
       type: 'checkListItem',
       props: {
         backgroundColor: 'default',
@@ -29,8 +30,11 @@ test('reader escapes native text and preserves false task status', () => {
   const html = renderWithLocale(
     createElement(DocumentReader, { document: validateDocument(document, true) }),
   )
-  assert.ok(html.includes('Not completed'))
-  assert.ok(html.includes('☐'))
+  assert.ok(html.includes('role="checkbox"'))
+  assert.ok(html.includes('aria-checked="false"'))
+  assert.ok(html.includes('disabled=""'))
+  assert.ok(html.includes('ztd-checkbox'))
+  assert.ok(html.includes(`aria-labelledby="task-text-${taskId}"`))
   assert.ok(html.includes('name="robots" content="noindex, nofollow"'))
   assert.ok(html.includes('&lt;script&gt;'))
   assert.ok(!html.includes('<script>'))

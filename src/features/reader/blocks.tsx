@@ -3,8 +3,9 @@ import type { Block, BlockType } from '@/content/document'
 import type { ReaderContext } from '@/features/reader/context'
 import { createElement } from 'react'
 import { Callout } from '@/components/ui/callout'
-import { codeLanguageName } from '@/content/code-languages'
+import { Checkbox } from '@/components/ui/ztd-me/client'
 import { blockSource } from '@/content/tree'
+import { CodeBlock } from '@/features/reader/code-block'
 import { contentsHeadings } from '@/features/reader/contents-model'
 import { Diagram } from '@/features/reader/diagram'
 import { VideoEmbed } from '@/features/reader/embed'
@@ -46,12 +47,6 @@ const layout3Class = [
   'link-card my-[1.4em] mx-0 py-4 px-5 border border-border rounded-[12px] bg-card',
   '[&_>_:last-child]:mb-0 [transition:border-color_0.2s]',
   'hover:border-[color-mix(in_srgb,_var(--ztd-accent)_45%,_var(--ztd-border))]',
-].join(' ')
-
-const codeFrameClass = [
-  'my-6 overflow-hidden rounded-xl border border-border bg-surface',
-  '[&>pre[data-language]]:m-0 [&>pre[data-language]]:rounded-none [&>pre[data-language]]:border-0',
-  '[&>pre[data-language]]:bg-transparent [&>pre[data-language]]:px-4 [&>pre[data-language]]:py-3',
 ].join(' ')
 
 type Props = {
@@ -130,14 +125,7 @@ const views: Record<BlockType, (props: Props) => ReactNode> = {
     </blockquote>
   ),
   codeBlock: ({ block }) => (
-    <div className={codeFrameClass}>
-      <div className="border-b border-border px-4 py-2 font-sans text-xs text-muted-foreground">
-        {codeLanguageName(String(block.props.language))}
-      </div>
-      <pre data-language={String(block.props.language)} className="overflow-x-auto">
-        <code data-language={String(block.props.language)}>{blockSource(block)}</code>
-      </pre>
-    </div>
+    <CodeBlock source={blockSource(block)} language={String(block.props.language)} />
   ),
   divider: () => <hr />,
   table: TableBlock,
@@ -223,6 +211,24 @@ function grouped(blocks: Block[]): {
   }
   return result
 }
+function Task({ block, context }: Props): ReactNode {
+  const textId = `task-text-${block.id}`
+  return (
+    <div className="flex min-w-0 items-start gap-2">
+      <Checkbox
+        checked={block.props.checked === true}
+        disabled
+        aria-labelledby={textId}
+        className="mt-0.5"
+      />
+      <div className="min-w-0 flex-1">
+        <span id={textId}><Text block={block} context={context} /></span>
+        <Blocks blocks={block.children} context={context} />
+      </div>
+    </div>
+  )
+}
+
 function List({ blocks, context }: { blocks: Block[], context: ReaderContext }): ReactNode {
   const first = blocks[0]
   const items = blocks.map(block => (
@@ -233,16 +239,14 @@ function List({ blocks, context }: { blocks: Block[], context: ReaderContext }):
       data-background-color={block.props.backgroundColor}
       data-alignment={block.props.textAlignment}
     >
-      {block.type === 'checkListItem' && (
-        <span
-          className="task-mark mr-[0.6rem] text-accent-foreground"
-          aria-label={block.props.checked === true ? 'Completed' : 'Not completed'}
-        >
-          {block.props.checked === true ? '☑' : '☐'}
-        </span>
-      )}
-      <Text block={block} context={context} />
-      <Blocks blocks={block.children} context={context} />
+      {block.type === 'checkListItem'
+        ? <Task block={block} context={context} />
+        : (
+            <>
+              <Text block={block} context={context} />
+              <Blocks blocks={block.children} context={context} />
+            </>
+          )}
     </li>
   ))
   if (first?.type === 'numberedListItem') {
@@ -252,7 +256,7 @@ function List({ blocks, context }: { blocks: Block[], context: ReaderContext }):
       </ol>
     )
   }
-  return <ul>{items}</ul>
+  return <ul className={first?.type === 'checkListItem' ? 'task-list list-none p-0' : undefined}>{items}</ul>
 }
 export function Blocks({
   blocks,

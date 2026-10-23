@@ -5,6 +5,7 @@ import {
   defaultInlineContentSpecs,
   defaultStyleSpecs,
 } from '@blocknote/core'
+import { checkListItem } from '@/features/editor/blocks/check-list'
 import { codeBlock } from '@/features/editor/blocks/code/code-block'
 import {
   callout,
@@ -32,7 +33,7 @@ export const editorSchema = BlockNoteSchema.create({
     }),
     bulletListItem: defaultBlockSpecs.bulletListItem,
     numberedListItem: defaultBlockSpecs.numberedListItem,
-    checkListItem: defaultBlockSpecs.checkListItem,
+    checkListItem,
     toggleListItem: defaultBlockSpecs.toggleListItem,
     quote: defaultBlockSpecs.quote,
     codeBlock,

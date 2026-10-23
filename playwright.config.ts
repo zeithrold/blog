@@ -1,17 +1,37 @@
+import type { ReporterDescription } from '@playwright/test'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from '@playwright/test'
 import { verificationArtifacts } from '@ztd-me/frontend-checks/playwright'
 
+const browserEndpoint = process.env.BLOG_PLAYWRIGHT_WS_ENDPOINT
+const remoteBrowser = browserEndpoint === undefined
+  ? {}
+  : { connectOptions: { wsEndpoint: browserEndpoint, exposeNetwork: '<loopback>' } }
 const testPort = Number(process.env.BLOG_TEST_PORT ?? 8801)
-const artifacts = verificationArtifacts(path.join(tmpdir(), 'blog-tests', 'browser'))
+const artifacts = verificationArtifacts(path.join(
+  tmpdir(),
+  'blog-tests',
+  process.env.BLOG_TEST_RUN_ID ?? 'browser',
+  process.env.BLOG_TEST_ARTIFACT_SCOPE ?? '',
+))
+const reporters: ReporterDescription[] = typeof artifacts.reporter === 'string'
+  ? [
+      [artifacts.reporter],
+    ]
+  : artifacts.reporter ?? []
 export default defineConfig({
   ...artifacts,
+  reporter: [
+    ...reporters,
+    ['./tests/support/browser/control-reporter.ts'],
+  ],
   timeout: 60000,
   workers: 1,
   use: {
     ...artifacts.use,
+    ...remoteBrowser,
     baseURL: `http://127.0.0.1:${testPort}`,
     viewport: { width: 1440, height: 1000 },
   },

@@ -4,125 +4,80 @@ import { ArrowRight, ArrowUp, PenLine } from 'lucide-react'
 import Link from 'next/link'
 import { SiteDate, SiteText } from '@/i18n/site-text'
 
-const utility1Class = [
-  'empty-state flex items-start gap-4 p-6 [border:1px_dashed_var(--ztd-border)] rounded-[12px]',
+const emptyStateStyle1 = ['empty-state flex items-center gap-5 border-y border-border py-12 max-[701px]:py-9'].join(' ')
+
+const emptyIconStyle2 = [
+  'empty-icon grid place-items-center size-12 shrink-0 rounded-sm bg-muted text-muted-foreground',
 ].join(' ')
 
-const utility2Class = [
-  '[&_p]:m-0 [&_p]:text-muted-foreground [&_p]:text-help [&_p]:leading-[1.7]',
-  '[&_.empty-title]:mt-0',
+const postEntryStyle3 = [
+  'post-entry group grid grid-cols-[140px_minmax(0,1fr)_32px] gap-8 items-center border-t',
+  'border-border py-7 text-inherit no-underline transition-colors duration-200 hover:bg-muted/40',
+  'motion-reduce:transition-none max-[960px]:grid-cols-[120px_minmax(0,1fr)_32px] max-[960px]:gap-6',
+  'max-[701px]:grid-cols-[minmax(0,1fr)_24px] max-[701px]:gap-x-3 max-[701px]:gap-y-3',
+  'max-[701px]:py-6',
 ].join(' ')
 
-const utility3Class = [
-  '[&_.empty-title]:text-[length:15px] [&_.empty-title]:font-medium max-[701px]:p-[22px]',
+const postMetaStyle4 = [
+  'post-meta flex flex-col gap-2 text-muted-foreground text-help tabular-nums max-[701px]:col-span-2',
+  'max-[701px]:flex-row max-[701px]:gap-4',
 ].join(' ')
 
-const utility4Class = [
-  'post-entry grid grid-cols-[140px_minmax(0,_1fr)_40px] gap-8 items-center py-[26px] px-7 border',
+const postTitleStyle5 = [
+  'post-title m-0 text-[length:21px] font-medium tracking-[-.025em] leading-[1.4] wrap-anywhere',
+  'max-[701px]:text-[length:19px]',
 ].join(' ')
 
-const utility5Class = ['hover:shadow-[0_8px_32px_var(--blog-shadow-hover)] [&:hover_.post-arrow]:bg-primary'].join(' ')
-
-const utility6Class = [
-  'post-title m-0 text-[length:22px] font-medium tracking-[-0.02em] leading-[1.3] wrap-anywhere',
+const postDescriptionStyle6 = [
+  'post-description max-w-[62ch] mt-2 mb-0 text-muted-foreground text-body leading-[1.8]',
+  'wrap-anywhere',
 ].join(' ')
 
-const utility7Class = [
-  'post-arrow flex items-center justify-center w-10 h-10 rounded-full bg-muted',
-  'text-muted-foreground',
+const postArrowStyle7 = [
+  'post-arrow grid place-items-center size-8 text-muted-foreground transition-transform duration-200',
+  'group-hover:translate-x-1 group-hover:text-foreground motion-reduce:transition-none',
+  'max-[701px]:size-6',
 ].join(' ')
 
-const utility8Class = ['[transition:background-color_0.2s,_color_0.2s,_transform_0.2s] max-[701px]:hidden'].join(' ')
-
-const utility9Class = [
-  'site-afterword flex items-center justify-between gap-6 pt-6 px-0 pb-[30px] border-t',
-  'border-border',
+const siteAfterwordStyle8 = [
+  'site-afterword flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pt-5 pb-6 border-t',
+  'border-border text-muted-foreground [&_p]:m-0 [&_p]:text-help',
 ].join(' ')
 
-const utility10Class = [
-  'post-description max-w-[62ch] mt-2 mx-0 mb-0 text-muted-foreground text-help leading-[1.75]',
+const backTopStyle9 = [
+  'back-top inline-flex items-center gap-2 min-h-11 text-help no-underline hover:text-foreground',
 ].join(' ')
 
-const layout1Class = [
-  utility1Class,
-  utility2Class,
-  '[&_.empty-title]:mx-0 [&_.empty-title]:mb-[2px] [&_.empty-title]:text-foreground',
-  utility3Class,
-].join(' ')
-
-const layout2Class = [
-  utility4Class,
-  'border-border rounded-[16px] bg-card text-inherit no-underline',
-  '[transition:border-color_0.2s,_box-shadow_0.2s]',
-  'hover:border-[color-mix(in_srgb,_var(--ztd-accent)_45%,_var(--ztd-border))]',
-  utility5Class,
-  '[&:hover_.post-arrow]:text-[var(--ztd-action-foreground)]',
-  '[&:hover_.post-arrow]:transform-[translateX(2px)]',
-  'max-[960px]:grid-cols-[120px_minmax(0,_1fr)_40px] max-[960px]:gap-6',
-  'max-[701px]:grid-cols-[minmax(0,_1fr)] max-[701px]:gap-[10px] max-[701px]:p-5',
-].join(' ')
-
-const layout3Class = [
-  'post-meta flex flex-col gap-[6px] text-muted-foreground text-help tabular-nums',
-  'max-[701px]:flex-row max-[701px]:gap-3',
-].join(' ')
-
-const layout4Class = [utility6Class, 'max-[701px]:text-[length:19px]'].join(' ')
-
-const layout5Class = [utility7Class, utility8Class].join(' ')
-
-const layout6Class = [utility9Class, 'text-muted-foreground [&_p]:m-0 [&_p]:text-help'].join(' ')
-
-export function PostList({
-  items,
-  start = 0,
-}: {
-  items: PublicItem[]
-  start?: number
-}): ReactNode {
+export function PostList({ items, start = 0 }: { items: PublicItem[], start?: number }): ReactNode {
   if (items.length === 0) {
     return (
-      <div className={layout1Class}>
-        <span
-          className={[
-            'empty-icon flex items-center justify-center w-11 h-11 rounded-[10px] bg-muted',
-            'text-muted-foreground',
-          ].join(' ')}
-          aria-hidden="true"
-        >
-          <PenLine size={20} />
-        </span>
+      <div className={emptyStateStyle1}>
+        <span className={emptyIconStyle2} aria-hidden="true"><PenLine size={23} strokeWidth={1.5} /></span>
         <div>
-          <p className="empty-title"><SiteText value="No published posts yet." /></p>
-          <p><SiteText value="New writing will appear here once it is published." /></p>
+          <p className="empty-title m-0 mb-1 text-body font-medium"><SiteText value="No published posts yet." /></p>
+          <p className="m-0 text-muted-foreground text-help leading-[1.8]">
+            <SiteText value="New writing will appear here once it is published." />
+          </p>
         </div>
       </div>
     )
   }
   return (
-    <ol className="post-list grid gap-[14px] m-0 p-0 list-none">
+    <ol className="post-list grid m-0 p-0 list-none border-b border-border">
       {items.map((post, index) => (
         <li key={post.documentId}>
-          <Link href={post.path} className={layout2Class} aria-labelledby={`post-${post.documentId}`}>
-            <span className={layout3Class}>
-              <span className="collection-number text-accent-foreground text-help font-normal tabular-nums">
+          <Link href={post.path} className={postEntryStyle3} aria-labelledby={`post-${post.documentId}`}>
+            <span className={postMetaStyle4}>
+              <span className="collection-number font-mono text-accent-foreground">
                 {String(start + index + 1).padStart(2, '0')}
               </span>
               <SiteDate value={post.publishedAt} />
             </span>
             <div className="post-body min-w-0">
-              <h3 className={layout4Class} id={`post-${post.documentId}`}>
-                {post.title}
-              </h3>
-              {post.description !== '' && (
-                <p className={[utility10Class, 'wrap-anywhere'].join(' ')}>
-                  {post.description}
-                </p>
-              )}
+              <h3 className={postTitleStyle5} id={`post-${post.documentId}`}>{post.title}</h3>
+              {post.description !== '' && <p className={postDescriptionStyle6}>{post.description}</p>}
             </div>
-            <span className={layout5Class} aria-hidden="true">
-              <ArrowRight size={18} />
-            </span>
+            <span className={postArrowStyle7} aria-hidden="true"><ArrowRight size={17} /></span>
           </Link>
         </li>
       ))}
@@ -132,15 +87,9 @@ export function PostList({
 
 export function SiteAfterword(): ReactNode {
   return (
-    <div className={layout6Class}>
+    <div className={siteAfterwordStyle8}>
       <p><SiteText value="Notes on building things." /></p>
-      <a
-        href="#top"
-        className={[
-          'back-top inline-flex items-center gap-[9px] min-h-11 text-help no-underline',
-          'hover:text-foreground',
-        ].join(' ')}
-      >
+      <a href="#top" className={backTopStyle9}>
         <SiteText value="Back to top" />
         <ArrowUp size={14} aria-hidden="true" />
       </a>
