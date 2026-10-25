@@ -1,5 +1,6 @@
 import { createBundledHighlighter } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import { diagnoseCodeHighlighter } from '@/content/code-highlighter-diagnostics'
 
 // Shared by the editor and reader. Load only selected grammars, without WASM or remote code.
 const createHighlighter = createBundledHighlighter({
@@ -37,5 +38,5 @@ const createHighlighter = createBundledHighlighter({
 })
 
 export async function createCodeHighlighter(): Promise<Awaited<ReturnType<typeof createHighlighter>>> {
-  return await createHighlighter({ themes: ['github-light', 'github-dark'], langs: [] })
+  return diagnoseCodeHighlighter(await createHighlighter({ themes: ['github-light', 'github-dark'], langs: [] }))
 }
