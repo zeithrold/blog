@@ -1,0 +1,37 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -625,6 +625,19 @@
+ 	const { tokenizeMaxLineLength = 0, tokenizeTimeLimit = 500, includeExplanation = false } = options;
++	// Cold regex compilation can consume the line budget. Never interpret a
++	// truncated native token stream as a complete line. One retry per theme
++	// operation retains the original finite budget and incoming grammar state.
++	let retried = false;
++	function tokenizeCompleteLine(method, line, state) {
++		let result = grammar[method](line, state, tokenizeTimeLimit);
++		if (result.stoppedEarly && !retried) {
++			retried = true;
++			result = grammar[method](line, state, tokenizeTimeLimit);
++		}
++		if (result.stoppedEarly) throw new ShikiError("Tokenization time limit exceeded");
++		return result;
++	}
+ 	const lines = splitLines(code);
+ 	let stateStack = options.grammarState ? getGrammarStack(options.grammarState, theme.name) ?? INITIAL : options.grammarContextCode != null ? _tokenizeWithTheme(options.grammarContextCode, grammar, theme, colorMap, {
+ 		...options,
+ 		grammarState: void 0,
+ 		grammarContextCode: void 0
+@@ -660,11 +673,11 @@
+ 		let tokensWithScopes;
+ 		let tokensWithScopesIndex;
+ 		if (includeExplanation && includeExplanation !== "tokenType") {
+-			resultWithScopes = grammar.tokenizeLine(line, stateStack, tokenizeTimeLimit);
++			resultWithScopes = tokenizeCompleteLine("tokenizeLine", line, stateStack);
+ 			tokensWithScopes = resultWithScopes.tokens;
+ 			tokensWithScopesIndex = 0;
+ 		}
+-		const result = grammar.tokenizeLine2(line, stateStack, tokenizeTimeLimit);
++		const result = tokenizeCompleteLine("tokenizeLine2", line, stateStack);
+ 		const tokensLength = result.tokens.length / 2;
+ 		for (let j = 0; j < tokensLength; j++) {
+ 			const startIndex = result.tokens[2 * j];

@@ -9,6 +9,7 @@ overrides:
 
 patchedDependencies:
   '@radix-ui/react-select@2.3.7': 9ee07b67639018c5db90378f411f81e59de5f7a9865432af906b7e682fa9f24c
+  '@shikijs/primitive@4.5.0': 647625dffed0906123add5aecc5c911db413cd634be4f0e49981ffe60dec6b37
   vaul@1.1.2: 60ec03db164a95a87e8d241a56a63464bbdadcac2d9ffbca933f0ab9586f7c19
 
 importers:
@@ -6742,7 +6743,7 @@ snapshots:
 
   '@shikijs/core@4.5.0':
     dependencies:
-      '@shikijs/primitive': 4.5.0
+      '@shikijs/primitive': 4.5.0(patch_hash=647625dffed0906123add5aecc5c911db413cd634be4f0e49981ffe60dec6b37)
       '@shikijs/types': 4.5.0
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.5
@@ -6763,7 +6764,7 @@ snapshots:
     dependencies:
       '@shikijs/types': 4.5.0
 
-  '@shikijs/primitive@4.5.0':
+  '@shikijs/primitive@4.5.0(patch_hash=647625dffed0906123add5aecc5c911db413cd634be4f0e49981ffe60dec6b37)':
     dependencies:
       '@shikijs/types': 4.5.0
       '@shikijs/vscode-textmate': 10.0.2
