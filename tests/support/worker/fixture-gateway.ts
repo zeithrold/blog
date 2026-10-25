@@ -33,7 +33,11 @@ const identity = z.strictObject({
   fixture: z.literal('browser-server'),
   pid: z.number().int().positive(),
   port: z.number().int().positive(),
+  reading: z.number().int().nonnegative(),
+  generation: z.number().int().positive(),
 })
+type GatewayState = z.infer<typeof identity>
+export type { GatewayState }
 const searchResults = z.object({
   items: z.array(z.object({ title: z.string(), path: z.string() })),
   nextOffset: z.number().int().nullable(),
@@ -132,6 +136,16 @@ export async function waitForChildren(pid: number, expected: number): Promise<vo
     await delay(50)
   }
   throw new Error(`expected ${expected} fixture runtimes, found ${(await children(pid)).length}`)
+}
+
+// The state the gateway reports about the case it is serving, for scenarios that must wait for it.
+export async function gatewayState(origin: string): Promise<GatewayState | undefined> {
+  const response = await fetch(`${origin}/__fixture/health`).catch(() => undefined)
+  if (response?.ok !== true) {
+    return undefined
+  }
+  const parsed = identity.safeParse(await response.json())
+  return parsed.success ? parsed.data : undefined
 }
 
 export async function call(origin: string, path: string, init: Call = {}): Promise<Response> {

@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { GatewayContext, Lease } from './fixture-pool'
+import type { Lease } from './fixture-pool'
 import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import process from 'node:process'
@@ -11,7 +11,6 @@ import { scenario } from './scenario'
 // aim a reset, a dying Worker or a disappearing client at the window where the response body is
 // still open. The header is stripped in `gatewayHeaders`, so the Worker never sees it.
 const HOLD = 'x-fixture-hold-ms'
-
 // This disposable Access gateway is only a test entry point and is absent from the Worker build.
 function gatewayHeaders(incoming: IncomingMessage, token: string) {
   const headers = new Headers()
@@ -54,7 +53,7 @@ async function handle(
     await serve(
       fixtures,
       outgoing,
-      async context => await scenario(context, incoming, outgoing),
+      async lease => await scenario(lease.context, incoming, outgoing),
       'Local scenario failed',
     )
     return
@@ -62,7 +61,16 @@ async function handle(
   const request = new URL(incoming.url ?? '/', `http://127.0.0.1:${options.port}`)
   if (request.pathname === '/__fixture/health') {
     outgoing.writeHead(200, { 'content-type': 'application/json' })
-    outgoing.end(JSON.stringify({ fixture: 'browser-server', pid: process.pid, port: options.port }))
+    outgoing.end(JSON.stringify({
+      fixture: 'browser-server',
+      pid: process.pid,
+      port: options.port,
+      // Requests past `rent()` whose response has arrived and whose body is still unread. Tests wait
+      // for this instead of sleeping, so their scenarios collide with the Worker state they mean.
+      reading: fixtures.reading(),
+      // The active case, so a test can tell that a swap has already happened.
+      generation: fixtures.generation(),
+    }))
     return
   }
   if (request.pathname === '/__fixture/reset') {
@@ -89,28 +97,39 @@ async function handle(
   await serve(
     fixtures,
     outgoing,
-    async context => await gateway(context, incoming, outgoing),
+    async (lease, signal) => await gateway(lease, incoming, outgoing, signal),
     'Local fixture failed',
   )
 }
 
 // Runs one request against the active Worker under a lease, so the Worker it dispatches to cannot be
-// disposed while the response is still being delivered.
+// disposed while the response is still being delivered. The signal fires when the client leaves.
 async function serve(
   fixtures: FixturePool,
   outgoing: ServerResponse,
-  run: (context: GatewayContext) => Promise<void>,
+  run: (lease: Lease, signal: AbortSignal) => Promise<void>,
   message: string,
 ): Promise<void> {
+  const gone = new AbortController()
+  const abandon = (): void => {
+    if (!outgoing.writableFinished) {
+      gone.abort()
+    }
+  }
+  outgoing.once('close', abandon)
   let lease: Lease | undefined
   try {
     lease = fixtures.rent()
-    await run(lease.context)
+    await run(lease, gone.signal)
   }
   catch (error: unknown) {
-    fail(outgoing, error, message)
+    // The client left, so there is nobody to answer and nothing to report.
+    if (!gone.signal.aborted) {
+      fail(outgoing, error, message)
+    }
   }
   finally {
+    outgoing.off('close', abandon)
     lease?.release()
   }
 }
@@ -185,7 +204,13 @@ async function main(): Promise<void> {
   process.on('SIGINT', shutdown)
 }
 
-async function gateway(context: GatewayContext, incoming: IncomingMessage, outgoing: ServerResponse) {
+async function gateway(
+  lease: Lease,
+  incoming: IncomingMessage,
+  outgoing: ServerResponse,
+  signal: AbortSignal,
+) {
+  const context = lease.context
   if (incoming.url === '/__fixture/login') {
     outgoing.writeHead(302, {
       'location': '/admin',
@@ -208,6 +233,8 @@ async function gateway(context: GatewayContext, incoming: IncomingMessage, outgo
     }
     parts.push(part)
   }
+  // The signal aborts the Worker request when the client leaves, so a departed client releases its
+  // Worker instead of being read out to the end.
   const response = await context.fixture.dispatchFetch(
     new URL(incoming.url ?? '/', context.origin),
     {
@@ -215,18 +242,29 @@ async function gateway(context: GatewayContext, incoming: IncomingMessage, outgo
       headers: Object.fromEntries(gatewayHeaders(incoming, context.token)),
       body: parts.length > 0 ? Buffer.concat(parts) : undefined,
       redirect: 'manual',
+      signal,
     },
   )
+  // From here the runtime's response exists and its body has not been read: the window a Worker must
+  // survive, and the state the gateway tests wait for.
+  lease.reading()
+  await holdFor(incoming, signal)
   // The body is read before the head is sent, so a Worker that dies mid-response is reported as a
-  // failed request instead of a half-written response. Tests keep that body unread for a while
-  // (`x-fixture-hold-ms`) to aim a reset, a dying Worker or a disappearing client at it.
-  const hold = Number(incoming.headers[HOLD] ?? 0)
-  if (hold > 0) {
-    await delay(hold)
-  }
+  // failed request instead of a half-written response.
   const body = Buffer.from(await response.arrayBuffer())
+  if (signal.aborted) {
+    return
+  }
   outgoing.writeHead(response.status, Object.fromEntries(response.headers))
   outgoing.end(body)
+}
+
+// Keeps a response unread for `x-fixture-hold-ms`; the wait ends early when the client goes away.
+async function holdFor(incoming: IncomingMessage, signal: AbortSignal): Promise<void> {
+  const hold = Number(incoming.headers[HOLD] ?? 0)
+  if (hold > 0) {
+    await delay(hold, undefined, { signal })
+  }
 }
 main().catch((error: unknown) => {
   console.error(error)

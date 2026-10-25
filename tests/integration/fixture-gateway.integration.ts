@@ -1,3 +1,4 @@
+import type { GatewayState } from '~/tests/support/worker/fixture-gateway'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import process from 'node:process'
@@ -10,6 +11,7 @@ import {
   call,
   children,
   cleanupGateways,
+  gatewayState,
   health,
   postReset,
   reset,
@@ -37,6 +39,23 @@ function report(message: string): void {
 
 async function liveness(origin: string): Promise<number> {
   return await status(await fetch(`${origin}/__fixture/health`))
+}
+
+// Waits for the gateway state a scenario aims at, so a case collides with the state it means instead
+// of with a window a slower machine may have missed.
+async function waitForGateway(
+  origin: string,
+  reached: (state: GatewayState) => boolean,
+  what: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const state = await gatewayState(origin)
+    if (state !== undefined && reached(state)) {
+      return
+    }
+    await delay(25)
+  }
+  throw new Error(`fixture gateway did not reach ${what}`)
 }
 
 async function isolation(origin: string, project: string): Promise<{ cold: number, warm: number }> {
@@ -94,7 +113,7 @@ test('a reset waits for the response its Worker is still delivering', async () =
     // in the spare. Disposing that Worker here is what reported `UNDICI terminated`, then threw
     // `ERR_HTTP_HEADERS_SENT` from the error handler and killed the gateway process.
     const held = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '3000' } })
-    await delay(300)
+    await waitForGateway(gateway.origin, state => state.reading === 1, 'an open response')
     const elapsed = await reset(gateway.origin, 'chromium')
     equal((await json(await held, 200, operationsSchema)).documents, 1, 'the open response still completes')
     assert.ok(elapsed >= 2500, `a reset waited for the open response, took ${elapsed.toFixed(0)}ms`)
@@ -113,8 +132,8 @@ test('a Worker that dies mid-response fails one request, not the gateway', async
     const worker = (await children(pid))[0]
     assert.ok(worker !== undefined)
     const held = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '3000' } })
-    await delay(300)
-    // The response is open and unread on the Worker when its process disappears.
+    // The response has left the Worker and its body is unread when the process disappears.
+    await waitForGateway(gateway.origin, state => state.reading === 1, 'an open response')
     process.kill(worker, 'SIGKILL')
     const failed = await held
     equal(failed.status, 500)
@@ -134,21 +153,52 @@ test('a client that disconnects mid-response releases its Worker', async () => {
     await reset(gateway.origin, 'chromium')
     await waitForChildren(pid, 2)
     const abort = new AbortController()
+    // The hold outlives the retirement grace, so only the disconnect can release the lease.
     const abandoned = call(gateway.origin, '/api/admin/operations', {
-      headers: { [hold]: '1500' },
+      headers: { [hold]: '30000' },
       signal: abort.signal,
     })
-    await delay(300)
+    await waitForGateway(gateway.origin, state => state.reading === 1, 'an open response')
     abort.abort()
     await assert.rejects(abandoned)
-    // The abandoned response still finishes on the Worker; its lease must survive the client.
-    await delay(1500)
-    equal(await liveness(gateway.origin), 200)
+    // A lease that only releases when the hold expires would cost the whole grace period.
     const elapsed = await reset(gateway.origin, 'chromium')
-    assert.ok(elapsed < 9000, `a departed client held retirement for ${elapsed.toFixed(0)}ms`)
+    assert.ok(elapsed < 3000, `a departed client held retirement for ${elapsed.toFixed(0)}ms`)
+    equal(await liveness(gateway.origin), 200)
+    equal(gateway.output().includes('Local fixture failed'), false, 'a departed client is not a failure')
     await waitForChildren(pid, 2)
     equal(await status(await call(gateway.origin, '/api/admin/documents')), 200)
   })
+}).catch((error: unknown) => {
+  throw error
+})
+
+test('shutdown shares one retirement budget across the Workers it retires', async () => {
+  // A shortened budget keeps the production default out of this test; only these cases set it.
+  const gateway = await start({
+    port,
+    env: { BLOG_FIXTURE_PREWARM: '0', BLOG_FIXTURE_RETIRE_GRACE_MS: '3000' },
+  })
+  // The running Worker keeps a response open, so its retirement is still waiting when the signal
+  // arrives, and the swap makes the replacement active before that wait is over.
+  const heldFirst = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '20000' } })
+    .catch((error: unknown) => error)
+  await waitForGateway(gateway.origin, state => state.reading === 1, 'an open response')
+  const swapping = postReset(gateway.origin, 'chromium').catch((error: unknown) => error)
+  await waitForGateway(gateway.origin, state => state.generation === 2, 'the swapped Worker')
+  // A second response, open on the Worker the swap installed: shutdown has two to retire.
+  const heldNext = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '20000' } })
+    .catch((error: unknown) => error)
+  await waitForGateway(gateway.origin, state => state.reading === 1, 'an open response')
+  const startedAt = performance.now()
+  equal(await stop(gateway), 0, `fixture gateway did not exit 0\n${gateway.output()}`)
+  const elapsed = performance.now() - startedAt
+  report(`shutdown of two retiring Workers: ${elapsed.toFixed(0)}ms`)
+  // Both retirements fit in the single budget close() established (3s here), not one each.
+  assert.ok(elapsed < 4500, `shutdown took ${elapsed.toFixed(0)}ms for two retiring Workers`)
+  await swapping
+  await heldFirst
+  await heldNext
 }).catch((error: unknown) => {
   throw error
 })

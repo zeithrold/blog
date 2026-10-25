@@ -1,14 +1,26 @@
 import type { Runtime, RuntimeFailure } from './runtime'
+import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { runtime } from './runtime'
 
 // The Worker a request is served by, plus the Access assertion minted for it.
 export type GatewayContext = Runtime & { tokenCreatedAt: number }
-// A request's hold on a Worker: it stays leased from `rent()` until `release()`.
-export type Lease = { context: GatewayContext, release: () => void }
-// How long a retirement waits for the responses its Worker is still delivering. A client that
-// stopped reading must delay a reset or a shutdown, never hang it.
-const RETIRE_GRACE_MS = 10000
+// A request's hold on a Worker: it stays leased from `rent()` until `release()`. `reading()` moves
+// it into the phase where the runtime's response has arrived and its body has not been read yet, so
+// that window can be observed instead of assumed.
+export type Lease = {
+  context: GatewayContext
+  reading: () => void
+  release: () => void
+}
+// How long a Worker may keep serving after it stops taking requests. The same budget bounds the
+// whole shutdown, so a queue of retirements cannot outlast what the caller waits for.
+const RETIRE_GRACE_MS = parseGrace(process.env.BLOG_FIXTURE_RETIRE_GRACE_MS)
+// Only the gateway tests shorten the budget; anything missing or malformed keeps the default.
+function parseGrace(value: string | undefined): number {
+  const grace = Number(value)
+  return Number.isSafeInteger(grace) && grace > 0 ? grace : 10000
+}
 
 // `BLOG_FIXTURE_FAULT` injects one failure so the cleanup paths stay covered: `build:<n>` fails
 // the nth build before a Worker exists, `runtime:<n>:<stage>` fails after it has been allocated,
@@ -35,15 +47,6 @@ function fault(value: string | undefined): Fault {
 // A build or reset cancelled by the gateway's own shutdown is not a failure of the case.
 class FixtureShutdown extends Error {}
 
-// Resolves to `true` once `promise` settles and to `false` after `ms`, so a wait is bounded without
-// keeping the process alive for a grace period nobody is waiting on any more.
-async function within(promise: Promise<void>, ms: number): Promise<boolean> {
-  return await Promise.race([
-    promise.then(() => true),
-    delay(ms, undefined, { ref: false }).then(() => false),
-  ])
-}
-
 // One built Worker and the requests that are still using it. A request takes a lease before it
 // dispatches and releases it once its response has been handed to the client; disposing a Worker
 // with a response still open terminates that connection mid-body, which is how one case boundary
@@ -51,6 +54,7 @@ async function within(promise: Promise<void>, ms: number): Promise<boolean> {
 class FixtureWorker {
   readonly context: GatewayContext
   #inFlight = 0
+  #reading = 0
   #retired = false
   #waiting: (() => void) | undefined
   #idle: Promise<void> | undefined
@@ -59,23 +63,41 @@ class FixtureWorker {
     this.context = context
   }
 
+  // Requests whose response has arrived and whose body is still unread.
+  reading(): number {
+    return this.#reading
+  }
+
   // Callers release the lease once their response is complete. `undefined` means the Worker is
   // already retiring, so the request must not be dispatched to it at all.
-  lease(): (() => void) | undefined {
+  lease(): Lease | undefined {
     if (this.#retired) {
       return undefined
     }
     this.#inFlight += 1
+    let reading = false
     let released = false
-    return () => {
-      if (released) {
-        return
-      }
-      released = true
-      this.#inFlight -= 1
-      if (this.#inFlight === 0) {
-        this.#waiting?.()
-      }
+    return {
+      context: this.context,
+      reading: () => {
+        if (!released && !reading) {
+          reading = true
+          this.#reading += 1
+        }
+      },
+      release: () => {
+        if (released) {
+          return
+        }
+        released = true
+        if (reading) {
+          this.#reading -= 1
+        }
+        this.#inFlight -= 1
+        if (this.#inFlight === 0) {
+          this.#waiting?.()
+        }
+      },
     }
   }
 
@@ -100,18 +122,26 @@ export class FixturePool {
   readonly #origin: string
   readonly #fault: Fault
   readonly #live = new Set<FixtureWorker>()
+  // Resolves once the shutdown budget is spent, so a retirement that started before close() is cut
+  // at the same deadline as the ones the drain starts afterwards.
+  readonly #expired: Promise<boolean>
+  readonly #expire: (expired: boolean) => void
   #builds = 0
   #disposeFailures: number
   #closing = false
+  #generation = 1
   #active: FixtureWorker | undefined
   #spare: Promise<FixtureWorker> | undefined
   #queue: Promise<void> = Promise.resolve()
   #closePromise: Promise<void> | undefined
 
   constructor(origin: string, failure?: string) {
+    const expired = Promise.withResolvers<boolean>()
     this.#origin = origin
     this.#fault = fault(failure)
     this.#disposeFailures = this.#fault.dispose
+    this.#expired = expired.promise
+    this.#expire = expired.resolve
   }
 
   // Every request serves from a lease of the active Worker, and a swap of that lease for a disposal
@@ -120,11 +150,21 @@ export class FixturePool {
     if (this.#active === undefined) {
       throw new Error('Fixture is not started')
     }
-    const release = this.#active.lease()
-    if (release === undefined) {
+    const lease = this.#active.lease()
+    if (lease === undefined) {
       throw new Error('Fixture Worker is retiring')
     }
-    return { context: this.#active.context, release }
+    return lease
+  }
+
+  // Responses the active Worker has delivered but the gateway has not finished reading.
+  reading(): number {
+    return this.#active?.reading() ?? 0
+  }
+
+  // Which case's Worker is active: 1 at start, one more per completed swap.
+  generation(): number {
+    return this.#generation
   }
 
   async start(): Promise<void> {
@@ -149,6 +189,12 @@ export class FixturePool {
 
   async #drain(): Promise<void> {
     this.#closing = true
+    // One budget for the whole shutdown, established before the queue drains: retirements already
+    // waiting are cut at this deadline and the Workers retired afterwards only get what is left.
+    delay(RETIRE_GRACE_MS, undefined, { ref: false }).then(
+      () => this.#expire(false),
+      () => this.#expire(false),
+    )
     // Swaps accepted before closing settle here, including the retirements they perform.
     await this.#queue
     const spare = this.#spare
@@ -191,6 +237,7 @@ export class FixturePool {
     const replacement = prewarm && spare !== undefined ? spare : await this.#build()
     const previous = this.#active
     this.#active = replacement
+    this.#generation += 1
     // The previous case keeps answering the requests it is already delivering, but takes no new
     // ones: from here on every request lands on the replacement.
     if (previous !== undefined) {
@@ -244,11 +291,25 @@ export class FixturePool {
     // finish first: every request leases the Worker it dispatches to, so a reset, a replacement and
     // the shutdown all dispose only once those leases are gone.
     const running = worker.retire()
-    if (running !== undefined && !await within(running, RETIRE_GRACE_MS)) {
-      console.error(`Fixture Worker still served a response after ${RETIRE_GRACE_MS}ms; disposing it`)
+    if (running !== undefined) {
+      await this.#converge(running)
     }
     // Forgetting a Worker before it is actually disposed would let a failure go unreported.
     await this.#dispose(worker.context)
     this.#live.delete(worker)
+  }
+
+  // Waits for the responses a retiring Worker is still delivering, bounded by this Worker's grace
+  // and by the deadline a shutdown shares between every Worker it retires.
+  async #converge(running: Promise<void>): Promise<void> {
+    const startedAt = Date.now()
+    const converged = await Promise.race([
+      running.then(() => true),
+      this.#expired,
+      delay(RETIRE_GRACE_MS, undefined, { ref: false }).then(() => false),
+    ])
+    if (!converged) {
+      console.error(`Fixture Worker still served a response after ${Date.now() - startedAt}ms; disposing it`)
+    }
   }
 }
