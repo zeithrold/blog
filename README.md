@@ -100,7 +100,11 @@ reset swaps instances rather than clearing a shared database. Each instance owns
 module state and authentication secrets. This reduces serial reset latency, not total initialization
 work, and costs one additional idle Worker. Performance cases retire the spare and disable prewarming
 so background initialization cannot contaminate measurements. Set `BLOG_FIXTURE_PREWARM=0` to diagnose
-the synchronous path. Build and disposal failures remain failures; shutdown drains accepted work and
+the synchronous path. A request leases the instance it dispatches to, so a swap retires the previous
+case's Worker only after the responses it is still delivering finish, with a bound so a departed
+client cannot hold a reset or a shutdown open. A request that loses its Worker is answered as a
+failed request instead of a second status line, so one bad response cannot end the shard.
+Build and disposal failures remain failures; shutdown drains accepted work and
 reports cleanup errors, including when signals repeat.
 
 Browser readiness uses the application's rendered state rather than whole-page network idle. The

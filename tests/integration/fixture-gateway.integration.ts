@@ -3,11 +3,14 @@ import { createServer } from 'node:http'
 import process from 'node:process'
 import { after, test } from 'node:test'
 import { setTimeout as delay } from 'node:timers/promises'
+import { operationsSchema } from '@/contracts/operations'
 import { equal } from '~/tests/support/unit/assertions'
 import { clean, nextCase, probe, seed } from '~/tests/support/worker/fixture-case'
 import {
   call,
+  children,
   cleanupGateways,
+  health,
   postReset,
   reset,
   start,
@@ -16,15 +19,24 @@ import {
   waitForChildren,
   withGateway,
 } from '~/tests/support/worker/fixture-gateway'
+import { json } from '~/tests/support/worker/responses'
 
 // The browser runner keeps one built Worker per case and rebuilds it at every case boundary.
 // These tests drive that gateway exactly as the runner does: seed a case, reset, then prove the
 // next case starts with clean D1, R2, live, search, history, mutation, schedule, quota and
 // authentication state. They also cover both reset modes, build failures after allocation,
-// failure reporting when switching to a measurement run and shutdown behaviour.
+// failure reporting when switching to a measurement run, shutdown behaviour, and responses a case
+// boundary interrupts.
 const port = Number(process.env.BLOG_FIXTURE_PORT ?? 8841)
+// The gateway's own seam: a request that keeps its response unread so a Worker cannot be retired
+// out from under it. Retirement waits for the response instead of terminating its connection.
+const hold = 'x-fixture-hold-ms'
 function report(message: string): void {
   process.stdout.write(`${message}\n`)
+}
+
+async function liveness(origin: string): Promise<number> {
+  return await status(await fetch(`${origin}/__fixture/health`))
 }
 
 async function isolation(origin: string, project: string): Promise<{ cold: number, warm: number }> {
@@ -65,6 +77,77 @@ test('a prewarmed reset starts the next case clean and keeps one spare', async (
     const performanceCase = await reset(gateway.origin, 'performance')
     await waitForChildren(pid, 1)
     report(`performance reset: ${performanceCase.toFixed(0)}ms, no spare kept`)
+  })
+}).catch((error: unknown) => {
+  throw error
+})
+
+test('a reset waits for the response its Worker is still delivering', async () => {
+  await withGateway({ port }, async (gateway) => {
+    const pid = gateway.child.pid ?? 0
+    // Warm the spare so the reset below swaps immediately instead of building first.
+    await reset(gateway.origin, 'chromium')
+    await waitForChildren(pid, 2)
+    await probe(gateway.origin)
+    equal((await health(gateway.origin)).documents, 1, 'the running case owns one document')
+    // The previous case's Worker answers this request and keeps its body open while the reset swaps
+    // in the spare. Disposing that Worker here is what reported `UNDICI terminated`, then threw
+    // `ERR_HTTP_HEADERS_SENT` from the error handler and killed the gateway process.
+    const held = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '3000' } })
+    await delay(300)
+    const elapsed = await reset(gateway.origin, 'chromium')
+    equal((await json(await held, 200, operationsSchema)).documents, 1, 'the open response still completes')
+    assert.ok(elapsed >= 2500, `a reset waited for the open response, took ${elapsed.toFixed(0)}ms`)
+    // The retired Worker is gone while the spare it was swapped for is now active.
+    await waitForChildren(pid, 2)
+    equal((await health(gateway.origin)).documents, 0, 'the next case serves from the replacement')
+  })
+}).catch((error: unknown) => {
+  throw error
+})
+
+test('a Worker that dies mid-response fails one request, not the gateway', async () => {
+  await withGateway({ port, env: { BLOG_FIXTURE_PREWARM: '0' } }, async (gateway) => {
+    const pid = gateway.child.pid ?? 0
+    await waitForChildren(pid, 1)
+    const worker = (await children(pid))[0]
+    assert.ok(worker !== undefined)
+    const held = call(gateway.origin, '/api/admin/operations', { headers: { [hold]: '3000' } })
+    await delay(300)
+    // The response is open and unread on the Worker when its process disappears.
+    process.kill(worker, 'SIGKILL')
+    const failed = await held
+    equal(failed.status, 500)
+    equal(await failed.text(), 'Local fixture failed')
+    // The shard keeps its gateway, and the next case still gets a running Worker.
+    equal(await liveness(gateway.origin), 200)
+    await reset(gateway.origin, 'chromium')
+    equal(await status(await call(gateway.origin, '/api/admin/documents')), 200)
+  })
+}).catch((error: unknown) => {
+  throw error
+})
+
+test('a client that disconnects mid-response releases its Worker', async () => {
+  await withGateway({ port }, async (gateway) => {
+    const pid = gateway.child.pid ?? 0
+    await reset(gateway.origin, 'chromium')
+    await waitForChildren(pid, 2)
+    const abort = new AbortController()
+    const abandoned = call(gateway.origin, '/api/admin/operations', {
+      headers: { [hold]: '1500' },
+      signal: abort.signal,
+    })
+    await delay(300)
+    abort.abort()
+    await assert.rejects(abandoned)
+    // The abandoned response still finishes on the Worker; its lease must survive the client.
+    await delay(1500)
+    equal(await liveness(gateway.origin), 200)
+    const elapsed = await reset(gateway.origin, 'chromium')
+    assert.ok(elapsed < 9000, `a departed client held retirement for ${elapsed.toFixed(0)}ms`)
+    await waitForChildren(pid, 2)
+    equal(await status(await call(gateway.origin, '/api/admin/documents')), 200)
   })
 }).catch((error: unknown) => {
   throw error

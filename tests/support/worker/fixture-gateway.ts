@@ -20,6 +20,7 @@ export type Call = {
   method?: string
   body?: BodyInit
   headers?: Record<string, string>
+  signal?: AbortSignal
   anonymous?: boolean
 }
 export type Write = (path: string, body: unknown, method?: string, key?: string) => Promise<Response>
@@ -265,7 +266,8 @@ async function kill(child: ChildProcess, timeout = 15000): Promise<boolean> {
   ])
 }
 
-async function children(pid: number): Promise<number[]> {
+// The Worker processes the gateway currently runs, for scenarios that have to reach one directly.
+export async function children(pid: number): Promise<number[]> {
   try {
     const { stdout } = await run('pgrep', [
       '-P',

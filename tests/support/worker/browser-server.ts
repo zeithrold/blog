@@ -1,10 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import type { Runtime, RuntimeFailure } from './runtime'
+import type { GatewayContext, Lease } from './fixture-pool'
 import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import process from 'node:process'
-import { runtime } from './runtime'
+import { setTimeout as delay } from 'node:timers/promises'
+import { FixturePool } from './fixture-pool'
 import { scenario } from './scenario'
+
+// A request can keep its response unread on purpose (`x-fixture-hold-ms`) so the gateway tests can
+// aim a reset, a dying Worker or a disappearing client at the window where the response body is
+// still open. The header is stripped in `gatewayHeaders`, so the Worker never sees it.
+const HOLD = 'x-fixture-hold-ms'
 
 // This disposable Access gateway is only a test entry point and is absent from the Worker build.
 function gatewayHeaders(incoming: IncomingMessage, token: string) {
@@ -15,181 +21,14 @@ function gatewayHeaders(incoming: IncomingMessage, token: string) {
     }
   }
   headers.delete('cf-access-jwt-assertion')
+  headers.delete(HOLD)
   if ((headers.get('cookie') ?? '').split('; ').includes('fixture=browser-test')) {
     headers.set('cf-access-jwt-assertion', token)
   }
   return headers
 }
-type GatewayContext = Runtime & { tokenCreatedAt: number }
 const SIGNALS = ['SIGINT', 'SIGTERM'] as const
 type GatewayOptions = { port: number, prewarm: boolean }
-// `BLOG_FIXTURE_FAULT` injects one failure so the cleanup paths stay covered: `build:<n>` fails
-// the nth build before a Worker exists, `runtime:<n>:<stage>` fails after it has been allocated,
-// and `dispose` fails the next disposal.
-type Fault = { at: number, stage?: RuntimeFailure, dispose: number }
-function fault(value: string | undefined): Fault {
-  const [kind, at, stage] = (value ?? '').split(':')
-  const index = Number(at)
-  if (kind === 'dispose') {
-    return { at: 0, dispose: 1 }
-  }
-  if (!Number.isSafeInteger(index) || index < 1) {
-    return { at: 0, dispose: 0 }
-  }
-  if (kind === 'build') {
-    return { at: index, dispose: 0 }
-  }
-  if (kind === 'runtime' && (stage === 'ready' || stage === 'migrate')) {
-    return { at: index, stage, dispose: 0 }
-  }
-  return { at: 0, dispose: 0 }
-}
-
-// A build or reset cancelled by the gateway's own shutdown is not a failure of the case.
-class FixtureShutdown extends Error {}
-
-// Owns every Worker runtime the gateway builds: one active case, at most one warm spare, and the
-// serialized swap between them. Failures are never swallowed: a build that fails surfaces at the
-// reset that waits for it, and shutdown reports whatever is left.
-class FixturePool {
-  readonly #origin: string
-  readonly #fault: Fault
-  readonly #live = new Set<GatewayContext>()
-  #builds = 0
-  #disposeFailures: number
-  #closing = false
-  #active: GatewayContext | undefined
-  #spare: Promise<GatewayContext> | undefined
-  #queue: Promise<void> = Promise.resolve()
-  #closePromise: Promise<void> | undefined
-
-  constructor(origin: string, faultRule: Fault) {
-    this.#origin = origin
-    this.#fault = faultRule
-    this.#disposeFailures = faultRule.dispose
-  }
-
-  active(): GatewayContext {
-    if (this.#active === undefined) {
-      throw new Error('Fixture is not started')
-    }
-    return this.#active
-  }
-
-  async start(): Promise<void> {
-    this.#active = await this.#build()
-  }
-
-  async reset(prewarm: boolean): Promise<void> {
-    if (this.#closing) {
-      throw new FixtureShutdown('Fixture gateway is shutting down')
-    }
-    const done = this.#queue.then(async () => await this.#swap(prewarm), async () => await this.#swap(prewarm))
-    this.#queue = done.then(() => undefined, () => undefined)
-    return await done
-  }
-
-  async close(): Promise<void> {
-    // One shutdown per gateway: every caller observes the same drain, so a second signal can
-    // never return (and let the process exit) while the first is still cleaning up.
-    this.#closePromise ??= this.#drain()
-    return await this.#closePromise
-  }
-
-  async #drain(): Promise<void> {
-    this.#closing = true
-    // Swaps accepted before closing settle here, including the retirements they perform.
-    await this.#queue
-    const spare = this.#spare
-    this.#spare = undefined
-    const failures: unknown[] = []
-    if (spare !== undefined) {
-      try {
-        await spare
-      }
-      catch (error) {
-        if (!(error instanceof FixtureShutdown)) {
-          failures.push(error)
-        }
-      }
-    }
-    const retained = [
-      ...this.#live,
-    ]
-    for (const target of retained) {
-      try {
-        await this.#dispose(target)
-        this.#live.delete(target)
-      }
-      catch (error) {
-        failures.push(error)
-      }
-    }
-    if (failures.length > 0) {
-      throw new AggregateError(failures, 'Fixture gateway did not shut down cleanly')
-    }
-  }
-
-  async #swap(prewarm: boolean): Promise<void> {
-    const pending = this.#spare
-    this.#spare = undefined
-    // A spare that failed is a failure of this reset in either mode; only a built Worker is usable.
-    const spare = pending === undefined ? undefined : await pending
-    if (!prewarm && spare !== undefined) {
-      await this.#retire(spare)
-    }
-    const replacement = prewarm && spare !== undefined ? spare : await this.#build()
-    const previous = this.#active
-    this.#active = replacement
-    if (previous !== undefined) {
-      await this.#retire(previous)
-    }
-    if (prewarm) {
-      this.#warm()
-    }
-  }
-
-  #warm(): void {
-    if (this.#closing) {
-      return
-    }
-    const spare = this.#build()
-    // A failed spare is reported by the next reset or by close(), never as an unhandled rejection.
-    spare.catch(() => undefined)
-    this.#spare = spare
-  }
-
-  async #build(): Promise<GatewayContext> {
-    if (this.#closing) {
-      throw new FixtureShutdown('Fixture gateway is shutting down')
-    }
-    this.#builds += 1
-    const index = this.#builds
-    if (this.#fault.at === index && this.#fault.stage === undefined) {
-      throw new Error(`Injected fixture build failure (BLOG_FIXTURE_FAULT=build:${index})`)
-    }
-    const failure = this.#fault.at === index ? this.#fault.stage : undefined
-    // A build that finishes during shutdown is kept in `live` and disposed by `#drain`; it is
-    // not a failure, and refusing it earlier keeps shutdown from starting pointless work.
-    const created = { ...await runtime(this.#origin, undefined, failure), tokenCreatedAt: Date.now() }
-    this.#live.add(created)
-    return created
-  }
-
-  async #dispose(target: GatewayContext): Promise<void> {
-    if (this.#disposeFailures > 0) {
-      this.#disposeFailures -= 1
-      throw new Error('Injected fixture dispose failure (BLOG_FIXTURE_FAULT=dispose)')
-    }
-    await target.dispose()
-  }
-
-  async #retire(target: GatewayContext): Promise<void> {
-    // Forgetting a Worker before it is actually disposed would let a failure go unreported.
-    await this.#dispose(target)
-    this.#live.delete(target)
-  }
-}
 
 function route(
   fixtures: FixturePool,
@@ -197,11 +36,27 @@ function route(
   incoming: IncomingMessage,
   outgoing: ServerResponse,
 ): void {
+  handle(fixtures, options, incoming, outgoing).catch((error: unknown) => {
+    // Everything `handle` can answer, it answers with `fail`; a request that still ends up here has
+    // no reply left to give, and a destroyed connection is the only signal it can send.
+    console.error(error)
+    outgoing.destroy()
+  })
+}
+
+async function handle(
+  fixtures: FixturePool,
+  options: GatewayOptions,
+  incoming: IncomingMessage,
+  outgoing: ServerResponse,
+): Promise<void> {
   if (incoming.url === '/__fixture/scenario') {
-    scenario(fixtures.active(), incoming, outgoing).catch((error: unknown) => {
-      console.error(error)
-      outgoing.writeHead(500).end('Local scenario failed')
-    })
+    await serve(
+      fixtures,
+      outgoing,
+      async context => await scenario(context, incoming, outgoing),
+      'Local scenario failed',
+    )
     return
   }
   const request = new URL(incoming.url ?? '/', `http://127.0.0.1:${options.port}`)
@@ -217,23 +72,65 @@ function route(
       outgoing.end()
       return
     }
-    // CPU-throttled measurement runs must not share the machine with a background build.
+    // CPU-throttled measurement runs must not share the machine with a background build. A reset
+    // serves no Worker of its own, so it holds no lease: the swap retires the previous case's
+    // Worker once the requests already reading from it have finished.
     const prewarm = options.prewarm && request.searchParams.get('project') !== 'performance'
-    fixtures.reset(prewarm).then(() => {
+    try {
+      await fixtures.reset(prewarm)
       outgoing.writeHead(204)
       outgoing.end()
-    }).catch((error: unknown) => {
-      console.error(error)
-      outgoing.writeHead(500)
-      outgoing.end('Local fixture reset failed')
-    })
+    }
+    catch (error) {
+      fail(outgoing, error, 'Local fixture reset failed')
+    }
     return
   }
-  gateway(fixtures.active(), incoming, outgoing).catch((error: unknown) => {
-    console.error(error)
+  await serve(
+    fixtures,
+    outgoing,
+    async context => await gateway(context, incoming, outgoing),
+    'Local fixture failed',
+  )
+}
+
+// Runs one request against the active Worker under a lease, so the Worker it dispatches to cannot be
+// disposed while the response is still being delivered.
+async function serve(
+  fixtures: FixturePool,
+  outgoing: ServerResponse,
+  run: (context: GatewayContext) => Promise<void>,
+  message: string,
+): Promise<void> {
+  let lease: Lease | undefined
+  try {
+    lease = fixtures.rent()
+    await run(lease.context)
+  }
+  catch (error: unknown) {
+    fail(outgoing, error, message)
+  }
+  finally {
+    lease?.release()
+  }
+}
+
+// Answers a failed request exactly once. Once the head is out, or the client has gone, a second
+// status line throws inside this handler and takes the gateway down with it, so the only honest
+// signal left is a destroyed connection.
+function fail(outgoing: ServerResponse, error: unknown, message: string): void {
+  console.error(error)
+  if (outgoing.headersSent || outgoing.writableEnded || outgoing.destroyed) {
+    outgoing.destroy()
+    return
+  }
+  try {
     outgoing.writeHead(500)
-    outgoing.end('Local fixture failed')
-  })
+    outgoing.end(message)
+  }
+  catch {
+    outgoing.destroy()
+  }
 }
 
 async function main(): Promise<void> {
@@ -244,7 +141,7 @@ async function main(): Promise<void> {
   }
   const fixtures = new FixturePool(
     `http://127.0.0.1:${port}`,
-    fault(process.env.BLOG_FIXTURE_FAULT),
+    process.env.BLOG_FIXTURE_FAULT,
   )
   // Miniflare's exit hook (src/exit-hook.ts) registers SIGINT/SIGTERM listeners that call
   // `process.exit(128 + signal)` synchronously, which would kill the gateway before its
@@ -264,6 +161,10 @@ async function main(): Promise<void> {
     }
   }
   const server = createServer((incoming, outgoing) => {
+    // A browser that navigates away mid-response is routine here: the socket error releases the
+    // request through its lease, and must never surface as an uncaught event on either side.
+    incoming.on('error', () => undefined)
+    outgoing.on('error', () => undefined)
     route(fixtures, options, incoming, outgoing)
   })
   server.listen(port, '127.0.0.1')
@@ -316,8 +217,16 @@ async function gateway(context: GatewayContext, incoming: IncomingMessage, outgo
       redirect: 'manual',
     },
   )
+  // The body is read before the head is sent, so a Worker that dies mid-response is reported as a
+  // failed request instead of a half-written response. Tests keep that body unread for a while
+  // (`x-fixture-hold-ms`) to aim a reset, a dying Worker or a disappearing client at it.
+  const hold = Number(incoming.headers[HOLD] ?? 0)
+  if (hold > 0) {
+    await delay(hold)
+  }
+  const body = Buffer.from(await response.arrayBuffer())
   outgoing.writeHead(response.status, Object.fromEntries(response.headers))
-  outgoing.end(Buffer.from(await response.arrayBuffer()))
+  outgoing.end(body)
 }
 main().catch((error: unknown) => {
   console.error(error)
