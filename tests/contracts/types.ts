@@ -3,6 +3,17 @@ export type Browser = 'chromium' | 'webkit'
 
 export type NodeReference = { file: string, title: string, describe?: readonly string[] }
 export type BrowserReference = NodeReference & { projects: readonly Browser[] }
+export type CaseMigration = {
+  readonly id: string
+  readonly legacy: readonly string[]
+  readonly component: readonly {
+    readonly case: string
+    readonly describe?: readonly string[]
+    readonly proves: readonly string[]
+  }[]
+  readonly retained: readonly { readonly cases: readonly string[], readonly reason: string }[]
+  readonly notMigrated?: readonly { readonly cases: readonly string[], readonly reason: string }[]
+}
 export type VerificationContract = {
   id: string
   behavior: string

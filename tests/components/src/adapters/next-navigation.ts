@@ -22,3 +22,15 @@ const router: HostRouter = {
 export function useRouter(): HostRouter {
   return router
 }
+
+// The harness document is a real page load, so its URL is the route the mounted
+// shell is on: chrome that branches on the admin section reads that pathname.
+// eslint-disable-next-line react/no-unnecessary-use-prefix -- Next.js-compatible adapter export.
+export function usePathname(): string {
+  return window.location.pathname
+}
+
+// eslint-disable-next-line react/no-unnecessary-use-prefix -- Next.js-compatible adapter export.
+export function useSearchParams(): URLSearchParams {
+  return new URLSearchParams(window.location.search)
+}

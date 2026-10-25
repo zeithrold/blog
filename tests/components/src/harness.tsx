@@ -7,7 +7,13 @@ import { createPreferencePolicy } from '@/components/ui/ztd-me'
 import { CatalogManager } from '@/features/catalog/catalog'
 import { DocumentList } from '@/features/documents/document-list'
 import { BlogFrontend } from '@/i18n/frontend'
+import { AdminControlsSurface, AdminNavigationSurface } from './admin-harness'
+import { EditorMathSurface } from './editor-harness'
+import { EditorWorkspaceSurface } from './editor-workspace-harness'
 import { COMPONENT_TEST_FIXTURES } from './fixtures'
+import { HistoryHarness } from './history-harness'
+import { MediaGallerySurface } from './media-harness'
+import { ReaderSurface } from './reader-harness'
 
 // A local, host-only preference cookie keeps this provider self-contained; it
 // never shares product persistence with the real app.
@@ -44,14 +50,17 @@ function preferencesFor(options: ComponentOptions): FrontendPreferences {
 
 function surfaceContent(surface: ComponentSurface): ReactNode {
   const { csrfToken, owner } = COMPONENT_TEST_FIXTURES
-  switch (surface) {
-    case 'documents':
-      return <DocumentList csrfToken={csrfToken} />
-    case 'catalog-tag':
-      return <CatalogManager kind="tag" csrfToken={csrfToken} owner={owner} />
-    case 'catalog-series':
-      return <CatalogManager kind="series" csrfToken={csrfToken} owner={owner} />
-    default:
-      throw new Error(`Unsupported component surface ${JSON.stringify(surface)}`)
+  const surfaces: Record<ComponentSurface, ReactNode> = {
+    'documents': <DocumentList csrfToken={csrfToken} />,
+    'catalog-tag': <CatalogManager kind="tag" csrfToken={csrfToken} owner={owner} />,
+    'catalog-series': <CatalogManager kind="series" csrfToken={csrfToken} owner={owner} />,
+    'admin-navigation': <AdminNavigationSurface />,
+    'admin-controls': <AdminControlsSurface />,
+    'media-gallery': <MediaGallerySurface />,
+    'reader-content': <ReaderSurface />,
+    'editor-math': <EditorMathSurface />,
+    'history-page': <HistoryHarness csrfToken={csrfToken} />,
+    'editor-workspace': <EditorWorkspaceSurface />,
   }
+  return surfaces[surface]
 }

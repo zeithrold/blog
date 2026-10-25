@@ -36,7 +36,7 @@ pnpm test:development
 
 Playwright has three configurations. `playwright.config.ts` defines Chromium and WebKit functional
 projects and a performance project that uses Chromium CDP. `playwright.components.config.ts` builds
-the real documents/catalog components with Vite and tests them without starting a Worker.
+real application components with Vite and tests them without starting a Worker.
 `playwright.development.config.ts` starts
 the Vite development server to check login, saving, and hot module replacement.
 
@@ -83,9 +83,10 @@ traces and videos are retained for seven days, with separate artifact names for 
 
 `pnpm test:ci-plan` uses Playwright's actual `--list` results to assert that the four shards contain
 exactly the unsharded dual-browser cases, without omissions or duplicates, keep files intact, and
-include the core cases. It discovers tests without starting a browser or Worker. Each shard's
-`control-coverage.json` is partial, not an independently complete inventory report; full inventory
-enforcement is aggregated by `pnpm test:contracts` and must not be enabled separately on each shard.
+include the core cases. It discovers tests without starting a browser or Worker. Each shard's native
+execution report is partial; `pnpm test:contracts` aggregates both browser layers and enforces the
+complete plans. There is no separate E2E-only control reporter: component replacements must count
+as evidence rather than appearing falsely uncovered in each old shard.
 
 For diagnosis, run:
 
@@ -138,13 +139,20 @@ values. These diagnostics do not change assertions, retries or performance-budge
 ## Test organization
 
 `tests/unit` contains Node unit tests; `tests/integration` contains tests against the built Worker.
-`tests/components` exercises real documents/catalog components in a production Vite bundle, with
+`tests/components` exercises real application components in a production Vite bundle, with
 only HTTP and framework-host routing boundaries replaced. Its routing adapter is not evidence of
 native application navigation. Font verification still uses actual Google CSS and font responses.
+The editor surface mounts the real editor entry, BlockNote, controllers and draft coordinator;
+native typing, IME, selection and undo/redo therefore remain browser checks without requiring D1.
+Fixture acknowledgements prove client behavior, not persisted server state. Stored versions,
+head/live isolation and allocation replay belong to real Worker integration tests. E2E retains
+representative persistence/reload, SSR and application-routing journeys.
 `tests/contracts` records business rules, exact native case references and the old-to-new assertion
 mapping. `registry.ts` composes the current references; the migration ledger retains historical names.
 The first slice retires 22 logical E2E cases and retains 24 documents/catalog cases in both browsers.
-It does not reorganize the remaining E2E suite or establish a whole-suite speed improvement.
+Subsequent batches are recorded in `surface-migrations.ts` and its domain tables. Retire the old
+case in the same change once its replacement assertions pass locally; a green legacy CI run is
+not the retirement criterion. Full-suite timing claims still require comparable measurements.
 `tests/browser` groups functional tests by business domain, with editor controls grouped further by
 blocks, tables, links, source editing, formatting, overlays, and navigation. Preview, recovery, and
 revision history belong to `history`; scheduling belongs to `publication`; media flows belong to
@@ -188,8 +196,10 @@ coverage. To collect the same evidence manually, run `pnpm test:prepare` first, 
 integration, component and E2E commands without editing the source between them. Set `TMPDIR=/tmp`
 and a shared `BLOG_VERIFICATION_RUN_ID` to retain one evidence batch across commands.
 `pnpm test:controls` is an alias for the final contract check, not a second browser run.
-The documents/catalog rules require exact case results; unmigrated surfaces retain their previous
-strict linked-suite obligations, with the entire E2E result set checked against native discovery.
+The documents/catalog rules require exact case results. Other controls keep linked-suite obligations;
+as replacements pass locally, their evidence links can move directly to component suites and the old
+E2E cases are removed in the same change. Both browser layers are checked against their complete
+native discovery plans, so a passing subset cannot stand in for the replacement suites.
 A successful filtered invocation is not a complete-suite receipt. Each invocation retains its own
 immutable result file; prepare a new batch before rerunning a layer, rather than replacing a failed
 attempt with a passing one. Worker fixtures also reject builds whose build-time source manifest

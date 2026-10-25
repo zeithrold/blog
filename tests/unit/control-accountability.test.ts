@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { assessControlMap } from '~/tests/contracts/accountability'
 import { documentsCatalogControlMap } from '~/tests/contracts/control-map'
 import { migratedControls } from '~/tests/contracts/legacy'
-import { documentsCatalogContracts } from '~/tests/contracts/registry'
+import { documentsCatalogContracts, migrationServerContracts } from '~/tests/contracts/registry'
 import { controls } from '~/tests/support/browser/control-contract'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
@@ -147,4 +147,15 @@ test('the canonical registry proves every primary layer and leaves no control ga
   deepEqual(gaps, [])
   equal(canonical.length, documentsCatalogContracts.length)
   assert.ok(canonical.length > 0, 'The ledger must hold the migrated contracts')
+}).catch((error: unknown) => { throw error })
+
+test('retired server assertions remain exact integration obligations', () => {
+  const contracts = documentsCatalogContracts.concat(migrationServerContracts)
+  equal(new Set(contracts.map(contract => contract.id)).size, contracts.length)
+  for (const contract of migrationServerContracts) {
+    equal(contract.primary, 'integration')
+    equal(contract.integration.length, 1)
+    equal(contract.component.length, 0)
+    equal(contract.e2e.length, 0)
+  }
 }).catch((error: unknown) => { throw error })

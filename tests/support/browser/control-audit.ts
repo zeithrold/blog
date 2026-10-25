@@ -11,6 +11,10 @@ import { expect } from './test'
 function normalize(name: string): string {
   return name.toLowerCase().replaceAll(/[^\p{L}\p{N}]+/gu, ' ').trim()
 }
+function textPattern(...values: string[]): RegExp {
+  const escaped = values.map(value => value.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+  return new RegExp(`^(?:${escaped.join('|')})$`, 'u')
+}
 const aliases = new Map<string, string>()
 for (const control of controlInventory) {
   for (const name of control.locator.split(' / ')) {
@@ -34,7 +38,16 @@ dictionary(enDocuments, zhDocuments)
 dictionary(enSite, zhSite)
 
 // Dynamic names identify a control type; the linked suites still verify its behavior.
-const publicLinks = /^(?:Skip to content|跳转到内容|Browse writing|浏览文章|Back to top|返回顶部|All writing|全部文章)$/u
+// Public reader links render from the site resource dictionaries, so their names come
+// from that same source instead of a second, hand-copied translation table.
+const publicLinks = textPattern(
+  enSite.browseWriting,
+  zhSite.browseWriting,
+  enSite.backToTop,
+  zhSite.backToTop,
+  enSite.allWriting,
+  zhSite.allWriting,
+)
 const licenseLinks = /^(?:Third.party notices|Dependency inventory|Source offers|.+\.(?:txt|json|md))$/iu
 
 const sourceLinks = new RegExp(

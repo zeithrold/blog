@@ -114,3 +114,39 @@ export const catalogCopy: Readonly<Record<'en' | 'zh', CatalogCopy>> = {
     review: '请核对操作后继续',
   },
 }
+
+/** Editor workspace copy the publication cases act on and assert. */
+const enEditorWorkspace = {
+  settings: 'Document settings',
+  publication: 'Publication',
+  body: 'Document body',
+  schedule: 'Scheduled publication',
+  timezone: 'Publication timezone',
+  search: 'Search cities or timezones',
+  device: 'Use device timezone',
+  title: 'Title',
+  publish: 'Publish',
+  caption: 'Table caption',
+  saved: 'Saved',
+  error: 'Publication checks failed',
+} as const
+
+export type EditorWorkspaceCopy = { readonly [K in keyof typeof enEditorWorkspace]: string }
+
+export const editorWorkspaceCopy: Readonly<Record<'en' | 'zh', EditorWorkspaceCopy>> = {
+  en: enEditorWorkspace,
+  zh: {
+    settings: '文档设置',
+    publication: '发布',
+    body: '正文',
+    schedule: '定时发布',
+    timezone: '发布时区',
+    search: '搜索城市或时区',
+    device: '使用设备时区',
+    title: '标题',
+    publish: '发布',
+    caption: '表格标题',
+    saved: '已保存',
+    error: '发布未通过检查',
+  },
+}

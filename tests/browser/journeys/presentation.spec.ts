@@ -240,6 +240,7 @@ async function publicRoundTrip(state: PresentationState): Promise<void> {
   await page.getByRole('link', { name: 'zeithrold/blog', exact: true }).click()
   await expect(page).toHaveURL(/\/$/)
   await page.getByRole('link', { name: 'Visual journey article' }).click()
+  await expect(page.locator('.reader')).toContainText('Visual journey content')
   await audit(page, info, 'final-reader')
   const laterReader = await capturePresentation(page.locator('.reader-body'), info, `${prefix}-late-reader`)
   expectPresentation(laterReader, initial.get('reader'))

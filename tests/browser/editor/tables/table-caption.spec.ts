@@ -1,6 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
 import { saved } from '~/tests/support/browser/document'
-import { setLocale } from '~/tests/support/browser/locale'
 import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
 import { keyboardTableFixture, persistedKeyboardDocument, tableWidgets } from './table-keyboard-helpers'
@@ -26,7 +25,7 @@ async function editCaption(page: Page, table: Locator, value: string): Promise<v
   await saved(page)
 }
 
-for (const width of [1440, 390]) {
+for (const width of [390]) {
   test(`each table has an independent caption below its viewport at ${width}px`, async ({ page }) => {
     const fixture = await keyboardTableFixture(page, width)
     const before = await persistedKeyboardDocument(page, fixture.id)
@@ -70,24 +69,3 @@ for (const width of [1440, 390]) {
     })).toHaveCount(0)
   })
 }
-
-test('Chinese caption controls focus the input and close on blur or Escape', async ({ page }, info) => {
-  await keyboardTableFixture(page, 1440)
-  await setLocale(page, 'zh')
-  const tables = page.getByLabel('正文', { exact: true }).locator('table')
-  const caption = tableWidgets(tables.first()).locator('.editor-table-caption')
-  await caption.getByRole('button', { name: '添加标题', exact: true }).click()
-  const input = caption.getByRole('textbox', { name: '表格标题', exact: true })
-  await expect(input).toBeFocused()
-  await expect(input).toHaveAttribute('placeholder', '填写这个表格的标题')
-  await input.fill('表一标题')
-  await input.press('Escape')
-  const button = caption.getByRole('button', { name: '编辑表格标题：表一标题', exact: true })
-  await expect(button).toBeFocused()
-  await button.click()
-  await input.fill('修改后的标题')
-  await tables.nth(1).getByText('Second First cell', { exact: true }).click()
-  await expect(caption.getByRole('textbox')).toHaveCount(0)
-  await expect(caption.getByRole('button', { name: '编辑表格标题：修改后的标题', exact: true })).toBeVisible()
-  await page.screenshot({ path: info.outputPath('table-caption-zh.png'), fullPage: true })
-})

@@ -1,79 +1,14 @@
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
-import { moveMouseDrag, startMouseDrag, touchPoint } from './table-drag-helpers'
+import { touchPoint } from './table-drag-helpers'
 import {
   bounds,
   documentTable,
   persistedTable,
-  revealTable,
   tableDocument,
   tableMenu,
   text,
-  undoTable,
 } from './table-overlay-helpers'
-
-for (const orientation of ['row', 'column'] as const) {
-  test(`desktop ${orientation} drag saves only on drop, undoes once and reloads`, async ({ page }, info) => {
-    const acknowledgement = await writeDocument(page, tableDocument(3, 3, 120))
-    const table = await revealTable(page)
-    const before = await persistedTable(page, acknowledgement.documentId)
-    const original = before.rows.map(row => row.cells.map(text))
-    const box = await bounds(table)
-    const start = await startMouseDrag(page, orientation)
-    const end = orientation === 'row'
-      ? { x: start.x, y: box.y + box.height - 1 }
-      : { x: box.x + box.width - 1, y: start.y }
-    await moveMouseDrag(page, end)
-    await expect(page.locator('[data-table-drag-preview]')).toHaveAttribute('data-table-drop-boundary', '3')
-    expect((await persistedTable(page, acknowledgement.documentId)).rows.map(row => row.cells.map(text)))
-      .toEqual(original)
-    await page.screenshot({ path: info.outputPath(`table-drag-${orientation}.png`) })
-    await page.mouse.up()
-    await expect(page.locator('[data-table-drag-preview]')).toHaveCount(0)
-    await saved(page)
-    const moved = await persistedTable(page, acknowledgement.documentId)
-    const expected = orientation === 'row'
-      ? [
-          original[1],
-          original[2],
-          original[0],
-        ]
-      : original.map(row => [
-          row[1],
-          row[2],
-          row[0],
-        ])
-    expect(moved.rows.map(row => row.cells.map(text))).toEqual(expected)
-    expect(moved.columnWidths).toEqual(before.columnWidths)
-    expect((await undoTable(page, acknowledgement.documentId)).rows.map(row => row.cells.map(text))).toEqual(original)
-    await page.getByRole('button', { name: 'Redo', exact: true }).click()
-    await saved(page)
-    await page.reload()
-    await expect(documentTable(page)).toBeVisible()
-    const reloaded = await persistedTable(page, acknowledgement.documentId)
-    expect(reloaded.rows.map(row => row.cells.map(text))).toEqual(expected)
-  })
-}
-
-test('Escape and releasing outside cancel without adding history', async ({ page }) => {
-  const acknowledgement = await writeDocument(page, tableDocument(3, 3, 120))
-  const table = await revealTable(page)
-  const before = await persistedTable(page, acknowledgement.documentId)
-  const box = await bounds(table)
-  const undoDisabled = await page.getByRole('button', { name: 'Undo', exact: true }).isDisabled()
-  for (const cancel of ['escape', 'outside']) {
-    const start = await startMouseDrag(page, 'column')
-    await moveMouseDrag(page, { x: box.x + box.width - 1, y: start.y })
-    if (cancel === 'escape') {
-      await page.keyboard.press('Escape')
-    }
-    else { await page.mouse.move(box.x + box.width + 100, box.y + box.height + 100) }
-    await page.mouse.up()
-    await expect(page.locator('[data-table-drag-preview]')).toHaveCount(0)
-    expect(await persistedTable(page, acknowledgement.documentId)).toEqual(before)
-    expect(await page.getByRole('button', { name: 'Undo', exact: true }).isDisabled()).toBe(undoDisabled)
-  }
-})
 
 test('menu offers keyboard row and column moves', async ({ page }) => {
   const acknowledgement = await writeDocument(page, tableDocument(3, 3, 120))

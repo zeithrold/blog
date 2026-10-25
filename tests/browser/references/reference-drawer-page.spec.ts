@@ -1,61 +1,9 @@
 import process from 'node:process'
-import { emptyDocument } from '@/content/document'
 import { acknowledgementSchema } from '@/contracts/documents'
 import { sessionSchema } from '@/contracts/session'
-import { assertAccessible } from '~/tests/support/browser/accessibility'
-import { writeDocument } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
 import { expectAuthors, replaceAuthors } from './reference-author-helpers'
-
-for (const width of [320, 390]) {
-  test(`reference pages share one drawer and restore settings at ${width}px`, async ({ page }, info) => {
-    await page.setViewportSize({ width, height: 740 })
-    await writeDocument(page, emptyDocument())
-    await settingsTab(page, 'Content')
-    const drawer = page.locator('.inspector-drawer')
-    await drawer.getByRole('button', { name: /^References \(/ }).click()
-    const add = drawer.getByRole('button', { name: 'Add reference', exact: true })
-    await add.scrollIntoViewIfNeeded()
-    const viewport = drawer.locator('.inspector-scroll .ztd-scroll-viewport')
-    const position = await viewport.evaluate(element => element.scrollTop)
-    await add.click()
-    const editor = page.getByRole('dialog', { name: 'Add reference', exact: true })
-    await expect(page.getByRole('dialog')).toHaveCount(1)
-    await expect(page.locator('.reference-dialog')).toHaveCount(0)
-    await expect(editor.getByLabel('DOI', { exact: true })).toBeFocused()
-    await expect(editor.getByRole('button', { name: 'Save', exact: true })).toBeInViewport()
-    await editor.getByRole('button', { name: 'Back to document settings', exact: true }).click()
-    await expect(drawer).toHaveAccessibleName('Document settings')
-    await expect(add).toBeFocused()
-    await expect.poll(async () => await viewport.evaluate(element => element.scrollTop)).toBeCloseTo(position, 0)
-    await add.click()
-    await page.getByLabel('Reference title', { exact: true }).fill('Unsaved reference')
-    await replaceAuthors(editor, ['Author one', 'Author two'])
-    await editor.getByRole('button', { name: 'Back to document settings', exact: true }).click()
-    await expect(editor.getByRole('alert')).toContainText('Discard reference changes?')
-    await expect(editor.getByRole('button', { name: 'Keep editing', exact: true })).toBeFocused()
-    await expect(page.getByRole('dialog')).toHaveCount(1)
-    await assertAccessible(page, info, { label: `reference-discard-${width}` })
-    await editor.getByRole('button', { name: 'Keep editing', exact: true }).click()
-    await expect(editor.getByLabel('Reference title', { exact: true })).toHaveValue('Unsaved reference')
-    await expect(editor.getByLabel('Reference title', { exact: true })).toBeFocused()
-    await expectAuthors(editor, ['Author one', 'Author two'])
-    await page.keyboard.press('Escape')
-    await expect(editor.getByRole('alert')).toBeVisible()
-    await editor.getByRole('button', { name: 'Discard changes', exact: true }).click()
-    await expect(drawer).toHaveAccessibleName('Document settings')
-    await expect(add).toBeFocused()
-    await expect.poll(async () => await viewport.evaluate(element => element.scrollTop)).toBeCloseTo(position, 0)
-    await add.click()
-    await expect(editor.getByLabel('Reference title', { exact: true })).toHaveValue('')
-    await expectAuthors(editor, [])
-    await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
-    await drawer.getByRole('button', { name: 'Close', exact: true }).click()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    await expect(page.getByLabel('Document body', { exact: true })).toBeVisible()
-  })
-}
 
 test('touch dragging sorts authors without dismissing the drawer', async ({ browser, browserName }) => {
   test.skip(browserName !== 'chromium', 'Physical touch dragging uses Chromium CDP.')

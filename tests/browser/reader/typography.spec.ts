@@ -151,14 +151,3 @@ for (const width of [
     expect(errors).toEqual([])
   })
 }
-
-for (const language of ['text', 'legacy-lang']) {
-  test(`reader preserves unhighlighted ${language} source as literal text`, async ({ page }) => {
-    await writeDocument(page, documentFixture(1440, language))
-    const preview = await draftPreview(page)
-    const pre = preview.locator(`pre[data-language="${language}"]`)
-    expect(await pre.locator('code').textContent()).toBe(source)
-    await expect(pre.locator('.reader-code-token, img, script')).toHaveCount(0)
-    await readerTypography(preview.locator('.reader-body'))
-  })
-}

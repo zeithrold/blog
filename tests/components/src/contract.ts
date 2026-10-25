@@ -2,6 +2,13 @@ export const COMPONENT_SURFACES = [
   'documents',
   'catalog-tag',
   'catalog-series',
+  'admin-navigation',
+  'admin-controls',
+  'media-gallery',
+  'reader-content',
+  'editor-math',
+  'history-page',
+  'editor-workspace',
 ] as const
 export const COMPONENT_LOCALES = ['en', 'zh'] as const
 export const COMPONENT_MODES = ['light', 'dark'] as const

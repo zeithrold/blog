@@ -4,7 +4,6 @@ import { tableDocument } from '~/tests/browser/editor/tables/table-overlay-helpe
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
-import { expectAuthors } from './reference-author-helpers'
 
 for (const structured of [false, true]) {
   test(`table citation guards update after editing (${structured ? 'structured' : 'array'})`, async ({ page }) => {
@@ -53,64 +52,6 @@ for (const structured of [false, true]) {
     expect(current.document.references).toEqual([])
   })
 }
-
-for (const startWidth of [1024, 1366]) {
-  test(`reference and author drafts survive resizing from ${startWidth}px`, async ({ page }, info) => {
-    await page.setViewportSize({ width: startWidth, height: 900 })
-    const ack = await writeDocument(page, emptyDocument())
-    await settingsTab(page, 'Content')
-    await page.getByRole('button', { name: /^References \(/ }).click()
-    await page.getByRole('button', { name: 'Add reference', exact: true }).click()
-    const editor = page.getByRole('dialog', { name: 'Add reference', exact: true })
-    await editor.getByLabel('Reference title', { exact: true }).fill('A reference kept through rotation')
-    await editor.getByRole('button', { name: 'Add author', exact: true }).click()
-    const author = page.getByRole('dialog', { name: 'Add author', exact: true })
-    await author.getByLabel('Author name', { exact: true }).fill('Author kept through rotation')
-    for (const width of [
-      startWidth === 1024 ? 1366 : 320,
-      startWidth,
-    ]) {
-      await page.setViewportSize({ width, height: 900 })
-      await expect(author.getByLabel('Author name', { exact: true })).toHaveValue('Author kept through rotation')
-      await expect(author.getByRole('button', { name: 'Save', exact: true })).toBeInViewport()
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-      await page.screenshot({ path: info.outputPath(`reference-resize-${startWidth}-${width}.png`) })
-    }
-    await author.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(editor.getByLabel('Reference title', { exact: true })).toHaveValue('A reference kept through rotation')
-    await expectAuthors(editor, ['Author kept through rotation'])
-    await page.setViewportSize({ width: startWidth === 1024 ? 1366 : 320, height: 900 })
-    await editor.getByRole('button', { name: 'Save', exact: true }).click()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    if (startWidth === 1024) {
-      await expect(page.locator('.document-settings')).toBeVisible()
-    }
-    else {
-      await expect(page.getByRole('button', { name: 'Document settings', exact: true })).toBeVisible()
-    }
-    await saved(page)
-    const response = await page.request.get(`/api/admin/documents/${ack.documentId}`)
-    const current = openDocumentSchema.parse(await response.json())
-    expect(current.document.references).toMatchObject([
-      {
-        title: 'A reference kept through rotation',
-        authors: ['Author kept through rotation'],
-      },
-    ])
-  })
-}
-
-test('a settings drawer closed by resizing does not reopen on returning to mobile', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 900 })
-  await writeDocument(page, emptyDocument())
-  await settingsTab(page, 'Content')
-  await expect(page.getByRole('dialog', { name: 'Document settings', exact: true })).toBeVisible()
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await expect(page.locator('.document-settings')).toBeVisible()
-  await page.setViewportSize({ width: 390, height: 900 })
-  await expect(page.getByRole('button', { name: 'Document settings', exact: true })).toBeVisible()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-})
 
 test('publication keeps reference mutations disabled until its response arrives', async ({ page }) => {
   const document = emptyDocument()

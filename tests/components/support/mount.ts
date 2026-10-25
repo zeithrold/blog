@@ -9,6 +9,11 @@ export type MountSurfaceOptions = {
   surface: ComponentSurface
   locale?: ComponentLocale
   mode?: ComponentMode
+  /**
+   * Document path the surface is mounted on. Shell chrome reads the real
+   * pathname, so an admin surface mounts at the admin route it renders.
+   */
+  route?: string
 }
 
 const mountTimeout = 15000
@@ -27,7 +32,7 @@ export async function mountSurface(page: Page, options: MountSurfaceOptions): Pr
   // Reject unsupported values before navigating, so a typo fails immediately
   // instead of waiting for a harness timeout.
   const normalized = readComponentOptions(query)
-  await page.goto(`/?${query.toString()}`)
+  await page.goto(`${options.route ?? '/'}?${query.toString()}`)
   await page.waitForFunction(
     () => {
       const state = document.documentElement.dataset.componentHarness

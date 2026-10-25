@@ -1,7 +1,4 @@
 import { openDocumentSchema } from '@/contracts/documents'
-import { assertAccessible } from '~/tests/support/browser/accessibility'
-import { saved } from '~/tests/support/browser/document'
-import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
 import { expectCaptionTarget, labels, locateTable, publicationTables, saveCaption } from './publication-locate-helpers'
 
@@ -63,59 +60,4 @@ for (const width of [1440, 320]) {
 
 async function savedInLocale(page: import('@playwright/test').Page, name: string): Promise<void> {
   await expect(page.getByRole('status').filter({ hasText: new RegExp(`^${name}$`) })).toBeVisible({ timeout: 15000 })
-}
-
-for (const width of [1440, 320]) {
-  test(`failed autosave retains publication reasons and typing focus at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 })
-    await publicationTables(page)
-    await page.getByRole('button', { name: 'Publish', exact: true }).click()
-    const notice = page.getByRole('region', { name: 'Publication checks failed', exact: true })
-    await expect(locateTable(notice, 2)).toBeVisible()
-    let failed = false
-    await page.route('**/revisions', async (route) => {
-      if (route.request().method() === 'PUT' && !failed) {
-        failed = true
-        await route.fulfill({ status: 503, json: { code: 'CONNECTION_FAILED' } })
-      }
-      else { await route.continue() }
-    })
-    const title = page.getByRole('textbox', { name: 'Title', exact: true })
-    await title.fill('Typing through a temporary save failure')
-    const saveError = page.getByRole('region', { name: 'Could not complete this action', exact: true })
-    await expect(saveError).toContainText('Connection failed.')
-    await expect(locateTable(notice, 2)).toBeVisible()
-    await expect(title).toBeFocused()
-    await savedInLocale(page, 'Saved')
-    await expect(saveError).toHaveCount(0)
-    await expect(locateTable(notice, 2)).toBeVisible()
-    await expect(title).toBeFocused()
-  })
-}
-
-for (const width of [1440, 320]) {
-  test(`publication summary cycles current table order and returns focus at ${width}px`, async ({ page }, info) => {
-    await page.setViewportSize({ width, height: 900 })
-    const original = await publicationTables(page)
-    const summary = page.locator('.publication-summary')
-    await settingsTab(page, 'Publication')
-    await locateTable(summary, 2).click()
-    await expectCaptionTarget(page, original.first)
-    if (width === 320) {
-      await expect(page.getByRole('dialog', { name: 'Document settings', exact: true })).toHaveCount(0)
-    }
-    await settingsTab(page, 'Publication')
-    await locateTable(summary, 2).click()
-    await expectCaptionTarget(page, original.second)
-    // Move the second table above the first. The incremental node index keeps
-    // its old insertion order, so the next lookup must use the actual document.
-    await page.getByRole('button', { name: 'Move block up', exact: true }).click()
-    await saved(page)
-    await settingsTab(page, 'Publication')
-    await locateTable(summary, 2).click()
-    await expectCaptionTarget(page, original.first)
-    await settingsTab(page, 'Publication')
-    await assertAccessible(page, info, { label: `publication-locate-${width}` })
-    await page.screenshot({ path: info.outputPath(`publication-locate-${width}.png`) })
-  })
 }

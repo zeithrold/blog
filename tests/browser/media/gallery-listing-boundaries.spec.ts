@@ -1,76 +1,14 @@
-import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { expect, test } from '~/tests/support/browser/test'
+import { galleryReady } from './media-gallery-helpers'
 
-async function selectFile(page: Page): Promise<string> {
-  await page.goto('/__fixture/login')
-  await page.goto('/admin/media')
-  await page.getByRole('button', { name: 'Upload media', exact: true }).click()
-  const name = `listing-race-${crypto.randomUUID()}.txt`
-  await page.getByLabel('Media file', { exact: true }).setInputFiles({
-    name,
-    mimeType: 'text/plain',
-    buffer: Buffer.from('Confirmed upload'),
-  })
-  return name
-}
-
-test('a delayed gallery refresh keeps an upload completed while it was reading', async ({ page }) => {
-  const name = await selectFile(page)
-  const dialog = page.getByRole('dialog', { name: 'Upload media', exact: true })
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
-  let release = (): void => {}
-  const held = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  let reading = false
-  await page.route('**/api/admin/assets', async (route) => {
-    if (route.request().method() === 'GET') {
-      const response = await route.fetch()
-      reading = true
-      await held
-      await route.fulfill({ response })
-    }
-    else {
-      await route.continue()
-    }
-  })
-  try {
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
-    await expect.poll(() => reading).toBe(true)
-    await page.getByRole('button', { name: 'Upload media', exact: true }).click()
-    await dialog.getByRole('button', { name: 'Upload files', exact: true }).click()
-    await expect(dialog.getByRole('listitem').filter({ hasText: name })).toHaveAttribute('data-state', 'complete')
-    release()
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click()
-    const gallery = page.getByRole('list', { name: 'Gallery', exact: true })
-    await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled()
-    await expect(gallery.getByRole('heading', { name, exact: true })).toBeVisible()
-  }
-  finally { release() }
-})
-
-test('a later authoritative gallery refresh removes a card absent from the server listing', async ({ page }) => {
-  const name = await selectFile(page)
-  const dialog = page.getByRole('dialog', { name: 'Upload media', exact: true })
-  await dialog.getByRole('button', { name: 'Upload files', exact: true }).click()
-  await expect(dialog.getByRole('listitem').filter({ hasText: name })).toHaveAttribute('data-state', 'complete')
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click()
-  const gallery = page.getByRole('list', { name: 'Gallery', exact: true })
-  await expect(gallery.getByRole('heading', { name, exact: true })).toBeVisible()
-  await page.route('**/api/admin/assets', async (route) => {
-    await route.fulfill({ json: { items: [], nextCursor: null } })
-  })
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click()
-  await expect(page.getByText('No media yet', { exact: true })).toBeVisible()
-  await expect(gallery.getByRole('heading', { name, exact: true })).toHaveCount(0)
-})
-
+// The listing/read-state cases moved to tests/components/specs/media-listing.spec.ts.
 test('Chinese mobile gallery explains retention and restores files after navigation', async ({ page }, info) => {
   await page.setViewportSize({ width: 320, height: 740 })
   await page.goto('/__fixture/login')
   await page.goto('/admin/media')
+  await galleryReady(page)
   await page.getByRole('button', { name: 'Appearance', exact: true }).click()
   await page.getByRole('menuitemradio', { name: 'Dark', exact: true }).click()
   await page.getByRole('combobox', { name: 'Language', exact: true }).click()

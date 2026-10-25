@@ -5,7 +5,8 @@ import { controlInventory } from '~/tests/support/browser/control-inventory'
 import { nativeCaseKey } from './discovery'
 
 // Transitional only: these two surfaces now have rule-level, cross-layer proof.
-// Other surfaces retain their previous strict browser obligations until migrated.
+// Other controls can move their evidence links to real-component suites as each
+// local replacement passes. Both native browser plans remain complete obligations.
 const migratedSurfaces = new Set(['documents', 'catalog'])
 export const migratedControls = controlInventory.filter(control => migratedSurfaces.has(control.surface))
 export const unmigratedControls = controlInventory.filter(control => !migratedSurfaces.has(control.surface))
@@ -32,7 +33,8 @@ export function assessLegacyControls(
   context: { runId: string, source: SourceIdentity },
   expected: readonly BrowserReference[],
 ): { passed: boolean, total: number, missing: string[], unexplainedSkips: string[], planIssues: string[] } {
-  const current = reports.filter(report => report.layer === 'e2e' && report.runId === context.runId
+  const current = reports.filter(report => (report.layer === 'e2e' || report.layer === 'component')
+    && report.runId === context.runId
     && report.source.revision === context.source.revision && report.source.fingerprint === context.source.fingerprint)
   const results = browserCases(current)
   const planIssues = [

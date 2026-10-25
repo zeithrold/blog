@@ -25,6 +25,8 @@ export function controls(
     ],
     states,
     behavior,
-    evidence: evidence.map(file => `tests/browser/${file}.spec.ts`),
+    // Existing short names select E2E; explicit paths allow a migrated control
+    // to point directly at its real-component replacement instead.
+    evidence: evidence.map(file => file.startsWith('tests/') ? file : `tests/browser/${file}.spec.ts`),
   }))
 }

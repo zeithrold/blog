@@ -54,7 +54,8 @@ export async function resizeBoundaryColumn(page: Page, offset: number): Promise<
   return table
 }
 
-async function columnWidth(table: Locator, value: number): Promise<void> {
+/** The rendered width of the first column, as the native column element carries it. */
+export async function columnWidth(table: Locator, value: number): Promise<void> {
   const column = table.locator('col').first()
   await expect.poll(async () => await column.evaluate(element => element.style.width)).toBe(`${value}px`)
 }

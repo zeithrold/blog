@@ -15,7 +15,12 @@ export type TableCaret = {
   collapsed: boolean
 }
 
-function twoTableDocument(merged: boolean): Document {
+/**
+ * The two-table body the keyboard and caption cases open. Exported so the
+ * component cases can seed the same native document the E2E fixture stores,
+ * instead of growing a second table formatter.
+ */
+export function keyboardTableDocument(merged: boolean): Document {
   const document = merged ? mergedTableDocument('column') : widthBoundaryDocument()
   document.meta.title = 'Pure keyboard table controls'
   const first = document.blocks[0]
@@ -48,7 +53,7 @@ export async function keyboardTableFixture(
   merged = false,
 ): Promise<{ id: string, body: Locator, first: Locator, second: Locator }> {
   await page.setViewportSize({ width, height: 1000 })
-  const acknowledgement = await writeDocument(page, twoTableDocument(merged))
+  const acknowledgement = await writeDocument(page, keyboardTableDocument(merged))
   const body = page.getByLabel('Document body', { exact: true })
   const tables = documentTable(page)
   await expect(tables).toHaveCount(2)

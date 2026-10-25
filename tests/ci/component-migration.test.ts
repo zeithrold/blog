@@ -6,6 +6,7 @@ import { test as nodeTest } from 'node:test'
 import { z } from 'zod'
 import { componentMigrations } from '~/tests/contracts/component-migrations'
 import { documentsCatalogContracts, retainedCaseKeys, retiredCaseKeys } from '~/tests/contracts/registry'
+import { surfaceMigrations } from '~/tests/contracts/surface-migrations'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 type Suite = {
@@ -73,6 +74,8 @@ const configurations: Record<Layer, { configFile: string, args: string[] }> = {
 }
 
 const browsers = ['chromium', 'webkit'] as const
+const retainedSurfaceKeys = new Set(surfaceMigrations.flatMap(migration =>
+  migration.retained.flatMap(group => group.cases)))
 const componentRoot = 'tests/components/'
 const browserRoot = 'tests/browser/'
 const plans = new Map<Layer, PlannedCase[]>()
@@ -210,6 +213,24 @@ nodeTest('every declared component reference is a real component case in both br
   assert.deepEqual(missing, [], 'Component evidence names exact cases, never a file that exists')
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
 
+nodeTest('locally replaced surfaces retire old E2E and retain exact component cases', () => {
+  const e2e = discover('e2e')
+  const components = discover('components')
+  for (const migration of surfaceMigrations) {
+    for (const project of browsers) {
+      for (const key of migration.legacy.filter(entry => !retainedSurfaceKeys.has(entry))) {
+        equal(count(e2e, caseKeyParts(key), project), 0, `Retired case still runs: ${project} › ${key}`)
+      }
+      for (const replacement of migration.component) {
+        const matching = components.filter(entry =>
+          JSON.stringify(entry.describe) === JSON.stringify(replacement.describe ?? []))
+        const found = count(matching, caseKeyParts(replacement.case), project)
+        equal(found, 1, `Missing replacement: ${project} › ${replacement.case}`)
+      }
+    }
+  }
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
+
 nodeTest('component and E2E proof never share a path', () => {
   const components = new Set(discover('components').map(entry => entry.file))
   const browser = new Set(discover('e2e').map(entry => entry.file))
@@ -243,4 +264,16 @@ nodeTest('component and E2E proof never share a path', () => {
     }
   }
   assert.deepEqual(issues, [], 'The two harnesses must stay separate')
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
+
+nodeTest('retained surface boundaries still exist in both E2E projects', () => {
+  const e2e = discover('e2e')
+  for (const key of retainedSurfaceKeys) {
+    for (const project of browsers) {
+      const found = key.includes(' :: ')
+        ? count(e2e, caseKeyParts(key), project)
+        : e2e.filter(entry => entry.file === key && entry.project === project).length
+      assert.ok(found > 0, `Missing retained boundary: ${project} › ${key}`)
+    }
+  }
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))

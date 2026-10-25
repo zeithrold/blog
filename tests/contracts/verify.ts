@@ -9,7 +9,7 @@ import { assessContracts } from './assess'
 import { documentsCatalogControlMap } from './control-map'
 import { discoverBrowserCases } from './discovery'
 import { assessLegacyControls, migratedControls } from './legacy'
-import { documentsCatalogContracts } from './registry'
+import { documentsCatalogContracts, migrationServerContracts } from './registry'
 import { layerEvidenceSchema } from './schema'
 
 async function readReports(): Promise<unknown[]> {
@@ -33,7 +33,10 @@ function legacyAssessment(reports: unknown[], scope: string, run: ReturnType<typ
     ? assessLegacyControls(
         reports.map(report => layerEvidenceSchema.parse(report)),
         { runId: run.id, source: run },
-        discoverBrowserCases(),
+        [
+          ...discoverBrowserCases(),
+          ...discoverBrowserCases('playwright.components.config.ts'),
+        ],
       )
     : null
 }
@@ -64,14 +67,17 @@ async function verify(): Promise<void> {
   const run = requireCurrentRun()
   const source = sourceIdentity()
   const reports = await readReports()
-  const assessment = assessContracts(documentsCatalogContracts, reports, run.id, source)
+  const contracts = scope === 'all'
+    ? documentsCatalogContracts.concat(migrationServerContracts)
+    : documentsCatalogContracts
+  const assessment = assessContracts(contracts, reports, run.id, source)
   const controlIssues = assessControlMap(migratedControls, documentsCatalogControlMap, documentsCatalogContracts)
   const legacy = legacyAssessment(reports, scope, run)
   const result = {
     scope,
     runId: run.id,
     source,
-    contracts: documentsCatalogContracts.length,
+    contracts: contracts.length,
     ...assessment,
     passed: assessment.passed && controlIssues.length === 0 && legacyPassed(legacy),
     controlIssues,
@@ -83,7 +89,7 @@ async function verify(): Promise<void> {
     const count = legacy?.missing.length ?? 0
     throw new Error(`Contract proof incomplete: ${result.issues.length} rule issue(s), ${count} legacy controls`)
   }
-  console.warn(`Documents/catalog contracts: ${result.contracts} proved by exact native case results`)
+  console.warn(`Verification contracts (${scope}): ${result.contracts} proved by exact native case results`)
 }
 
 verify().catch((error: unknown) => {

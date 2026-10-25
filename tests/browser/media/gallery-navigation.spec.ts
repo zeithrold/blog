@@ -1,16 +1,8 @@
-import type { Page } from '@playwright/test'
 import { Buffer } from 'node:buffer'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { expect, test } from '~/tests/support/browser/test'
+import { enterGallery } from './media-gallery-helpers'
 import { interruptTransfer } from './media-transfer-helpers'
-
-async function enterGallery(page: Page): Promise<void> {
-  await page.goto('/__fixture/login')
-  await page.goto('/admin/tags')
-  await page.getByRole('link', { name: 'Media library', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Upload media', exact: true }).click()
-}
 
 for (const width of [1440, 320]) {
   test(`gallery retains queued files after navigating away and back at ${width}px`, async ({ page }, info) => {

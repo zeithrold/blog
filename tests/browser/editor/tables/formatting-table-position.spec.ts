@@ -3,7 +3,7 @@ import { withinViewport } from '~/tests/support/browser/layout'
 import { expect, test } from '~/tests/support/browser/test'
 import { persistedTable, tableDocument } from './table-overlay-helpers'
 
-for (const width of [390, 1440]) {
+for (const width of [390]) {
   test(`table formatting preserves its range below the selection at ${width}px`, async ({ page }, info) => {
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))

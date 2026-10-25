@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { envelope } from '@/content/envelope'
 import { normalizeDoi } from '@/content/reference-metadata'
 import { fillEmptyFields } from '@/features/editor/references/reference-form'
 import { Problem } from '@/server/http/problem'
@@ -145,6 +146,36 @@ test('partial metadata stays usable and lookup preserves edits made while a requ
     doi,
   }
   deepEqual(fillEmptyFields(current, incoming), { ...current, year: '2026' })
+}).catch((error: unknown) => {
+  assert.fail(error instanceof Error ? error.message : 'Test failed')
+})
+
+// The form submits a draft through this schema, so the year rule it enforces is
+// the one thing a browser case cannot prove on its own: a fractional value the
+// input accepts is still refused, and only a whole year between 1 and 9999 is
+// stored.
+test('the reference envelope stores a whole year and refuses a fractional or out-of-range one', () => {
+  const reference = {
+    id: crypto.randomUUID(),
+    title: 'A reference',
+    authors: ['Author'],
+    year: 2026,
+    url: '',
+    doi: '',
+  }
+  equal(envelope.shape.references.element.safeParse(reference).success, true)
+  equal(envelope.shape.references.element.safeParse({ ...reference, year: null }).success, true)
+  for (const year of [
+    2026.5,
+    0,
+    10000,
+  ]) {
+    const result = envelope.shape.references.element.safeParse({ ...reference, year })
+    equal(result.success, false, `year ${year} must be refused`)
+    deepEqual(result.success ? [] : result.error.issues.map(issue => issue.path), [
+      ['year'],
+    ])
+  }
 }).catch((error: unknown) => {
   assert.fail(error instanceof Error ? error.message : 'Test failed')
 })

@@ -5,7 +5,13 @@ import { editorControls } from './editor-control-inventory'
 // Reviewed semantic contracts. ALL applicable linked tests must pass in BOTH browsers.
 // Repeated list items share their control contract; boundary/identity cases live in the linked suites.
 export const controlInventory: ControlContract[] = [
-  ...controls('history-selection', ['history/history', 'history/history-boundaries'], [
+  ...controls('history-selection', [
+    'history/history',
+    'tests/components/specs/history-boundaries.spec.ts',
+    'tests/components/specs/history-conflict.spec.ts',
+    'tests/components/specs/history-reconciliation.spec.ts',
+    'tests/components/specs/history-requirements.spec.ts',
+  ], [
     'loaded',
     'selected',
     'refreshed',
@@ -15,8 +21,8 @@ export const controlInventory: ControlContract[] = [
     ['Selected revision', 'Choose a revision independently of the comparison baseline.'],
   ]),
   ...controls('shell', [
-    'admin/appearance',
-    'admin/admin-navigation-motion',
+    'tests/components/specs/admin-editor-state.spec.ts',
+    'tests/components/specs/admin-navigation.spec.ts',
     'journeys/presentation',
   ], [
     'initial',
@@ -91,11 +97,12 @@ export const controlInventory: ControlContract[] = [
   ...editorControls,
   ...controls('publication', [
     'editor/editor',
-    'publication/publication-preflight',
     'publication/publication-locate',
     'publication/publication-save-errors',
     'publication/schedule-boundaries',
-    'publication/schedule-timezone',
+    'tests/components/specs/editor-workspace.spec.ts',
+    'tests/components/specs/editor-preflight.spec.ts',
+    'tests/components/specs/editor-locate.spec.ts',
     'journeys/publication',
     'journeys/lifecycle',
   ], [
@@ -124,7 +131,10 @@ export const controlInventory: ControlContract[] = [
   ]),
   ...controls('history', [
     'history/history',
-    'history/history-boundaries',
+    'tests/components/specs/history-boundaries.spec.ts',
+    'tests/components/specs/history-conflict.spec.ts',
+    'tests/components/specs/history-reconciliation.spec.ts',
+    'tests/components/specs/history-requirements.spec.ts',
     'history/preview-history-a11y',
     'history/conflict',
     'editor/editor-safety',

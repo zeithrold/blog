@@ -1,7 +1,4 @@
-import type { Page } from '@playwright/test'
 import { openDocumentSchema } from '@/contracts/documents'
-import { historySchema } from '@/contracts/history'
-import { mutate } from '~/tests/support/browser/api'
 import { expect, test } from '~/tests/support/browser/test'
 import { historyFixture } from './history-helpers'
 
@@ -44,42 +41,3 @@ test('history compares stable blocks, restores a new head and publishes a select
   expect((await page.request.get(`/posts/${slug}`)).status()).toBe(404)
   expect(await (await page.request.get(`/posts/${slug}-updated`)).text()).toContain('Latest draft body')
 })
-test('history CAS conflict refreshes the baseline and preserves the selected revision for explicit retry', async ({
-  page,
-}) => {
-  const { path, first, latest } = await historyFixture(page)
-  await page.getByRole('button', { name: /^Revision 2 / }).click()
-  const external = openDocumentSchema.parse(await (await page.request.get(path)).json())
-  external.document.meta.title = 'Another tab changed the draft'
-  const saved = await mutate(page, `${path}/revisions`, {
-    expectedVersion: latest.version,
-    baseRevisionId: latest.headRevisionId,
-    reason: 'manual',
-    document: external.document,
-  }, 'PUT')
-  await page.getByRole('button', { name: 'Restore as new draft', exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true }).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Another tab changed this document' })).toBeVisible()
-  await expect(page.locator('.history-selection')).toHaveAttribute('data-selected-revision', first.headRevisionId)
-  await verifyBaseline(page, path, saved.headRevisionId)
-  const current = openDocumentSchema.parse(await (await page.request.get(path)).json())
-  expect(current.headRevisionId).toBe(saved.headRevisionId)
-  expect(current.liveRevisionId).toBe(first.headRevisionId)
-})
-
-async function verifyBaseline(page: Page, path: string, revisionId: string): Promise<void> {
-  const history = historySchema.parse(await (await page.request.get(`${path}/revisions`)).json())
-  const revision = history.items.find(item => item.revisionId === revisionId)
-  expect(revision).toBeDefined()
-  if (revision === undefined) {
-    throw new Error('Expected baseline revision in saved history')
-  }
-  const selection = page.getByRole('combobox', { name: 'Compare against', exact: true })
-  await expect(selection).toContainText(`Revision ${revision.sequence}`)
-  await expect(selection).toContainText('Current draft')
-  await selection.click()
-  await expect(page.getByRole('option', { name: new RegExp(`^Revision ${revision.sequence} .*Current draft$`) }))
-    .toHaveAttribute('aria-selected', 'true')
-  await page.keyboard.press('Escape')
-  await expect(selection).toBeFocused()
-}

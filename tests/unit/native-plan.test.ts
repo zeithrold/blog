@@ -2,6 +2,7 @@ import type { BrowserReference, LayerEvidence } from '~/tests/contracts/types'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { assessNativePlan } from '~/tests/contracts/legacy'
+import { controls } from '~/tests/support/browser/control-contract'
 
 const plan: BrowserReference[] = [
   { file: 'tests/browser/example.spec.ts', title: 'required', projects: ['chromium', 'webkit'] },
@@ -41,4 +42,23 @@ test('native discovery requires every exact identity once, not an arbitrary pass
     },
   ], plan).length > 0)
   assert.ok(assessNativePlan([report], []).length > 0)
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
+test('component replacements remain complete native obligations alongside retained E2E', () => {
+  const file = 'tests/components/specs/example.spec.ts'
+  const component: LayerEvidence = {
+    ...report,
+    layer: 'component',
+    cases: report.cases.map(entry => ({ ...entry, file })),
+  }
+  const expected = [
+    ...plan,
+    ...plan.map(reference => ({ ...reference, file })),
+  ]
+  assert.deepEqual(assessNativePlan([report, component], expected), [])
+  assert.ok(assessNativePlan([report], expected).length > 0)
+  const [control] = controls('example', [file], ['ready'], [
+    ['button', 'activates'],
+  ])
+  assert.deepEqual(control?.evidence, [file])
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))

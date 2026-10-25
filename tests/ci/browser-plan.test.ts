@@ -66,11 +66,11 @@ function cases(suite: Suite, ancestors: string[] = []): PlannedCase[] {
   ]
   return [
     ...suite.specs.flatMap(spec => spec.tests.map(test => ({
+      // Locations are diagnostic metadata, not identity; moving a declaration
+      // must not change which logical case a shard is obliged to execute.
       id: JSON.stringify([
         test.projectName,
         spec.file,
-        spec.line,
-        spec.column,
         ...titles,
         spec.title,
       ]),

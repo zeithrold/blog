@@ -25,7 +25,6 @@ function heading(title: string, level: number): Block {
 function readerDocument(slug: string): { document: Document, headingId: string } {
   const document = emptyDocument()
   const nestedHeading = heading('Inside nested details', 2)
-  const tableId = crypto.randomUUID()
   document.meta.title = 'Public reader navigation'
   document.meta.slug = `${slug}-${crypto.randomUUID()}`
   document.blocks = [
@@ -68,42 +67,8 @@ function readerDocument(slug: string): { document: Document, headingId: string }
         },
       ],
     },
-    wideTable(tableId),
   ]
-  document.tableAccessibility[tableId] = { caption: 'Keyboard scroll comparison' }
   return { document, headingId: nestedHeading.id }
-}
-
-function wideTable(id: string): Block {
-  return {
-    id,
-    type: 'table',
-    props: { textColor: 'default' },
-    content: {
-      type: 'tableContent',
-      columnWidths: [
-        200,
-        200,
-        200,
-        200,
-        200,
-        200,
-      ],
-      headerRows: 1,
-      rows: [
-        {
-          cells: Array.from({ length: 6 }, (_, index) => [
-            {
-              type: 'text' as const,
-              text: `Comparison-column-${index + 1}-${'x'.repeat(30)}`,
-              styles: {},
-            },
-          ]),
-        },
-      ],
-    },
-    children: [],
-  }
 }
 
 async function publishReader(page: Page, document: Document): Promise<void> {
@@ -124,12 +89,15 @@ test('article contents reveal nested details and continue keyboard reading at th
   const destination = page.locator(`#block-${headingId} h3`)
   await expect(contents.getByRole('link')).toHaveCount(2)
   await expect(page.locator('.reader details[open]')).toHaveCount(0)
-  const newTab = page.context().waitForEvent('page')
+  // The reader must leave a modified click to the browser. Chromium does not open
+  // same-document fragment links in a new tab, so assert the reader stays untouched and
+  // close whatever the browser opened before the rest of the test observes this page.
   await link.click({ modifiers: ['ControlOrMeta'] })
-  const opened = await newTab
-  await opened.waitForLoadState()
   await expect(page.locator('.reader details[open]')).toHaveCount(0)
-  await opened.close()
+  await expect(page).toHaveURL(new RegExp(`/posts/${document.meta.slug}$`))
+  for (const opened of page.context().pages().filter(entry => entry !== page)) {
+    await opened.close()
+  }
   await link.focus()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(new RegExp(`#block-${headingId}$`))
@@ -158,23 +126,4 @@ test('article contents reveal nested details and continue keyboard reading at th
   await page.reload()
   await expect(page.locator('.reader details[open]')).toHaveCount(2)
   await expect(destination).toBeFocused()
-})
-
-test('article table captions name keyboard-scrollable regions without overflowing the mobile page', async ({
-  page,
-}, info) => {
-  const { document: reader } = readerDocument('public-reader-table')
-  await publishReader(page, reader)
-  await page.setViewportSize({ width: 360, height: 800 })
-  const table = page.getByRole('region', { name: 'Keyboard scroll comparison', exact: true })
-  await expect(table.getByRole('table')).toBeVisible()
-  expect(await table.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
-  await table.focus()
-  await expect(table).toBeFocused()
-  await page.keyboard.press('ArrowRight')
-  await expect.poll(async () => await table.evaluate(element => element.scrollLeft)).toBeGreaterThan(0)
-  await page.keyboard.press('ArrowLeft')
-  await expect.poll(async () => await table.evaluate(element => element.scrollLeft)).toBe(0)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  await page.screenshot({ path: info.outputPath('public-reader-mobile.png') })
 })

@@ -25,7 +25,6 @@ export default defineConfig({
   ...artifacts,
   reporter: [
     ...reporters,
-    ['./tests/support/browser/control-reporter.ts'],
     [
       './tests/support/verification/browser-reporter.ts',
       { layer: 'e2e' },
