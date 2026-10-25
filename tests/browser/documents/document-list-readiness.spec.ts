@@ -1,5 +1,5 @@
 import { emptyDocument } from '@/content/document'
-import { documentListReady, writeDocument } from '~/tests/support/browser/document'
+import { documentListReady, seedDocument } from '~/tests/support/browser/document'
 import { trackPrefetchBatches } from '~/tests/support/browser/prefetch'
 import { expect, test } from '~/tests/support/browser/test'
 
@@ -13,7 +13,9 @@ test('list readiness does not wait for an unrelated request that never answers',
   const document = emptyDocument()
   document.meta.title = `Readiness ${crypto.randomUUID()}`
   document.meta.slug = `readiness-${crypto.randomUUID()}`
-  await writeDocument(page, document)
+  // The case only needs a stored row whose title the list can be waited on; the
+  // editor is not part of what it asserts.
+  await seedDocument(page, document)
   let release = (): void => {}
   const held = new Promise<void>((resolve) => {
     release = resolve

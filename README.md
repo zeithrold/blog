@@ -108,10 +108,13 @@ second status line, so one bad response cannot end the shard.
 Build and disposal failures remain failures; shutdown drains accepted work and
 reports cleanup errors, including when signals repeat.
 
-Browser readiness uses the application's rendered state rather than whole-page network idle. The
-loading-polish fixture separately coordinates already-started, marked route prefetches before deliberate
-document unloads, with a bounded deadline and no response replay or page-error exemptions. This avoids
-the usual cancellation window; it does not fix the framework's underlying prefetch rejection behavior.
+Browser readiness uses the application's rendered state rather than whole-page network idle. Setup
+that only needs a stored document seeds it through the admin API and stays request-scoped; opening
+the editor is a separate step, so a case visits the editor only when it edits, reads history,
+previews or asserts the editor's own hydration. The loading-polish fixture separately coordinates
+already-started, marked route prefetches before deliberate document unloads, with a bounded
+deadline and no response replay or page-error exemptions. This avoids the usual cancellation
+window; it does not fix the framework's underlying prefetch rejection behavior.
 
 Production quotas and data constraints remain active. Set `BLOG_TEST_PORT` to choose
 an isolated port. Development server tests use the local development database and accept

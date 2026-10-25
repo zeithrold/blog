@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { emptyDocument } from '@/content/document'
 import { mutate } from '~/tests/support/browser/api'
-import { writeDocument } from '~/tests/support/browser/document'
+import { seedDocument } from '~/tests/support/browser/document'
 
 export const labels = {
   en: {
@@ -35,7 +35,9 @@ export async function deletedDocument(page: Page, title: string): Promise<Awaite
   const document = emptyDocument()
   document.meta.title = title
   document.meta.slug = `trash-boundary-${crypto.randomUUID()}`
-  const saved = await writeDocument(page, document)
+  // Trash rows are read from the list, so the fixture seeds the document through
+  // the API and never opens the editor it is about to delete.
+  const saved = await seedDocument(page, document)
   return await mutate(page, `/api/admin/documents/${saved.documentId}`, {
     expectedVersion: saved.version,
     expectedLiveGeneration: saved.liveGeneration,

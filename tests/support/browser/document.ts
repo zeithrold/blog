@@ -29,12 +29,16 @@ export async function saved(page: Page): Promise<void> {
   })
   await expect(page.getByRole('alert')).toHaveCount(0)
 }
-export async function writeDocument(
+// A document that exists and is stored is what a list, metadata or trash case
+// needs: creating it and writing its revision are request-scoped, so nothing about
+// those cases depends on the editor. Seeding stops there, and the browser opens the
+// admin list the case actually asserts on as its first destination.
+export async function seedDocument(
   page: Page,
   document: Document,
 ): Promise<ReturnType<typeof acknowledgementSchema.parse>> {
   // Authenticate setup requests without a throwaway browser navigation through
-  // the admin list. The first browser destination is the document under test.
+  // the admin list.
   const login = await page.request.get('/__fixture/login', { maxRedirects: 0 })
   expect(login.status()).toBe(302)
   expect(login.headers().location).toBe('/admin')
@@ -60,7 +64,7 @@ export async function writeDocument(
     return acknowledgementSchema.parse(await response.json())
   }
   const created = await write('/api/admin/documents', {})
-  const result = await write(
+  return await write(
     `/api/admin/documents/${created.documentId}/revisions`,
     {
       expectedVersion: created.version,
@@ -70,7 +74,22 @@ export async function writeDocument(
     },
     'PUT',
   )
-  await page.goto(`/admin/documents/${created.documentId}`)
+}
+
+// Opening the document is the contract of every case that then edits, reads
+// history, previews or watches the editor hydrate, so it stays an explicit step
+// rather than part of seeding.
+export async function openEditor(page: Page, documentId: string): Promise<void> {
+  await page.goto(`/admin/documents/${documentId}`)
   await expect(page.getByLabel('Document body', { exact: true })).toBeVisible()
+}
+
+export async function writeDocument(
+  page: Page,
+  document: Document,
+): Promise<ReturnType<typeof acknowledgementSchema.parse>> {
+  // The first browser destination is the document under test.
+  const result = await seedDocument(page, document)
+  await openEditor(page, result.documentId)
   return result
 }
