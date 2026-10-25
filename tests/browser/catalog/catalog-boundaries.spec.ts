@@ -1,39 +1,31 @@
 import { catalogItemSchema } from '@/contracts/catalog'
 import { expect, test } from '~/tests/support/browser/test'
-import { fixture, writeCatalog } from './catalog-boundary-helpers'
+import { fixture, holdCatalogRequest, writeCatalog } from './catalog-boundary-helpers'
 
 for (const kind of ['tag', 'series'] as const) {
   test(`a slow ${kind} refresh cannot retarget a different entry's form`, async ({ page }) => {
     const { first, second, path } = await fixture(page, kind)
     await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
-    let release = (): void => {}
-    const held = new Promise<void>((resolve) => {
-      release = resolve
-    })
-    await page.route(`**${path}`, async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.continue()
-        return
-      }
-      const response = await route.fetch()
-      await held
-      await route.fulfill({ response })
-    })
-    const reading = page.waitForRequest(request => request.url().endsWith(path) && request.method() === 'GET')
-    const refresh = page.getByRole('button', { name: 'Refresh', exact: true })
-    await refresh.click()
-    await reading
-    await page.getByRole('button', { name: `Edit ${second.name}`, exact: true }).click()
-    await page.getByLabel('Name', { exact: true }).fill('Local change to B')
-    await page.getByLabel('Slug', { exact: true }).fill(`local-b-${crypto.randomUUID()}`)
-    release()
-    await expect(refresh).toBeEnabled()
-    const written = page.waitForResponse(response => response.url().includes(`${path}/`)
-      && response.request().method() === 'PUT')
-    await page.getByRole('button', { name: 'Save', exact: true }).click()
-    const saved = catalogItemSchema.parse(await (await written).json())
-    expect(saved.id).toBe(second.id)
-    expect(saved.name).toBe('Local change to B')
+    const hold = await holdCatalogRequest(page, path, 'GET')
+    try {
+      const refresh = page.getByRole('button', { name: 'Refresh', exact: true })
+      await refresh.click()
+      await hold.captured
+      await page.getByRole('button', { name: `Edit ${second.name}`, exact: true }).click()
+      await page.getByLabel('Name', { exact: true }).fill('Local change to B')
+      await page.getByLabel('Slug', { exact: true }).fill(`local-b-${crypto.randomUUID()}`)
+      await hold.release()
+      await expect(refresh).toBeEnabled()
+      const written = page.waitForResponse(response => response.url().includes(`${path}/`)
+        && response.request().method() === 'PUT')
+      await page.getByRole('button', { name: 'Save', exact: true }).click()
+      const saved = catalogItemSchema.parse(await (await written).json())
+      expect(saved.id).toBe(second.id)
+      expect(saved.name).toBe('Local change to B')
+    }
+    finally {
+      await hold.dispose()
+    }
   })
 
   test(`refreshing a clean ${kind} form adopts remote fields without marking it dirty`, async ({ page }) => {
@@ -104,31 +96,23 @@ test('a confirmed catalog creation stays visible when the list refresh fails', a
 test('a slow refresh cannot turn a new catalog entry into an update of the old entry', async ({ page }) => {
   const { first, path } = await fixture(page, 'tag')
   await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
-  let release = (): void => {}
-  const held = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  await page.route(`**${path}`, async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue()
-      return
-    }
-    const response = await route.fetch()
-    await held
-    await route.fulfill({ response })
-  })
-  const reading = page.waitForRequest(request => request.url().endsWith(path) && request.method() === 'GET')
-  await page.getByRole('button', { name: 'Refresh', exact: true }).click()
-  await reading
-  await page.getByRole('button', { name: 'New tag', exact: true }).click()
-  await page.getByLabel('Name', { exact: true }).fill('A new catalog entry')
-  await page.getByLabel('Slug', { exact: true }).fill(`new-after-refresh-${crypto.randomUUID()}`)
-  release()
-  await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled()
-  const response = page.waitForResponse(result => result.request().method() === 'POST' && result.url().endsWith(path))
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
-  expect(catalogItemSchema.parse(await (await response).json()).id).not.toBe(first.id)
-  await expect(page.getByRole('button', { name: `Edit ${first.name}`, exact: true })).toBeVisible()
+  const hold = await holdCatalogRequest(page, path, 'GET')
+  try {
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    await hold.captured
+    await page.getByRole('button', { name: 'New tag', exact: true }).click()
+    await page.getByLabel('Name', { exact: true }).fill('A new catalog entry')
+    await page.getByLabel('Slug', { exact: true }).fill(`new-after-refresh-${crypto.randomUUID()}`)
+    await hold.release()
+    await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled()
+    const response = page.waitForResponse(result => result.request().method() === 'POST' && result.url().endsWith(path))
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    expect(catalogItemSchema.parse(await (await response).json()).id).not.toBe(first.id)
+    await expect(page.getByRole('button', { name: `Edit ${first.name}`, exact: true })).toBeVisible()
+  }
+  finally {
+    await hold.dispose()
+  }
 })
 
 test('catalog retries an unknown creation after refreshing with the original idempotency key', async ({ page }) => {

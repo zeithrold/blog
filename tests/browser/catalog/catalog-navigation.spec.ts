@@ -1,5 +1,14 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from '~/tests/support/browser/test'
-import { fixture } from './catalog-boundary-helpers'
+import { fixture, holdCatalogRequest } from './catalog-boundary-helpers'
+
+// A catalog navigation only becomes part of the browser's history once its route has
+// committed. Clicking away before the gallery is there leaves the previous entry current,
+// so the return trip lands wherever the session started instead of on the gallery.
+async function openGallery(page: Page): Promise<void> {
+  await page.getByRole('link', { name: 'Media library', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+}
 
 test('switching a clean catalog form to the other catalog starts an empty form', async ({ page }) => {
   const { first } = await fixture(page, 'tag')
@@ -59,32 +68,27 @@ test('catalog navigation waits for an in-flight save before leaving', async ({ p
   const { first, path } = await fixture(page, 'tag')
   await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill('Confirmed before leaving')
-  let release = (): void => {}
-  const held = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  await page.route(`**${path}/${first.id}`, async (route) => {
-    const response = await route.fetch()
-    await held
-    await route.fulfill({ response })
-  })
-  const saving = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith(first.id))
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
-  await saving
-  await page.getByRole('link', { name: 'Series', exact: true }).click()
-  const dialog = page.getByRole('dialog', { name: 'Leave the catalog editor?', exact: true })
-  await expect(dialog).toContainText('Wait for the current save to finish')
-  await expect(dialog.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled()
-  release()
-  await dialog.getByRole('button', { name: 'Confirm', exact: true }).click()
-  await expect(page).toHaveURL(/\/admin\/series$/)
+  const hold = await holdCatalogRequest(page, `${path}/${first.id}`, 'PUT')
+  try {
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await hold.captured
+    await page.getByRole('link', { name: 'Series', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Leave the catalog editor?', exact: true })
+    await expect(dialog).toContainText('Wait for the current save to finish')
+    await expect(dialog.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled()
+    await hold.release()
+    await dialog.getByRole('button', { name: 'Confirm', exact: true }).click()
+    await expect(page).toHaveURL(/\/admin\/series$/)
+  }
+  finally {
+    await hold.dispose()
+  }
 })
 
 for (const direction of ['back', 'forward'] as const) {
   test(`catalog draft survives browser ${direction} and returning without changing history`, async ({ page }) => {
     const { first } = await fixture(page, 'tag')
-    await page.getByRole('link', { name: 'Media library', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+    await openGallery(page)
     if (direction === 'back') {
       await page.getByRole('link', { name: 'Tags', exact: true }).click()
     }
@@ -110,8 +114,7 @@ for (const direction of ['back', 'forward'] as const) {
 
 test('an unknown catalog creation retries its original request after browser history navigation', async ({ page }) => {
   const { path } = await fixture(page, 'tag')
-  await page.getByRole('link', { name: 'Media library', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+  await openGallery(page)
   await page.getByRole('link', { name: 'Tags', exact: true }).click()
   const name = `History retry ${crypto.randomUUID()}`
   await page.getByLabel('Name', { exact: true }).fill(name)
@@ -148,35 +151,29 @@ test('an unknown catalog creation retries its original request after browser his
 test('a catalog save stays busy through browser navigation and only updates its original form', async ({ page }) => {
   const { first, path } = await fixture(page, 'tag')
   const name = `Saved across navigation ${crypto.randomUUID()}`
-  await page.getByRole('link', { name: 'Media library', exact: true }).click()
+  await openGallery(page)
   await page.getByRole('link', { name: 'Tags', exact: true }).click()
   await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill(name)
-  let release = (): void => {}
-  const held = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  let writes = 0
-  await page.route(`**${path}/${first.id}`, async (route) => {
-    writes++
-    const response = await route.fetch()
-    await held
-    await route.fulfill({ response })
-  })
-  const writing = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith(first.id))
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
-  await writing
-  await page.goBack()
-  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
-  await page.goForward()
-  await expect(page.getByLabel('Name', { exact: true })).toBeDisabled()
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue(name)
-  await expect(page.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled()
-  release()
-  await expect(page.getByRole('status').filter({ hasText: 'Catalog entry saved.' })).toBeVisible()
-  await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
-  await expect(page.getByRole('button', { name: `Edit ${name}`, exact: true })).toBeVisible()
-  expect(writes).toBe(1)
+  const hold = await holdCatalogRequest(page, `${path}/${first.id}`, 'PUT')
+  try {
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await hold.captured
+    await page.goBack()
+    await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+    await page.goForward()
+    await expect(page.getByLabel('Name', { exact: true })).toBeDisabled()
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue(name)
+    await expect(page.getByRole('button', { name: 'Saving…', exact: true })).toBeDisabled()
+    await hold.release()
+    await expect(page.getByRole('status').filter({ hasText: 'Catalog entry saved.' })).toBeVisible()
+    await expect(page.getByLabel('Name', { exact: true })).toHaveValue('')
+    await expect(page.getByRole('button', { name: `Edit ${name}`, exact: true })).toBeVisible()
+    expect(hold.observed()).toBe(1)
+  }
+  finally {
+    await hold.dispose()
+  }
 })
 
 test('tags and series keep independent drafts while traversing the same browser history', async ({ page }) => {
