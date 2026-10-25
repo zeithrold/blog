@@ -1,78 +1,33 @@
 import { acknowledgementSchema } from '@/contracts/documents'
-import { horizontalBounds } from '~/tests/support/browser/layout'
+import { holdRequest } from '~/tests/support/browser/held-request'
 import { expect, test } from '~/tests/support/browser/test'
-import { labels } from './document-list-boundary-helpers'
 
 test('a late creation response preserves navigation away from the document list', async ({ page }) => {
   await page.goto('/__fixture/login')
-  let release = (): void => {}
-  let created = (): void => {}
-  const held = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  const committed = new Promise<void>((resolve) => {
-    created = resolve
-  })
-  let documentId = ''
-  await page.route('**/api/admin/documents', async (route) => {
-    if (route.request().method() !== 'POST') {
-      await route.continue()
-      return
+  const hold = await holdRequest(page, '/api/admin/documents', 'POST')
+  try {
+    await page.getByRole('button', { name: 'New post', exact: true }).click()
+    await hold.captured
+    const captured = hold.answers()[0]
+    if (captured === undefined) {
+      throw new Error('The creation acknowledgement was not captured')
     }
-    const response = await route.fetch()
-    documentId = acknowledgementSchema.parse(await response.json()).documentId
-    created()
-    await held
-    await route.fulfill({ response })
-  })
-  await page.getByRole('button', { name: 'New post', exact: true }).click()
-  await committed
-  await page.getByRole('link', { name: 'Media library', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
-  const completed = page.waitForResponse(response => response.url().endsWith('/api/admin/documents')
-    && response.request().method() === 'POST')
-  release()
-  expect((await completed).ok()).toBe(true)
-  // The held acknowledgement has reached the browser; the destination has to stay
-  // put. The gallery publishes its own settled state only after its session request
-  // answers, so a late navigation would replace the surface these assertions read.
-  await expect(page).toHaveURL(/\/admin\/media$/)
-  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
-  await expect(page.getByText('No media yet', { exact: true })).toBeVisible()
-  expect((await page.request.get(`/api/admin/documents/${documentId}`)).ok()).toBe(true)
+    const documentId = acknowledgementSchema.parse(JSON.parse(captured.body.toString('utf8'))).documentId
+    await page.getByRole('link', { name: 'Media library', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+    const completed = page.waitForResponse(response => response.url().endsWith('/api/admin/documents')
+      && response.request().method() === 'POST')
+    await hold.release()
+    expect((await completed).ok()).toBe(true)
+    // The held acknowledgement has reached the browser; the destination has to stay
+    // put. The gallery publishes its own settled state only after its session request
+    // answers, so a late navigation would replace the surface these assertions read.
+    await expect(page).toHaveURL(/\/admin\/media$/)
+    await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+    await expect(page.getByText('No media yet', { exact: true })).toBeVisible()
+    expect((await page.request.get(`/api/admin/documents/${documentId}`)).ok()).toBe(true)
+  }
+  finally {
+    await hold.dispose()
+  }
 })
-
-for (const locale of ['en', 'zh'] as const) {
-  test(`120-character ${locale} search chips fit at 320px and can be removed`, async ({ page }, info) => {
-    await page.setViewportSize({ width: 320, height: 900 })
-    await page.goto('/__fixture/login')
-    // The filter form keeps its controls natively disabled until React owns the server
-    // markup, so typing waits for the client tree instead of landing in a dead field.
-    // An enabled search box is that signal; the list request may still be in flight.
-    await expect(page.getByRole('searchbox', { name: labels.en.search, exact: true })).toBeEnabled()
-    if (locale === 'zh') {
-      await page.getByRole('combobox', { name: 'Language', exact: true }).click()
-      await page.getByRole('option', { name: '简体中文', exact: true }).click()
-    }
-    const copy = labels[locale]
-    const search = page.getByRole('searchbox', { name: copy.search, exact: true })
-    const query = (locale === 'zh' ? '文' : 'W').repeat(120)
-    await search.fill(query)
-    await expect(search).toHaveValue(query)
-    await page.getByRole('button', { name: copy.submit, exact: true }).click()
-    const chip = page.getByRole('list', { name: locale === 'zh' ? '已启用的筛选' : 'Active filters', exact: true })
-      .getByRole('button')
-    await horizontalBounds(page, chip)
-    const text = chip.locator('span')
-    expect(await text.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
-    await expect(text).toHaveCSS('text-overflow', 'ellipsis')
-    const icon = chip.locator('svg')
-    await expect(icon).toBeVisible()
-    await horizontalBounds(page, icon)
-    await page.screenshot({ path: info.outputPath(`long-search-${locale}-320.png`) })
-    await chip.click()
-    await expect(chip).toHaveCount(0)
-    await expect(search).toHaveValue('')
-    await expect(search).toBeFocused()
-  })
-}

@@ -154,3 +154,33 @@ for (const failed of [false, true]) {
     }
   }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
 }
+
+test('a version conflict refreshes the list instead of repeating the restoration', async () => {
+  const target = entry('Conflicted document')
+  const paths: string[] = []
+  let writes = 0
+  const fetch = mock.method(globalThis, 'fetch', async (path: string, init: RequestInit) => {
+    paths.push(path)
+    if (init.method === 'POST') {
+      writes++
+      return await Promise.resolve(Response.json({ code: 'EDIT_CONFLICT' }, { status: 409 }))
+    }
+    return await Promise.resolve(Response.json({ items: [target], nextCursor: null }))
+  })
+  try {
+    const controller = new DocumentsController('csrf')
+    await controller.load({ ...defaultDocumentFilters, state: 'deleted' })
+    await controller.restore(target)
+    equal(controller.snapshot().error, 'restore')
+    equal(controller.snapshot().errorCode, 'EDIT_CONFLICT')
+    // The row moved on, so the list has to show the current state before another attempt.
+    await controller.retry()
+    equal(writes, 1)
+    equal(controller.snapshot().error, null)
+    equal(controller.snapshot().errorCode, '')
+    equal(paths.at(-1), '/api/admin/documents?state=deleted')
+  }
+  finally {
+    fetch.mock.restore()
+  }
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))

@@ -2,6 +2,16 @@ import { test as base, expect } from '@playwright/test'
 
 export { expect }
 
-// Intentionally plain: Playwright gives every test a fresh browser context and
-// page, and the component harness has no Worker state to reset.
-export const test = base
+// Each case has a fresh native context/page, with no Worker state to reset.
+// An uncaught error is never classified or excused by its message.
+export const test = base.extend<{ browserErrors: undefined }>({
+  browserErrors: [
+    async ({ page }, use) => {
+      const errors: string[] = []
+      page.on('pageerror', error => errors.push(error.message))
+      await use(undefined)
+      expect(errors).toEqual([])
+    },
+    { auto: true },
+  ],
+})

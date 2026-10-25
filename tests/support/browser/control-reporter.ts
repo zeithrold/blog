@@ -2,13 +2,12 @@ import type { FullConfig } from '@playwright/test'
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter'
 import type { Evidence } from './control-evidence'
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { unmigratedControls } from '~/tests/contracts/legacy'
+import { sourceIdentity } from '~/tests/support/verification/source'
 import { assessEvidence, fileEvidence } from './control-evidence'
-import { controlInventory } from './control-inventory'
 
 export default class ControlReporter implements Reporter {
   private readonly results: Evidence[] = []
@@ -21,8 +20,9 @@ export default class ControlReporter implements Reporter {
   onBegin(config: FullConfig): void {
     this.root = process.cwd()
     this.output = path.dirname(config.projects[0]?.outputDir ?? config.rootDir)
-    this.revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
-    this.fingerprint = sourceFingerprint()
+    const identity = sourceIdentity()
+    this.revision = identity.revision
+    this.fingerprint = identity.fingerprint
     this.worktree = execFileSync('git', ['status', '--short'], { encoding: 'utf8' })
   }
 
@@ -41,7 +41,7 @@ export default class ControlReporter implements Reporter {
   }
 
   async onEnd(result: FullResult): Promise<{ status: FullResult['status'] }> {
-    const contracts = controlInventory.map(control => ({
+    const contracts = unmigratedControls.map(control => ({
       ...control,
       browsers: ['chromium', 'webkit'].map((project) => {
         const files = control.evidence.map(file => fileEvidence(this.results, file, project))
@@ -52,11 +52,12 @@ export default class ControlReporter implements Reporter {
     const skippedTests = this.results.filter(test => test.status === 'skipped')
       .map(test => assessEvidence(this.results, test))
     const unexplainedSkips = skippedTests.filter(test => !test.excluded)
-    const files = Array.from(new Set(controlInventory.flatMap(control => control.evidence))).sort()
+    const files = Array.from(new Set(unmigratedControls.flatMap(control => control.evidence))).sort()
     for (const file of files) {
       await readFile(path.join(this.root, file))
     }
     const report = {
+      scope: 'unmigrated-browser-controls',
       revision: this.revision,
       sourceFingerprint: this.fingerprint,
       worktree: this.worktree,
@@ -79,19 +80,4 @@ export default class ControlReporter implements Reporter {
     }
     return { status: result.status }
   }
-}
-
-function sourceFingerprint(): string {
-  const files = execFileSync('git', [
-    'ls-files',
-    '--cached',
-    '--others',
-    '--exclude-standard',
-    '-z',
-  ], { encoding: 'utf8' })
-  const fingerprint = createHash('sha256')
-  for (const file of Array.from(new Set(files.split('\0').filter(Boolean))).sort()) {
-    fingerprint.update(file).update(existsSync(file) ? readFileSync(file) : 'missing')
-  }
-  return fingerprint.digest('hex')
 }

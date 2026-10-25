@@ -25,7 +25,13 @@ const webServerCommand = 'vite build --config tests/components/vite.config.ts'
 
 export default defineConfig({
   ...artifacts,
-  reporter: reporters,
+  reporter: [
+    ...reporters,
+    [
+      './tests/support/verification/browser-reporter.ts',
+      { layer: 'component' },
+    ],
+  ],
   testDir: 'tests/components/specs',
   timeout: 30000,
   workers: 1,

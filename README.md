@@ -25,6 +25,7 @@ pnpm test:unit
 pnpm build
 pnpm test:integration
 pnpm test:ci-plan
+pnpm test:components
 pnpm test:core
 pnpm test:e2e
 pnpm test:journeys
@@ -33,8 +34,10 @@ pnpm test:editor-performance
 pnpm test:development
 ```
 
-Playwright has two configurations. `playwright.config.ts` defines Chromium and WebKit functional
-projects and a performance project that uses Chromium CDP. `playwright.development.config.ts` starts
+Playwright has three configurations. `playwright.config.ts` defines Chromium and WebKit functional
+projects and a performance project that uses Chromium CDP. `playwright.components.config.ts` builds
+the real documents/catalog components with Vite and tests them without starting a Worker.
+`playwright.development.config.ts` starts
 the Vite development server to check login, saving, and hot module replacement.
 
 The performance project disables trace and video recording to avoid measurement overhead under CPU
@@ -56,9 +59,9 @@ scanner cases from the functional suite. Local `pnpm check` remains the full seq
 prevent unrelated checks from executing:
 
 - **Foundation:** `pnpm check:base`, then package the tested `dist` with its exact source SHA.
-- **Core journeys:** `pnpm test:core` runs editing/autosave, publication, private media and the four
-  uninterrupted business journeys in both browsers. This intentionally overlaps full coverage for
-  earlier feedback; it never replaces any full-suite case.
+- **Components:** the real React components, controllers, translations and production CSS run in
+  Chromium and WebKit against explicit HTTP fixtures. This does not prove real router navigation,
+  Worker persistence, SSR or hydration.
 - **Full browsers:** Chromium and WebKit each run two Playwright shards on four isolated runners.
   Each runner installs dependencies, restores the foundation build after checking its source SHA,
   and owns its own Worker, D1 and R2. `workers: 1` and file-level sharding stay unchanged so neither
@@ -66,10 +69,13 @@ prevent unrelated checks from executing:
 - **Performance:** all four measured scenarios run independently of browser outcomes. Timing
   budgets remain report-only; correctness and measurement integrity still fail the job.
 - **Development:** the real Vite server tests run independently, including when foundation fails.
+- **Contracts:** native Node and Playwright case results are combined for the same source and prepared
+  run. Missing results, retries, stale evidence and incomplete runs fail the gate.
 - **`verify`:** the existing required-check name is retained as an always-run aggregate. Every
   required job must succeed; failure, cancellation or a skipped dependency cannot yield a green gate.
 
-Core, browser and performance jobs require a successful foundation, not each other. Build output is
+Component, browser and performance jobs require a successful foundation, not each other. The local
+`pnpm test:core` selector remains available; CI does not run those same cases a second time. Build output is
 transferred as a tar archive so hidden manifests survive; it is test input, not deployment approval.
 No deployment is added. No test filters, default retries, assertion budgets or supported browsers
 are removed. Job deadlines reserve time for evidence uploads. Logs, browser reports, screenshots,
@@ -79,7 +85,7 @@ traces and videos are retained for seven days, with separate artifact names for 
 exactly the unsharded dual-browser cases, without omissions or duplicates, keep files intact, and
 include the core cases. It discovers tests without starting a browser or Worker. Each shard's
 `control-coverage.json` is partial, not an independently complete inventory report; full inventory
-enforcement remains `pnpm test:controls` and must not be enabled separately on each shard.
+enforcement is aggregated by `pnpm test:contracts` and must not be enabled separately on each shard.
 
 For diagnosis, run:
 
@@ -108,10 +114,13 @@ second status line, so one bad response cannot end the shard.
 Build and disposal failures remain failures; shutdown drains accepted work and
 reports cleanup errors, including when signals repeat.
 
-Browser readiness uses the application's rendered state rather than whole-page network idle. The
-loading-polish fixture separately coordinates already-started, marked route prefetches before deliberate
-document unloads, with a bounded deadline and no response replay or page-error exemptions. This avoids
-the usual cancellation window; it does not fix the framework's underlying prefetch rejection behavior.
+Browser readiness uses the application's rendered state rather than whole-page network idle. Setup
+that only needs a stored document seeds it through the admin API and stays request-scoped; opening
+the editor is a separate step, so a case visits the editor only when it edits, reads history,
+previews or asserts the editor's own hydration. The loading-polish fixture separately coordinates
+already-started, marked route prefetches before deliberate document unloads, with a bounded
+deadline and no response replay or page-error exemptions. This avoids the usual cancellation
+window; it does not fix the framework's underlying prefetch rejection behavior.
 
 Production quotas and data constraints remain active. Set `BLOG_TEST_PORT` to choose
 an isolated port. Development server tests use the local development database and accept
@@ -129,6 +138,13 @@ values. These diagnostics do not change assertions, retries or performance-budge
 ## Test organization
 
 `tests/unit` contains Node unit tests; `tests/integration` contains tests against the built Worker.
+`tests/components` exercises real documents/catalog components in a production Vite bundle, with
+only HTTP and framework-host routing boundaries replaced. Its routing adapter is not evidence of
+native application navigation. Font verification still uses actual Google CSS and font responses.
+`tests/contracts` records business rules, exact native case references and the old-to-new assertion
+mapping. `registry.ts` composes the current references; the migration ledger retains historical names.
+The first slice retires 22 logical E2E cases and retains 24 documents/catalog cases in both browsers.
+It does not reorganize the remaining E2E suite or establish a whole-suite speed improvement.
 `tests/browser` groups functional tests by business domain, with editor controls grouped further by
 blocks, tables, links, source editing, formatting, overlays, and navigation. Preview, recovery, and
 revision history belong to `history`; scheduling belongs to `publication`; media flows belong to
@@ -137,7 +153,7 @@ revision history belong to `history`; scheduling belongs to `publication`; media
 `tests/development` checks the actual Vite server; `tests/performance` owns performance scenarios,
 fixtures, and measurements. `tests/support` separates unit rendering/assertions, shared browser
 operations, disposable Worker infrastructure, and development-only login support. Scenario-specific
-helpers stay with their scenarios. There are no barrel exports or additional test configurations.
+helpers stay with their scenarios. There are no barrel exports.
 
 `pnpm test:journeys` runs four uninterrupted business tasks plus the presentation journeys in
 `tests/browser/journeys`. Each task uses `test.step` boundaries and one disposable database; stages do
@@ -167,12 +183,21 @@ Native drag cancellations require recorded detached audio/video clones, matching
 clone counts, and connected healthy original media. Their attribution is retained in `journey.json`;
 other resource failures and failed mutations still fail the task.
 
-`pnpm test:controls` runs the full functional suite and requires every inventory contract's linked
-suites' applicable cases to pass in both browsers, without retries or skipped evidence. The reporter always writes
-`control-coverage.json` with missing contracts, actual test results, revision and source fingerprint;
-focused runs explicitly report incomplete coverage. Passing the inventory validates the registered
-contracts, not every theoretical input permutation. Set `BLOG_TEST_RUN_ID` to a distinct output folder
-name and `BLOG_TEST_PORT` to a distinct port when running independent instances.
+`pnpm check` prepares a shared run and executes every layer before `pnpm test:contracts` verifies
+coverage. To collect the same evidence manually, run `pnpm test:prepare` first, then the native unit,
+integration, component and E2E commands without editing the source between them. Set `TMPDIR=/tmp`
+and a shared `BLOG_VERIFICATION_RUN_ID` to retain one evidence batch across commands.
+`pnpm test:controls` is an alias for the final contract check, not a second browser run.
+The documents/catalog rules require exact case results; unmigrated surfaces retain their previous
+strict linked-suite obligations, with the entire E2E result set checked against native discovery.
+A successful filtered invocation is not a complete-suite receipt. Each invocation retains its own
+immutable result file; prepare a new batch before rerunning a layer, rather than replacing a failed
+attempt with a passing one. Worker fixtures also reject builds whose build-time source manifest
+does not match the checkout. Only current-source, current-run results count, without retries or
+unexplained skipped evidence. `pnpm test:contracts documents-catalog` is a first-slice diagnostic,
+not the full CI gate. Passing validates registered contracts, not every theoretical input
+permutation. Set `BLOG_TEST_RUN_ID` to a distinct output folder name and `BLOG_TEST_PORT` to a distinct
+port when running independent instances.
 
 Pre-existing physical-touch cases that require Chromium CDP remain listed as platform limitations.
 Only their exact annotated WebKit skips may be excluded, and only when the identical Chromium case

@@ -14,6 +14,7 @@ import {
 } from 'miniflare'
 import { unstable_getMiniflareWorkerOptions, unstable_splitSqlQuery } from 'wrangler'
 import { sessionSchema } from '@/contracts/session'
+import { verifyBuildSource } from '~/tests/support/verification/build-source'
 
 export type Runtime = {
   fixture: Miniflare
@@ -46,6 +47,9 @@ async function loadFixtureInputs(): Promise<FixtureInputs> {
   return await fixtureInputs
 }
 async function readFixtureInputs(): Promise<FixtureInputs> {
+  // The manifests describe the source that produced `dist`; they are checked before anything
+  // resolves or evaluates a module from it, so a stale build cannot run under a newer checkout.
+  verifyBuildSource()
   const options = unstable_getMiniflareWorkerOptions(
     path.resolve('dist/server/wrangler.json'),
   )

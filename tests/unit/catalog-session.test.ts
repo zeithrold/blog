@@ -188,6 +188,25 @@ test('unknown catalog results retain their retry key across token updates and vi
   }
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
 
+test('a clean catalog form never writes', async () => {
+  const fetches: string[] = []
+  const fetch = mock.method(globalThis, 'fetch', async (path: unknown) => {
+    fetches.push(typeof path === 'string' ? path : 'Unexpected request')
+    return await Promise.resolve(Response.json({ items: [] }))
+  })
+  try {
+    const session = new CatalogSession('tag', 'test-csrf')
+    await session.save()
+    session.begin(entry())
+    await session.save()
+    deepEqual(fetches, [])
+    equal(session.snapshot().busy, false)
+  }
+  finally {
+    fetch.mock.restore()
+  }
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
 test('server catalog sessions do not share form state between requests', () => {
   const first = catalogSession('owner', 'tag', 'token')
   first.change('name', 'Server-local input')

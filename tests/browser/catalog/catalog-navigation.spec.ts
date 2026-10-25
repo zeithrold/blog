@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
+import { holdRequest } from '~/tests/support/browser/held-request'
 import { expect, test } from '~/tests/support/browser/test'
-import { fixture, holdCatalogRequest } from './catalog-boundary-helpers'
+import { fixture } from './catalog-boundary-helpers'
 
 // A catalog navigation only becomes part of the browser's history once its route has
 // committed. Clicking away before the gallery is there leaves the previous entry current,
@@ -68,7 +69,7 @@ test('catalog navigation waits for an in-flight save before leaving', async ({ p
   const { first, path } = await fixture(page, 'tag')
   await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill('Confirmed before leaving')
-  const hold = await holdCatalogRequest(page, `${path}/${first.id}`, 'PUT')
+  const hold = await holdRequest(page, `${path}/${first.id}`, 'PUT')
   try {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await hold.captured
@@ -155,7 +156,7 @@ test('a catalog save stays busy through browser navigation and only updates its 
   await page.getByRole('link', { name: 'Tags', exact: true }).click()
   await page.getByRole('button', { name: `Edit ${first.name}`, exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill(name)
-  const hold = await holdCatalogRequest(page, `${path}/${first.id}`, 'PUT')
+  const hold = await holdRequest(page, `${path}/${first.id}`, 'PUT')
   try {
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await hold.captured

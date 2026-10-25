@@ -26,6 +26,10 @@ export default defineConfig({
   reporter: [
     ...reporters,
     ['./tests/support/browser/control-reporter.ts'],
+    [
+      './tests/support/verification/browser-reporter.ts',
+      { layer: 'e2e' },
+    ],
   ],
   timeout: 60000,
   workers: 1,

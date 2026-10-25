@@ -12,6 +12,7 @@ type FontResponse = {
 // The harness reuses the production stylesheet, whose Google Fonts imports are
 // the only font source in the app layout. This smoke fails if that wiring turns
 // into a silent fallback instead of loading the real Noto faces.
+// Check native network/font state rather than treating build warnings as proof.
 test('the harness loads real Noto fonts through the production stylesheet', async ({ page }) => {
   const responses: FontResponse[] = []
   page.on('response', (response) => {
