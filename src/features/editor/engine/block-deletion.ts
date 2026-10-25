@@ -1,6 +1,6 @@
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import { getBlockInfo, getNodeById } from '@blocknote/core'
-import { NodeSelection } from 'prosemirror-state'
+import { NodeSelection, TextSelection } from 'prosemirror-state'
 import { ATOMIC_TYPES } from '@/content/tree'
 
 const selectableFunctionalTypes = new Set([
@@ -62,6 +62,28 @@ function ignoreBlockDeletion(event: React.KeyboardEvent, workspace: Workspace): 
     || !isEditorBodyEvent(event, workspace)
 }
 
+function reconcileCaret(editor: Workspace['model']['editor']): void {
+  const view = editor.prosemirrorView
+  const domSelection = view.dom.ownerDocument.getSelection()
+  if (!view.hasFocus() || domSelection === null || !domSelection.isCollapsed) {
+    return
+  }
+  const anchor = domSelection.anchorNode
+  if (anchor === null || !view.dom.contains(anchor)) {
+    return
+  }
+  const position = view.posAtDOM(anchor, domSelection.anchorOffset)
+  const { selection, doc } = view.state
+  // Focus can temporarily suppress ProseMirror's selection observer. Do not let
+  // its old node selection delete a block when the browser caret is now in text.
+  if (doc.resolve(position).parent.inlineContent) {
+    const caret = TextSelection.create(doc, position)
+    if (!selection.eq(caret)) {
+      view.dispatch(view.state.tr.setSelection(caret))
+    }
+  }
+}
+
 export function selectBeforeBlockDeletion(
   event: React.KeyboardEvent,
   workspace: Workspace,
@@ -72,6 +94,7 @@ export function selectBeforeBlockDeletion(
   if (ignoreBlockDeletion(event, workspace)) {
     return
   }
+  reconcileCaret(editor)
   const selection = editor.prosemirrorState.selection
   if ('node' in selection) {
     const selected = editor.getTextCursorPosition().block

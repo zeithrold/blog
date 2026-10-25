@@ -43,13 +43,19 @@ for (const locale of ['en', 'zh'] as const) {
   test(`120-character ${locale} search chips fit at 320px and can be removed`, async ({ page }, info) => {
     await page.setViewportSize({ width: 320, height: 900 })
     await page.goto('/__fixture/login')
+    // The filter form keeps its controls natively disabled until React owns the server
+    // markup, so typing waits for the client tree instead of landing in a dead field.
+    // An enabled search box is that signal; the list request may still be in flight.
+    await expect(page.getByRole('searchbox', { name: labels.en.search, exact: true })).toBeEnabled()
     if (locale === 'zh') {
       await page.getByRole('combobox', { name: 'Language', exact: true }).click()
       await page.getByRole('option', { name: '简体中文', exact: true }).click()
     }
     const copy = labels[locale]
     const search = page.getByRole('searchbox', { name: copy.search, exact: true })
-    await search.fill((locale === 'zh' ? '文' : 'W').repeat(120))
+    const query = (locale === 'zh' ? '文' : 'W').repeat(120)
+    await search.fill(query)
+    await expect(search).toHaveValue(query)
     await page.getByRole('button', { name: copy.submit, exact: true }).click()
     const chip = page.getByRole('list', { name: locale === 'zh' ? '已启用的筛选' : 'Active filters', exact: true })
       .getByRole('button')

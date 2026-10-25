@@ -7,6 +7,7 @@ import { useId } from 'react'
 import { ChoiceSelect } from '@/components/ui/choice-select'
 import { Button, Input } from '@/components/ui/ztd-me/client'
 import { defaultDocumentFilters, documentFiltersSchema, hasDocumentFilters } from '@/content/document-list-query'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { background } from '@/shared/admin/background'
 import {
   utility1Class,
@@ -55,9 +56,13 @@ function focusSearch(event: MouseEvent<HTMLButtonElement>): void {
 }
 
 export function DocumentFiltersForm({ controller, state, copy }: FilterProps): ReactNode {
+  const hydrated = useHydrated()
   const id = useId()
   const apply: ApplyFilters = filters => background(controller.load(filters), () => {})
-  const pending = state.mutation !== null
+  // Until React owns the server-rendered form, a keystroke never reaches the
+  // controller and is silently lost, so the controls stay natively disabled until
+  // then. In-flight list loads must not disable them; only mutations do.
+  const disabled = !hydrated || state.mutation !== null
   return (
     <form
       className="document-filter-bar grid min-w-0 grid-cols-[minmax(0,_1fr)] gap-[10px] mt-2 mx-0 mb-4"
@@ -79,21 +84,21 @@ export function DocumentFiltersForm({ controller, state, copy }: FilterProps): R
           value={state.query}
           maxLength={120}
           placeholder={copy.searchPlaceholder}
-          disabled={pending}
+          disabled={disabled}
           onChange={event => controller.setQuery(event.currentTarget.value)}
         />
-        <Button type="submit" disabled={pending}>{copy.searchSubmit}</Button>
+        <Button type="submit" disabled={disabled}>{copy.searchSubmit}</Button>
       </div>
       <div className={layout3Class}>
         <ListFilter size={15} aria-hidden="true" />
-        <FilterSelect field="kind" state={state} copy={copy} apply={apply} />
-        <FilterSelect field="state" state={state} copy={copy} apply={apply} />
+        <FilterSelect field="kind" state={state} copy={copy} apply={apply} disabled={disabled} />
+        <FilterSelect field="state" state={state} copy={copy} apply={apply} disabled={disabled} />
         {(hasDocumentFilters(state.filters) || state.query !== '') && (
           <Button
             type="button"
             variant="ghost"
             className="document-clear-filters min-h-10 ml-auto px-2 text-muted-foreground text-help"
-            disabled={pending}
+            disabled={disabled}
             onClick={(event) => {
               focusSearch(event)
               apply(defaultDocumentFilters)
@@ -103,16 +108,17 @@ export function DocumentFiltersForm({ controller, state, copy }: FilterProps): R
           </Button>
         )}
       </div>
-      <ActiveFilters state={state} copy={copy} apply={apply} />
+      <ActiveFilters state={state} copy={copy} apply={apply} disabled={disabled} />
     </form>
   )
 }
 
-function FilterSelect({ field, state, copy, apply }: {
+function FilterSelect({ field, state, copy, apply, disabled }: {
   field: 'kind' | 'state'
   state: DocumentsState
   copy: DocumentListCopy
   apply: ApplyFilters
+  disabled: boolean
 }): ReactNode {
   const values = field === 'kind'
     ? [
@@ -132,7 +138,7 @@ function FilterSelect({ field, state, copy, apply }: {
       className={layout4Class}
       label={field === 'kind' ? copy.kind : copy.state}
       value={state.filters[field]}
-      disabled={state.mutation !== null}
+      disabled={disabled}
       options={values.map(value => ({ value, label: optionLabel(value, field, copy) }))}
       onValueChange={value => apply(documentFiltersSchema.parse({
         ...state.filters,
@@ -154,10 +160,11 @@ function optionLabel(value: string, field: 'kind' | 'state', copy: DocumentListC
   return value
 }
 
-function ActiveFilters({ state, copy, apply }: {
+function ActiveFilters({ state, copy, apply, disabled }: {
   state: DocumentsState
   copy: DocumentListCopy
   apply: ApplyFilters
+  disabled: boolean
 }): ReactNode {
   const filters = activeFilters(state.filters, copy)
   if (filters.length === 0) {
@@ -179,7 +186,7 @@ function ActiveFilters({ state, copy, apply }: {
             className={layout5Class}
             title={filter.label}
             aria-label={`${copy.removeFilter}: ${filter.name}: ${filter.label}`}
-            disabled={state.mutation !== null}
+            disabled={disabled}
             onClick={(event) => {
               focusSearch(event)
               apply({

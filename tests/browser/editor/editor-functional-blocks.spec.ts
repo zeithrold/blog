@@ -154,6 +154,36 @@ for (const type of [
   })
 }
 
+test('Backspace uses the current DOM caret before a pending selectionchange is delivered', async ({ page }) => {
+  const snapshot = functionalDocument()
+  const ack = await writeDocument(page, snapshot)
+  const paragraph = body(page).locator('[data-content-type="paragraph"] .bn-inline-content')
+  await paragraph.evaluate((element) => {
+    const root = element.closest('[contenteditable="true"]')
+    if (!(root instanceof HTMLElement)) {
+      throw new TypeError('Missing editable root')
+    }
+    root.focus()
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    range.collapse(true)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    // Keep caret placement and deletion in one task: selectionchange is asynchronous.
+    root.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Backspace',
+      code: 'Backspace',
+      keyCode: 8,
+      bubbles: true,
+      cancelable: true,
+    }))
+  })
+  await expect(body(page).locator('[data-content-type="toc"]')).toBeVisible()
+  await expect(body(page).locator('.ProseMirror-selectednode')).toContainText('Live contents')
+  expect((await persisted(page, ack.documentId)).blocks).toEqual(snapshot.blocks)
+})
+
 test('first Backspace retains an empty paragraph and respects IME composition and normal text', async ({ page }) => {
   const ack = await writeDocument(page, functionalDocument('toc', true))
   const paragraph = body(page).locator('[data-content-type="paragraph"] .bn-inline-content')

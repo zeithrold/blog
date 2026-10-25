@@ -111,6 +111,7 @@ for (const direction of ['back', 'forward'] as const) {
 test('an unknown catalog creation retries its original request after browser history navigation', async ({ page }) => {
   const { path } = await fixture(page, 'tag')
   await page.getByRole('link', { name: 'Media library', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Tags', exact: true }).click()
   const name = `History retry ${crypto.randomUUID()}`
   await page.getByLabel('Name', { exact: true }).fill(name)
