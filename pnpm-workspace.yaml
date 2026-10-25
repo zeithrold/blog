@@ -16,6 +16,7 @@ patchedDependencies:
   '@radix-ui/react-select@2.3.7': src/components/ui/ztd-me/patches/@radix-ui__react-select@2.3.7.patch
   '@shikijs/primitive@4.5.0': src/content/patches/@shikijs__primitive@4.5.0.patch
   vaul@1.1.2: src/components/ui/ztd-me/patches/vaul@1.1.2.patch
+  vinext@1.0.1: src/shared/patches/vinext@1.0.1.patch
 
 allowBuilds:
   esbuild: true

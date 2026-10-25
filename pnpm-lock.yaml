@@ -11,6 +11,7 @@ patchedDependencies:
   '@radix-ui/react-select@2.3.7': 9ee07b67639018c5db90378f411f81e59de5f7a9865432af906b7e682fa9f24c
   '@shikijs/primitive@4.5.0': 647625dffed0906123add5aecc5c911db413cd634be4f0e49981ffe60dec6b37
   vaul@1.1.2: 60ec03db164a95a87e8d241a56a63464bbdadcac2d9ffbca933f0ab9586f7c19
+  vinext@1.0.1: 8dc9045e088054439534692dc4a0c8b8020726e9c7f4d9431e840851f7952261
 
 importers:
 
@@ -126,7 +127,7 @@ importers:
         version: 1.1.2(patch_hash=60ec03db164a95a87e8d241a56a63464bbdadcac2d9ffbca933f0ab9586f7c19)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       vinext:
         specifier: 1.0.1
-        version: 1.0.1(@types/node@24.12.0)(@vitejs/plugin-react@6.0.0(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(@vitejs/plugin-rsc@0.5.35(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1))
+        version: 1.0.1(patch_hash=8dc9045e088054439534692dc4a0c8b8020726e9c7f4d9431e840851f7952261)(@types/node@24.12.0)(@vitejs/plugin-react@6.0.0(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(@vitejs/plugin-rsc@0.5.35(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1))
       zod:
         specifier: 4.6.5
         version: 4.6.5
@@ -10157,7 +10158,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vinext@1.0.1(@types/node@24.12.0)(@vitejs/plugin-react@6.0.0(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(@vitejs/plugin-rsc@0.5.35(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)):
+  vinext@1.0.1(patch_hash=8dc9045e088054439534692dc4a0c8b8020726e9c7f4d9431e840851f7952261)(@types/node@24.12.0)(@vitejs/plugin-react@6.0.0(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(@vitejs/plugin-rsc@0.5.35(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)))(react-dom@19.3.0(react@19.3.0))(react-server-dom-webpack@19.3.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.28)(sharp@0.35.5(@types/node@24.12.0))))(react@19.3.0)(vite@8.3.1(@types/node@24.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1)):
     dependencies:
       '@unpic/react': 1.0.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@vercel/og': 1.0.3(@types/node@24.12.0)

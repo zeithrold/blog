@@ -1,0 +1,93 @@
+diff --git a/dist/shims/internal/app-prefetch-fetch-queue.js b/dist/shims/internal/app-prefetch-fetch-queue.js
+--- a/dist/shims/internal/app-prefetch-fetch-queue.js
++++ b/dist/shims/internal/app-prefetch-fetch-queue.js
+@@ -4,5 +4,16 @@
+ const MAX_DEFAULT_APP_PREFETCH_REQUESTS = 4;
+ const defaultAppPrefetchQueue = [];
++const queuedAppPrefetchRejections = new WeakMap();
++// A failed speculative batch must not start fresh fetches while its document
++// is being unloaded. Reject only still-queued low-priority work with the
++// original cause; active, promoted and high-priority navigation stay independent.
++function rejectQueuedAppPrefetches(reason) {
++	for (const runner of defaultAppPrefetchQueue.splice(0)) {
++		const reject = queuedAppPrefetchRejections.get(runner);
++		queuedAppPrefetchRejections.delete(runner);
++		reject?.(reason);
++	}
++}
+ /** Lets a consumer promote or cancel the request behind a promise it already holds. */
+ const appPrefetchFetchControls = /* @__PURE__ */ new WeakMap();
+ let activeDefaultAppPrefetchRequests = 0;
+@@ -28,7 +39,7 @@
+-function releaseAppPrefetchFetchSlot(response) {
++function releaseAppPrefetchFetchSlot(response, failure) {
+ 	const release = response[APP_PREFETCH_FETCH_SLOT_RELEASE_KEY];
+ 	if (release === void 0) return;
+ 	response[APP_PREFETCH_FETCH_SLOT_RELEASE_KEY] = void 0;
+-	release();
++	release(failure);
+ }
+ /**
+@@ -51,6 +62,8 @@
+ 		rejectPromise = reject;
+ 		runner = () => {
+ 			started = true;
++			queuedAppPrefetchRejections.delete(runner);
+ 			let didRelease = false;
+-			const release = () => {
++			const release = (failure) => {
+ 				if (didRelease) return;
++				if (failure !== void 0) rejectQueuedAppPrefetches(failure.cause);
+@@ -66,11 +78,13 @@
+ 					resolve(response);
+ 				}, (error) => {
+ 					appPrefetchFetchControls.delete(promise);
++					rejectQueuedAppPrefetches(error);
+ 					release();
+ 					reject(error);
+ 				});
+ 			} catch (error) {
+ 				appPrefetchFetchControls.delete(promise);
++				rejectQueuedAppPrefetches(error);
+ 				release();
+ 				reject(error);
+ 			}
+@@ -79,6 +93,11 @@
+ 		};
+ 	});
+ 	defaultAppPrefetchQueue.push(runner);
++	queuedAppPrefetchRejections.set(runner, (reason) => {
++		appPrefetchFetchControls.delete(promise);
++		controller.abort(reason);
++		rejectPromise(reason);
++	});
+ 	appPrefetchFetchControls.set(promise, {
+ 		runner,
+ 		cancel: () => {
+@@ -89,6 +108,7 @@
+ 			const index = defaultAppPrefetchQueue.indexOf(runner);
+ 			if (index === -1) return;
+ 			defaultAppPrefetchQueue.splice(index, 1);
++			queuedAppPrefetchRejections.delete(runner);
+ 			appPrefetchFetchControls.delete(promise);
+ 			controller.abort();
+ 			rejectPromise(controller.signal.reason);
+diff --git a/dist/shims/internal/app-prefetch-fetch-queue.d.ts b/dist/shims/internal/app-prefetch-fetch-queue.d.ts
+--- a/dist/shims/internal/app-prefetch-fetch-queue.d.ts
++++ b/dist/shims/internal/app-prefetch-fetch-queue.d.ts
+@@ -1,1 +1,1 @@
+-export declare function releaseAppPrefetchFetchSlot(response: Response): void;
++export declare function releaseAppPrefetchFetchSlot(response: Response, failure?: { cause: unknown }): void;
+diff --git a/dist/shims/navigation.js b/dist/shims/navigation.js
+--- a/dist/shims/navigation.js
++++ b/dist/shims/navigation.js
+@@ -710,6 +710,9 @@
+ 			...snapshot,
+ 			expiresAt
+ 		};
++	} catch (error) {
++		releaseAppPrefetchFetchSlot(response, { cause: error });
++		throw error;
+ 	} finally {
+ 		releaseAppPrefetchFetchSlot(response);
+ 	}
