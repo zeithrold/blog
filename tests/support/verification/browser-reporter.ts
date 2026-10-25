@@ -53,7 +53,9 @@ export default class ContractReporter implements Reporter {
       project,
       status: result.status,
       retry: result.retry,
-      annotations: test.annotations,
+      // Native annotations also carry source locations. The proof format needs
+      // only their semantic type/reason, including exact platform-skip reasons.
+      annotations: test.annotations.map(({ type, description }) => ({ type, description })),
     })
   }
 

@@ -40,7 +40,18 @@ function browserCase(project: string, describes: readonly string[], title: strin
     title,
     parent,
     location: { file: path.join(process.cwd(), 'tests/components/specs/probe.spec.ts') },
-    annotations: [],
+    annotations: [
+      {
+        type: 'slow',
+        description: 'native slow annotation',
+        location: { file: 'tests/browser/example.spec.ts', line: 56, column: 10 },
+      },
+      {
+        type: 'skip',
+        description: 'native platform skip reason',
+        location: { file: 'tests/browser/example.spec.ts', line: 57, column: 10 },
+      },
+    ],
   } as unknown as TestCase
 }
 
@@ -78,6 +89,10 @@ test('browser evidence is immutable and absent or skipped functional cases fail 
   assert.equal(afterPassing.length, 1)
   const passed = singleReport(afterPassing)
   assert.equal(passed.complete, true)
+  assert.deepEqual(passed.cases[0]?.annotations, [
+    { type: 'slow', description: 'native slow annotation' },
+    { type: 'skip', description: 'native platform skip reason' },
+  ])
   const observed = passed.cases.map(entry =>
     `${entry.project ?? ''} :: ${entry.title} :: ${entry.describe.join('/')}`)
   const expected = ['chromium :: top level case :: ', 'webkit :: nested case :: accessibility scanner'] as const
