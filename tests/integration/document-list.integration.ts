@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { documentListSchema, openDocumentSchema } from '@/contracts/documents'
 import { scheduleAckSchema } from '@/contracts/publication'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
-import { json } from '~/tests/support/worker/responses'
+import { json, refusal } from '~/tests/support/worker/responses'
 import { runtime } from '~/tests/support/worker/runtime'
 
 async function list(context: Runtime, query = '') {
@@ -175,3 +175,79 @@ test('admin documents search, filtered pagination and tombstone recovery use the
     await context.dispose()
   }
 }).catch((error: unknown) => { throw error })
+
+test('document writes stay version-guarded while list reads survive maintenance', async () => {
+  const context = await runtime()
+  try {
+    await guardedWrites(context)
+  }
+  finally {
+    await context.dispose()
+  }
+}).catch((error: unknown) => { throw error })
+
+async function guardedWrites(context: Runtime) {
+  // The list is a private read: it needs the same owner JWT the pages need.
+  equal(
+    await refusal(await context.fixture.dispatchFetch(`${context.origin}/api/admin/documents`), 401),
+    'AUTH_REQUIRED',
+  )
+  const document = await create(context, 'Maintenance fixture')
+  await context.db.prepare('UPDATE site_state SET maintenance=1 WHERE id=1').run()
+  try {
+    // Maintenance pauses writes, not the list the editor is reading while it waits.
+    deepEqual(
+      (await list(context, '?q=Maintenance')).items.map(item => item.documentId),
+      [document.documentId],
+    )
+    equal(
+      await refusal(await context.write('/api/admin/documents', { kind: 'article' }), 503),
+      'MAINTENANCE',
+    )
+    equal(
+      await refusal(
+        await context.write(`/api/admin/documents/${document.documentId}/restore-deleted`, {
+          expectedVersion: document.version,
+        }),
+        503,
+      ),
+      'MAINTENANCE',
+    )
+  }
+  finally {
+    await context.db.prepare('UPDATE site_state SET maintenance=0 WHERE id=1').run()
+  }
+  // A creation the browser never learned the outcome of is retried under the same key.
+  const key = crypto.randomUUID()
+  const created = await json(await context.write('/api/admin/documents', {}, 'POST', key), 201)
+  deepEqual(await json(await context.write('/api/admin/documents', {}, 'POST', key), 201), created)
+  equal(await documentRows(context), 2)
+  equal(
+    await refusal(await context.write('/api/admin/documents', { kind: 'page' }, 'POST', key), 409),
+    'IDEMPOTENCY_KEY_REUSED',
+  )
+  equal(await documentRows(context), 2)
+  // Trash only holds drafts and unpublished documents, so a live document cannot be deleted.
+  const published = await publish(context, await create(context, 'Guarded delete'))
+  const path = `/api/admin/documents/${published.documentId}`
+  equal(
+    await refusal(
+      await context.write(path, {
+        expectedVersion: published.version,
+        expectedLiveGeneration: published.liveGeneration,
+      }, 'DELETE'),
+      409,
+    ),
+    'EDIT_CONFLICT',
+  )
+  equal((await context.fetch(path)).status, 200)
+  deepEqual(
+    (await list(context, '?q=Guarded&state=published')).items.map(item => item.documentId),
+    [published.documentId],
+  )
+}
+async function documentRows(context: Runtime): Promise<number> {
+  const row = await context.db.prepare('SELECT COUNT(*) AS n FROM documents').first<{ n: number }>()
+  assert.ok(row !== null)
+  return row.n
+}

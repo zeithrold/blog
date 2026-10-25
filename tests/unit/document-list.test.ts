@@ -2,7 +2,7 @@ import type { DocumentEntry } from '@/features/documents/document-list-model'
 import assert from 'node:assert/strict'
 import { mock, test } from 'node:test'
 import { defaultDocumentFilters, documentListPath } from '@/content/document-list-query'
-import { DocumentsController } from '@/features/documents/document-list-model'
+import { documentPublication, DocumentsController } from '@/features/documents/document-list-model'
 import { listCursor, readDocumentListQuery } from '@/server/documents/document-list-query'
 import { Problem } from '@/server/http/problem'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
@@ -26,6 +26,13 @@ function entry(title: string): DocumentEntry {
 function page(items: DocumentEntry[], nextCursor: string | null = null): Response {
   return Response.json({ items, nextCursor })
 }
+checked('a row publication state follows its live revision relative to head', () => {
+  const document = entry('Published state')
+  equal(documentPublication({ ...document, liveRevisionId: null }), 'draft')
+  equal(documentPublication({ ...document, liveRevisionId: document.headRevisionId }), 'published')
+  equal(documentPublication({ ...document, liveRevisionId: crypto.randomUUID() }), 'changed')
+})
+
 checked('document queries reject unknown/duplicate fields and filter-incompatible cursors', () => {
   const filters = { ...defaultDocumentFilters, q: '中文 %_"', kind: 'page' as const }
   const position = { time: 1234, id: crypto.randomUUID() }
