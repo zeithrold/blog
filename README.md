@@ -24,6 +24,8 @@ pnpm typecheck
 pnpm test:unit
 pnpm build
 pnpm test:integration
+pnpm test:ci-plan
+pnpm test:core
 pnpm test:e2e
 pnpm test:journeys
 pnpm test:controls
@@ -45,10 +47,51 @@ boundaries and sample counts. Performance budgets are temporarily report-only, a
 `pnpm exec playwright test --project=chromium`. `pnpm test:integration` runs service integration tests
 only; `pnpm test:editor-performance` runs the performance project separately, and
 `pnpm test:development` runs development server tests. `pnpm test:a11y` selects the accessibility
-scanner cases from the functional suite. CI runs `pnpm check` once, covering static checks, unit
-tests, the build, integration tests, both browsers, performance tests, and development server tests.
-The check has its own deadline within the job budget, leaving time to upload failure evidence.
-CI retains the native check log, browser reports, screenshots, traces and videos for seven days.
+scanner cases from the functional suite. Local `pnpm check` remains the full sequential gate.
+`pnpm check:base` owns static checks, unit tests, test-plan validation, the build and integration.
+
+### CI feedback and full verification
+
+`Verify CMS` runs the same required source and runtime checks without making browser failures
+prevent unrelated checks from executing:
+
+- **Foundation:** `pnpm check:base`, then package the tested `dist` with its exact source SHA.
+- **Core journeys:** `pnpm test:core` runs editing/autosave, publication, private media and the four
+  uninterrupted business journeys in both browsers. This intentionally overlaps full coverage for
+  earlier feedback; it never replaces any full-suite case.
+- **Full browsers:** Chromium and WebKit each run two Playwright shards on four isolated runners.
+  Each runner installs dependencies, restores the foundation build after checking its source SHA,
+  and owns its own Worker, D1 and R2. `workers: 1` and file-level sharding stay unchanged so neither
+  shared resets nor journey steps race. Matrix `fail-fast` is disabled to retain every shard's result.
+- **Performance:** all four measured scenarios run independently of browser outcomes. Timing
+  budgets remain report-only; correctness and measurement integrity still fail the job.
+- **Development:** the real Vite server tests run independently, including when foundation fails.
+- **`verify`:** the existing required-check name is retained as an always-run aggregate. Every
+  required job must succeed; failure, cancellation or a skipped dependency cannot yield a green gate.
+
+Core, browser and performance jobs require a successful foundation, not each other. Build output is
+transferred as a tar archive so hidden manifests survive; it is test input, not deployment approval.
+No deployment is added. No test filters, default retries, assertion budgets or supported browsers
+are removed. Job deadlines reserve time for evidence uploads. Logs, browser reports, screenshots,
+traces and videos are retained for seven days, with separate artifact names for every job/shard.
+
+`pnpm test:ci-plan` uses Playwright's actual `--list` results to assert that the four shards contain
+exactly the unsharded dual-browser cases, without omissions or duplicates, keep files intact, and
+include the core cases. It discovers tests without starting a browser or Worker. Each shard's
+`control-coverage.json` is partial, not an independently complete inventory report; full inventory
+enforcement remains `pnpm test:controls` and must not be enabled separately on each shard.
+
+For diagnosis, run:
+
+```sh
+pnpm test:diagnose tests/browser/journeys/content.spec.ts --project=webkit --repeat-each=3
+```
+
+`Diagnose browser` provides the same selection on a manually chosen
+GitHub ref, with an existing spec path (optionally `:line`), one browser and 1/3/10 fresh test
+repetitions, not retries. Manual workflow dispatch becomes available once the workflow exists on
+the default branch. Its result is diagnostic only and never substitutes for `verify`; it uploads
+evidence on success or failure without running unrelated suites or deploying.
 
 Tests against the build output reset their disposable Worker and local D1/R2 instances before each
 case through an automatic Playwright fixture. The single-worker configuration keeps the reset isolated
