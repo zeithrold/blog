@@ -33,9 +33,12 @@ test('a late creation response preserves navigation away from the document list'
     && response.request().method() === 'POST')
   release()
   expect((await completed).ok()).toBe(true)
-  await page.waitForLoadState('networkidle')
+  // The held acknowledgement has reached the browser; the destination has to stay
+  // put. The gallery publishes its own settled state only after its session request
+  // answers, so a late navigation would replace the surface these assertions read.
   await expect(page).toHaveURL(/\/admin\/media$/)
   await expect(page.getByRole('heading', { name: 'Gallery', exact: true })).toBeVisible()
+  await expect(page.getByText('No media yet', { exact: true })).toBeVisible()
   expect((await page.request.get(`/api/admin/documents/${documentId}`)).ok()).toBe(true)
 })
 

@@ -47,8 +47,16 @@ test.describe('accessibility scanner', () => {
     await page.getByRole('button', { name: 'Documents', exact: true }).click()
     await page.getByRole('menuitem', { name: 'Operations', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Operations', exact: true })).toBeVisible()
-    await page.waitForLoadState('networkidle')
+    // The compact menu hands the navigation to the destination and then finishes its
+    // exit animation; reopening the trigger while it is still leaving leaves the menu
+    // closed again. The exited menu, the destination URL and the panel summary are the
+    // shell's own signals for that, and the status request has answered once the
+    // summary renders.
+    await expect(page).toHaveURL(/\/admin\/operations$/)
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Storage and content', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Operations', exact: true }).click()
+    await expect(page.getByRole('menu')).toBeVisible()
     await page.getByRole('menuitem', { name: 'Documents', exact: true }).click()
     const state = page.getByRole('combobox', { name: 'Publication state', exact: true })
     await state.click()

@@ -75,7 +75,9 @@ test('leaving while refreshing an editor prevents a late load from replacing the
   await page.getByRole('link', { name: 'Series', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Series', exact: true })).toBeVisible()
   release()
-  await page.waitForLoadState('networkidle')
+  // The catalog renders its empty state only once the series request answers, so the
+  // destination has settled on its own data before the stale editor load is judged.
+  await expect(page.locator('.catalog-browser .empty-state')).toBeVisible()
   await expect(page).toHaveURL(/\/admin\/series$/)
   await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveCount(0)
 })

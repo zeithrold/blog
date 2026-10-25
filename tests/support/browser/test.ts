@@ -33,8 +33,10 @@ export const test = base.extend<{ workerState: undefined, highlighterDiagnostics
     { auto: true },
   ],
   workerState: [
-    async ({ request }, use) => {
-      const reset = await request.post('/__fixture/reset')
+    async ({ request }, use, info) => {
+      // The gateway names the project so CPU-throttled performance runs keep every build
+      // synchronous instead of sharing the machine with a background one.
+      const reset = await request.post(`/__fixture/reset?project=${encodeURIComponent(info.project.name)}`)
       expect(reset.status(), await reset.text()).toBe(204)
       await use(undefined)
     },

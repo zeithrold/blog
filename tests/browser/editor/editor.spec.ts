@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { captureState } from '@ztd-me/frontend-checks/playwright'
 import { openDocumentSchema } from '@/contracts/documents'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
-import { saved } from '~/tests/support/browser/document'
+import { documentsHydrated, saved } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
 
@@ -82,7 +82,9 @@ test('native editing, autosave, preview and publish keep public content isolated
   })
   await page.goto('/__fixture/login')
   await expect(page.getByRole('heading', { name: 'Documents', exact: true })).toBeVisible()
-  await page.waitForLoadState('networkidle')
+  // The header buttons only create a document once React owns the server markup,
+  // so hydration is the precondition; the list request itself is not.
+  await documentsHydrated(page)
   await page.getByRole('button', { name: 'New post' }).click()
   await expect(page.locator('.bn-editor[contenteditable="true"]')).toBeVisible()
   const editor = page.locator('.bn-editor[contenteditable="true"]')

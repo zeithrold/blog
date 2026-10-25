@@ -28,8 +28,46 @@ export type Runtime = {
   dispose: () => Promise<void>
 }
 type MetadataFetch = (request: Parameters<V4FetchHandler>[0]) => Response | Promise<Response>
+type WorkerOptions = ReturnType<typeof V4WorkerOptionsSchema.parse>
+type FixtureInputs = {
+  modules: { type: 'ESModule', path: string }[]
+  modulesRoot: string
+  workerOptions: WorkerOptions
+  externalWorkers: WorkerOptions[]
+}
+// `dist/server` is immutable for the life of a test run, so resolving wrangler's configuration
+// and scanning the built modules is invariant work that must not repeat per case.
+let fixtureInputs: Promise<FixtureInputs> | undefined
+async function loadFixtureInputs(): Promise<FixtureInputs> {
+  fixtureInputs ??= readFixtureInputs().catch((error: unknown) => {
+    fixtureInputs = undefined
+    throw error
+  })
+  return await fixtureInputs
+}
+async function readFixtureInputs(): Promise<FixtureInputs> {
+  const options = unstable_getMiniflareWorkerOptions(
+    path.resolve('dist/server/wrangler.json'),
+  )
+  const modulesRoot = path.resolve('dist/server')
+  const modules = (await readdir(modulesRoot, { recursive: true }))
+    .filter(file => file.endsWith('.js'))
+    .sort((left, right) => Number(right === 'index.js') - Number(left === 'index.js'))
+    .map(file => ({ type: 'ESModule' as const, path: path.join(modulesRoot, file) }))
+  return {
+    modules,
+    modulesRoot,
+    workerOptions: V4WorkerOptionsSchema.parse({ ...options.workerOptions, modules, modulesRoot }),
+    externalWorkers: options.externalWorkers.map(worker => V4WorkerOptionsSchema.parse(worker)),
+  }
+}
 
-export async function runtime(origin = 'http://127.0.0.1:8800', metadataFetch?: MetadataFetch): Promise<Runtime> {
+export type RuntimeFailure = 'migrate' | 'ready'
+export async function runtime(
+  origin = 'http://127.0.0.1:8800',
+  metadataFetch?: MetadataFetch,
+  failure?: RuntimeFailure,
+): Promise<Runtime> {
   const { privateKey, publicKey } = await generateKeyPair('RS256')
   const jwk = {
     ...(await exportJWK(publicKey)),
@@ -38,10 +76,33 @@ export async function runtime(origin = 'http://127.0.0.1:8800', metadataFetch?: 
     use: 'sig',
   }
   const team = 'blog-test.cloudflareaccess.com'
-  const fixture = await makeFixture(origin, team, jwk, metadataFetch)
+  // Authentication material is per fixture, so a token minted for one case can never act in the next.
+  const csrfSecret = `${crypto.randomUUID()}${crypto.randomUUID()}`
+  const fixture = await makeFixture(origin, { team, jwk, csrfSecret }, metadataFetch)
+  try {
+    return await acquire(fixture, { origin, team, privateKey, failure })
+  }
+  catch (error) {
+    // The caller never receives a Worker that failed after allocation, so it must be disposed here.
+    await fixture.dispose().catch((disposeError: unknown) => console.error(disposeError))
+    throw error
+  }
+}
+
+async function acquire(
+  fixture: Miniflare,
+  options: { origin: string, team: string, privateKey: CryptoKey, failure?: RuntimeFailure },
+): Promise<Runtime> {
+  const { origin, team, privateKey, failure } = options
   await fixture.ready
+  if (failure === 'ready') {
+    throw new Error(`Injected fixture runtime failure (${failure})`)
+  }
   const db = await fixture.getD1Database('DB', 'blog-cms-local')
   await migrate(db)
+  if (failure === 'migrate') {
+    throw new Error(`Injected fixture runtime failure (${failure})`)
+  }
   const jwt = signer(privateKey, team)
   const token = await jwt()
   async function fetch(url: string, init: Parameters<DispatchFetch>[1] = {}) {
@@ -79,16 +140,13 @@ export async function runtime(origin = 'http://127.0.0.1:8800', metadataFetch?: 
   }
 }
 
-async function makeFixture(origin: string, team: string, jwk: JWK, metadataFetch?: MetadataFetch) {
-  const options = unstable_getMiniflareWorkerOptions(
-    path.resolve('dist/server/wrangler.json'),
-  )
-  const modulesRoot = path.resolve('dist/server')
-  const modules = (await readdir(modulesRoot, { recursive: true }))
-    .filter(file => file.endsWith('.js'))
-    .sort((left, right) => Number(right === 'index.js') - Number(left === 'index.js'))
-    .map(file => ({ type: 'ESModule' as const, path: path.join(modulesRoot, file) }))
-  const workerOptions = V4WorkerOptionsSchema.parse({ ...options.workerOptions, modules, modulesRoot })
+async function makeFixture(
+  origin: string,
+  identity: { team: string, jwk: JWK, csrfSecret: string },
+  metadataFetch?: MetadataFetch,
+) {
+  const { modules, modulesRoot, workerOptions, externalWorkers } = await loadFixtureInputs()
+  const { team, jwk, csrfSecret } = identity
   return new Miniflare(
     convertV4MiniflareOptions({
       cf: false,
@@ -105,7 +163,7 @@ async function makeFixture(origin: string, team: string, jwk: JWK, metadataFetch
             ACCESS_TEAM_DOMAIN: team,
             ACCESS_AUD: 'fixture-audience',
             OWNER_SUBS: '["fixture-owner"]',
-            CSRF_SIGNING_SECRET: 'disposable-local-csrf-secret-at-least-32-characters',
+            CSRF_SIGNING_SECRET: csrfSecret,
           },
           outboundService: async (request) => {
             if (request.url === `https://${team}/cdn-cgi/access/certs`) {
@@ -126,7 +184,7 @@ async function makeFixture(origin: string, team: string, jwk: JWK, metadataFetch
             })
           },
         },
-        ...options.externalWorkers.map(worker => V4WorkerOptionsSchema.parse(worker)),
+        ...externalWorkers,
       ],
     }),
   )

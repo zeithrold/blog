@@ -95,12 +95,31 @@ evidence on success or failure without running unrelated suites or deploying.
 
 Tests against the build output reset their disposable Worker and local D1/R2 instances before each
 case through an automatic Playwright fixture. The single-worker configuration keeps the reset isolated
-from other cases. Production quotas and data constraints remain active. Set `BLOG_TEST_PORT` to choose
+from other cases. Functional cases prebuild at most one fresh spare Worker while the current case runs;
+reset swaps instances rather than clearing a shared database. Each instance owns its D1/R2 state,
+module state and authentication secrets. This reduces serial reset latency, not total initialization
+work, and costs one additional idle Worker. Performance cases retire the spare and disable prewarming
+so background initialization cannot contaminate measurements. Set `BLOG_FIXTURE_PREWARM=0` to diagnose
+the synchronous path. Build and disposal failures remain failures; shutdown drains accepted work and
+reports cleanup errors, including when signals repeat.
+
+Browser readiness uses the application's rendered state rather than whole-page network idle. The
+loading-polish fixture separately coordinates already-started, marked route prefetches before deliberate
+document unloads, with a bounded deadline and no response replay or page-error exemptions. This avoids
+the usual cancellation window; it does not fix the framework's underlying prefetch rejection behavior.
+
+Production quotas and data constraints remain active. Set `BLOG_TEST_PORT` to choose
 an isolated port. Development server tests use the local development database and accept
 `BLOG_DEV_TEST_PORT` for the port. Browser screenshots, traces, and reports are written to `blog-tests`
 under the operating system's temporary directory. They do not create an `artifacts` directory in the
 repository. The performance script uses a `performance` subdirectory so its report cannot replace
 the functional results during `pnpm check`. `pnpm preview` requires a real Access configuration.
+
+The published `@ztd-me/frontend-checks@0.1.4` helper attaches complete Axe scans and named PNGs
+as files rather than embedding ordinary labels in the JSON report. Retain the report together with
+its referenced files; exceptionally long labels keep the inline compatibility form. Each run also
+writes `test-timings.json` with observed native setup/body/teardown boundaries and explicit unknown
+values. These diagnostics do not change assertions, retries or performance-budget enforcement.
 
 ## Test organization
 

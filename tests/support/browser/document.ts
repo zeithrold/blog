@@ -4,6 +4,25 @@ import { expect } from '@playwright/test'
 import { acknowledgementSchema } from '@/contracts/documents'
 import { sessionSchema } from '@/contracts/session'
 
+// The list panel publishes its own busy state and renders the rows it loaded, so
+// these are the signals that say the surface is usable. Waiting for network
+// silence instead would also wait for traffic nobody is waiting on: sibling route
+// prefetches and the remote font stylesheet.
+export async function documentListReady(page: Page, title?: string): Promise<void> {
+  await expect(page.locator('.document-list-panel')).toHaveAttribute('aria-busy', 'false')
+  await expect(page.locator('.document-loading')).toHaveCount(0)
+  if (title !== undefined) {
+    await expect(page.getByRole('link', { name: title, exact: true })).toBeVisible()
+  }
+}
+
+// The filter form stays natively disabled until React owns the server markup, so
+// an enabled search box proves the admin shell is hydrated. Anything that clicks
+// a list control waits for this, not for the document request to answer.
+export async function documentsHydrated(page: Page, search = 'Search by title'): Promise<void> {
+  await expect(page.getByRole('searchbox', { name: search, exact: true })).toBeEnabled()
+}
+
 export async function saved(page: Page): Promise<void> {
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible({
     timeout: 15000,
