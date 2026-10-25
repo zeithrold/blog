@@ -1,0 +1,4 @@
+/* Import the production stylesheet unchanged. The harness lives outside the app
+   root, so point Tailwind's source detection at the real component tree. */
+@import '../../../src/app/styles.css';
+@source '../../../src';
