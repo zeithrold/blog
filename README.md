@@ -242,28 +242,22 @@ Local source, production-build checks and live deployment are separate evidence.
 
 ## Shared development Skills
 
-`zt.json` explicitly selects five development Skills from Tools
-`7fd78ba96830452502adbda07575bb250af914ba`. Complete directories, references and licenses live under
-`.agents/skills`; `zt.lock.json` records their module version and directory hashes.
+The five generic development Skills (`js-ts-testing`, `ui-foundation`, `ui-web`,
+`frontend-engineering`, `frontend-verification`) come from Tools
+[`7fd78ba96830452502adbda07575bb250af914ba`](https://github.com/zeithrold/tools/tree/7fd78ba96830452502adbda07575bb250af914ba/skills)
+and are installed once for the current user in `~/.agents/skills`; this repository keeps no copy.
+Selection lives in the user-global `~/.agents/zt.json` or an explicit `zt sync --skills` list for
+the new global `zt sync` in the Tools source working tree, which has no released build yet.
+`zt.lock.json` stays as an empty retired lock; no project-level Skill sync remains.
 The root module declaration supports read-only discovery. The native `pnpm check`
 command continues to own static checks, build, integration, both browser suites,
 performance and development verification.
 
-For UI work, read the public reading design above and the installed
-[UI foundation](.agents/skills/ui-foundation/SKILL.md), including its
-[eight-dimension visual review](.agents/skills/ui-foundation/references/visual-design.md).
+For UI work, read the public reading design above and the globally installed
+[UI foundation](https://github.com/zeithrold/tools/blob/7fd78ba96830452502adbda07575bb250af914ba/skills/ui-foundation/SKILL.md), including its
+[eight-dimension visual review](https://github.com/zeithrold/tools/blob/7fd78ba96830452502adbda07575bb250af914ba/skills/ui-foundation/references/visual-design.md).
 Keep Blog's reading/editor role budgets, content, authentication and native verification
 local. The Skills do not own application components or publication policy.
-
-Reproduce or review the managed delivery with the pinned CLI:
-
-```sh
-go install github.com/zeithrold/tools/cmd/zt@7fd78ba96830452502adbda07575bb250af914ba
-zt sync --root . --plan
-zt sync --root .
-```
-
-Sync protects unmanaged Skills and local edits; review its plan before applying updates.
 
 ## Source organization
 
