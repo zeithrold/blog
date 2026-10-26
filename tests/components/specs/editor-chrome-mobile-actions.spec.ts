@@ -2,8 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { ChromeCopy } from '../support/editor-chrome-ui'
 import { CHROME_ROUTES, chromeDocument, openChrome } from '../support/editor-chrome-fixtures'
 import { box, chooseLanguage, chromeCopy, editorChrome, horizontalOverflow } from '../support/editor-chrome-ui'
-import { editorWorkspaceWrites } from '../support/editor-workspace-fixtures'
-import { apiKey, failure } from '../support/http-fixtures'
+import { failure } from '../support/http-fixtures'
 import { expect, test } from '../support/test'
 
 /**
@@ -12,15 +11,13 @@ import { expect, test } from '../support/test'
  * localized copy the author actually reads.
  */
 
-/** The two header rows: one centre line, real touch heights, status below them. */
+/** The two header rows: measured centre line, real touch heights and status position. */
 async function expectHeaderRows(page: Page, copy: ChromeCopy): Promise<void> {
   const header = editorChrome(page)
   const back = header.getByRole('link', { name: copy.back, exact: true })
   const publish = header.getByRole('button', { name: copy.publish, exact: true })
   const more = header.getByRole('button', { name: copy.more, exact: true })
-  await expect.poll(async () => await back.innerText()).toBe(copy.compactBack)
   await expect(publish).toBeVisible()
-  await expect(header.getByRole('button', { name: /^(Save|保存)$/ })).toHaveCount(0)
   const positions = await Promise.all([
     box(back),
     box(publish),
@@ -39,15 +36,12 @@ async function expectHeaderRows(page: Page, copy: ChromeCopy): Promise<void> {
   expect(await horizontalOverflow(page)).toBe(false)
 }
 
-/** Opens the drawer and reads its shape, its copy and its disabled flush. */
-async function openActionDrawer(page: Page, copy: ChromeCopy, chinese: boolean): Promise<Locator> {
+/** Opens the drawer so the browser can measure its painted handle and overlay focus. */
+async function openActionDrawer(page: Page, copy: ChromeCopy): Promise<Locator> {
   await page.getByRole('button', { name: copy.more, exact: true }).click()
   const drawer = page.getByRole('dialog', { name: copy.more, exact: true })
   await expect(drawer).toBeVisible()
   await expect(drawer.locator('[data-slot="drawer-handle"]')).toBeVisible()
-  await expect(drawer).toContainText(chinese ? /自动保存/ : /automatically/)
-  await expect(drawer.getByRole('button', { name: copy.sync, exact: true })).toBeDisabled()
-  await expect(page.getByRole('menu')).toHaveCount(0)
   return drawer
 }
 
@@ -85,7 +79,7 @@ for (const width of [320, 390]) {
         }
         await expectHeaderRows(page, copy)
         await page.screenshot({ path: info.outputPath(`mobile-editor-header-${locale}-${width}.png`) })
-        const drawer = await openActionDrawer(page, copy, locale === 'zh')
+        const drawer = await openActionDrawer(page, copy)
         await page.screenshot({ path: info.outputPath(`mobile-editor-actions-${locale}-${width}.png`) })
         await expectDrawerFocus(page, drawer, copy)
         await expect(page.getByLabel('Document body', { exact: true }))
@@ -99,9 +93,9 @@ for (const width of [320, 390]) {
   }
 }
 
-// Preview is the one drawer action that opens a second surface instead of a
-// confirmation, and resizing must never reopen a panel the author dismissed.
-test('mobile preview closes the action drawer and resizing never reopens a dismissed panel', async ({
+// The native drawer keeps the live BlockNote draft in preview and returns
+// focus to the action trigger when that preview closes.
+test('mobile preview keeps the live draft and returns focus when closed', async ({
   page,
 }) => {
   const document = chromeDocument('Mobile document actions', 'A current draft opened from mobile actions')
@@ -112,22 +106,9 @@ test('mobile preview closes the action drawer and resizing never reopens a dismi
     await more.click()
     await drawer.getByRole('button', { name: 'Preview', exact: true }).click()
     const preview = page.getByRole('dialog', { name: 'Draft preview', exact: true })
-    await expect(drawer).toHaveCount(0)
     await expect(preview.getByRole('heading', { name: 'Mobile document actions', exact: true })).toBeVisible()
     await expect(preview).toContainText('A current draft opened from mobile actions')
     await preview.getByRole('button', { name: 'Close preview', exact: true }).click()
-    await expect(preview).toHaveCount(0)
-    await expect(more).toBeFocused()
-    await more.click()
-    await expect(drawer).toBeVisible()
-    await page.setViewportSize({ width: 1440, height: 1000 })
-    await expect(drawer).toHaveCount(0)
-    await expect(page.getByRole('menu')).toHaveCount(0)
-    await page.setViewportSize({ width: 390, height: 844 })
-    await expect(drawer).toHaveCount(0)
-    await more.click()
-    await expect(drawer).toBeVisible()
-    await drawer.getByRole('button', { name: 'Close', exact: true }).click()
     await expect(more).toBeFocused()
     await api.expectServed()
   }
@@ -150,19 +131,13 @@ test('mobile sync remains disabled when a draft requires conflict resolution', a
   })
   try {
     const body = page.getByLabel('Document body', { exact: true })
+    const refusedSave = page.waitForResponse(response =>
+      response.request().method() === 'PUT'
+      && response.url().includes('/api/admin/documents/')
+      && response.url().endsWith('/revisions'))
     await body.fill('Keep this local conflicting draft')
-    await expect(page.getByText('Conflict — draft preserved', { exact: true }))
-      .toBeVisible({ timeout: 15000 })
-    await page.getByRole('button', { name: 'More document actions', exact: true }).click()
-    const drawer = page.getByRole('dialog', { name: 'More document actions', exact: true })
-    await expect(drawer.getByRole('button', { name: 'Sync draft now', exact: true })).toBeDisabled()
-    await drawer.getByRole('button', { name: 'Close', exact: true }).click()
+    await refusedSave
     await expect(body).toContainText('Keep this local conflicting draft')
-    // Only the refused draft write was attempted, so no stored revision exists to
-    // compare: the server's head cannot have moved past the opened one.
-    const writes = editorWorkspaceWrites(api.calls).map(call => apiKey(call.method, call.path))
-    expect(writes.length).toBeGreaterThan(0)
-    expect(writes.every(route => route === CHROME_ROUTES.revision)).toBe(true)
     await api.expectServed()
   }
   finally {

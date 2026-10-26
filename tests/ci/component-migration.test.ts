@@ -1,11 +1,28 @@
+/* eslint-disable max-lines -- Keep suite-identity regressions beside the migration gate they protect. */
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
 import { test as nodeTest } from 'node:test'
 import { z } from 'zod'
+import { suiteDeclarations } from '~/tests/ci/suite-declarations'
+import {
+  caseKeyIssue,
+  exactSuiteCount,
+  retainedSuiteIssues,
+  retiredSuiteIssues,
+  suiteDeclarationIndex,
+} from '~/tests/ci/suite-identity'
 import { componentMigrations } from '~/tests/contracts/component-migrations'
-import { documentsCatalogContracts, retainedCaseKeys, retiredCaseKeys } from '~/tests/contracts/registry'
+import { documentsCatalogContracts as baseline } from '~/tests/contracts/documents-catalog'
+import { historyServerProofs } from '~/tests/contracts/history-migrations'
+import { historyRemainingServerProofs } from '~/tests/contracts/history-remaining-migrations'
+import {
+  documentsCatalogContracts,
+  retainedCaseKeys,
+  retiredCaseKeys,
+  retirementOwnership,
+} from '~/tests/contracts/registry'
 import { surfaceMigrations } from '~/tests/contracts/surface-migrations'
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
@@ -76,6 +93,39 @@ const configurations: Record<Layer, { configFile: string, args: string[] }> = {
 const browsers = ['chromium', 'webkit'] as const
 const retainedSurfaceKeys = new Set(surfaceMigrations.flatMap(migration =>
   migration.retained.flatMap(group => group.cases)))
+const declaredSuites = suiteDeclarationIndex(
+  [
+    ...componentMigrations.flatMap(migration => migration.component),
+    ...surfaceMigrations.flatMap(migration => migration.component),
+    ...historyServerProofs.flatMap(proof => [
+      proof.component,
+      ...proof.integration,
+    ].map(caseKey => ({ case: caseKey }))),
+    ...historyRemainingServerProofs.flatMap(proof => [
+      proof.component,
+      ...proof.integration,
+    ].map(caseKey => ({ case: caseKey }))),
+  ],
+  baseline.flatMap(contract => [
+    ...contract.unit,
+    ...contract.integration,
+    ...contract.component,
+    ...contract.e2e,
+  ]),
+  suiteDeclarations,
+)
+
+/*
+ * The second generation of a replacement.
+ *
+ * A surface migration names the component case that replaced an E2E case. When a
+ * later change moves that component case to the jsdom layer, the DOM ledger is
+ * where the retirement is declared: it names the component case as `legacy` and
+ * the dom case that now proves the same assertions. A component case that no
+ * longer runs is therefore accepted only when that record exists — never because
+ * the file happens to exist, and never silently.
+ */
+const completeRetirements = retirementOwnership.complete
 const componentRoot = 'tests/components/'
 const browserRoot = 'tests/browser/'
 const plans = new Map<Layer, PlannedCase[]>()
@@ -131,16 +181,35 @@ function sourceFile(rootDir: string, file: string): string {
 /** Migration keys are `<file> :: <title>`, the same shape the registry parses. */
 function caseKeyParts(key: string): { file: string, title: string } {
   const [file, title, extra] = key.split(' :: ')
-  if (file === undefined || title === undefined || extra !== undefined) {
+  if (caseKeyIssue(key) !== null || file === undefined || title === undefined || extra !== undefined) {
     throw new Error(`Invalid migration case key: ${key}`)
   }
   return { file, title }
 }
 
-function count(plan: readonly PlannedCase[], key: { file: string, title: string }, project: string): number {
-  return plan.filter(entry => entry.file === key.file && entry.title === key.title
-    && entry.project === project).length
+function count(
+  plan: readonly PlannedCase[],
+  key: { file: string, title: string, describe: readonly string[] },
+  project: string,
+): number {
+  return exactSuiteCount(plan, { ...key, project })
 }
+
+nodeTest('component case counts include file, title, suite path and project', () => {
+  const expected = {
+    file: 'tests/components/suite-identity.spec.ts',
+    title: 'a component case with an exact suite identity',
+    describe: ['declared suite'],
+  }
+  const plan: PlannedCase[] = [
+    { ...expected, project: 'chromium', executions: 0 },
+    { ...expected, describe: ['other suite'], project: 'chromium', executions: 0 },
+    { ...expected, project: 'webkit', executions: 0 },
+  ]
+  equal(count(plan, expected, 'chromium'), 1)
+  equal(count(plan, { ...expected, describe: ['other suite'] }, 'chromium'), 1)
+  equal(count(plan, { ...expected, describe: ['other suite'] }, 'webkit'), 0)
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
 
 function referenceFiles(layer: 'component' | 'e2e'): Set<string> {
   return new Set(documentsCatalogContracts.flatMap(contract =>
@@ -166,10 +235,12 @@ nodeTest('retired E2E cases no longer run in either browser', () => {
   for (const key of Array.from(retiredCaseKeys).sort()) {
     const parts = caseKeyParts(key)
     for (const project of browsers) {
-      const found = count(e2e, parts, project)
-      if (found > 0) {
-        present.push(`${project} › ${key}: listed ${found} times`)
-      }
+      present.push(...retiredSuiteIssues(
+        e2e,
+        { ...parts, project },
+        declaredSuites,
+        `${project} › ${key}`,
+      ))
     }
   }
   assert.deepEqual(present, [], 'Retired cases belong to the component specs, not tests/browser')
@@ -181,10 +252,12 @@ nodeTest('retained E2E cases still run against Chromium and WebKit', () => {
   for (const key of Array.from(retainedCaseKeys).sort()) {
     const parts = caseKeyParts(key)
     for (const project of browsers) {
-      const found = count(e2e, parts, project)
-      if (found !== 1) {
-        missing.push(`${project} › ${key}: listed ${found} times`)
-      }
+      missing.push(...retainedSuiteIssues(
+        e2e,
+        { ...parts, project },
+        declaredSuites,
+        `${project} › ${key}`,
+      ))
     }
   }
   assert.deepEqual(missing, [], 'Only the built application can prove the retained cases')
@@ -201,9 +274,11 @@ nodeTest('every declared component reference is a real component case in both br
           missing.push(`${label} does not declare ${project}`)
           continue
         }
-        const matching = components.filter(entry =>
-          JSON.stringify(entry.describe) === JSON.stringify(reference.describe ?? []))
-        const found = count(matching, reference, project)
+        const found = count(components, {
+          file: reference.file,
+          title: reference.title,
+          describe: reference.describe ?? [],
+        }, project)
         if (found !== 1) {
           missing.push(`${project} › ${label}: listed ${found} times`)
         }
@@ -219,12 +294,25 @@ nodeTest('locally replaced surfaces retire old E2E and retain exact component ca
   for (const migration of surfaceMigrations) {
     for (const project of browsers) {
       for (const key of migration.legacy.filter(entry => !retainedSurfaceKeys.has(entry))) {
-        equal(count(e2e, caseKeyParts(key), project), 0, `Retired case still runs: ${project} › ${key}`)
+        const issues = retiredSuiteIssues(
+          e2e,
+          { ...caseKeyParts(key), project },
+          declaredSuites,
+          `${project} › ${key}`,
+        )
+        assert.deepEqual(issues, [], `Retired case still runs: ${project} › ${key}`)
       }
       for (const replacement of migration.component) {
-        const matching = components.filter(entry =>
-          JSON.stringify(entry.describe) === JSON.stringify(replacement.describe ?? []))
-        const found = count(matching, caseKeyParts(replacement.case), project)
+        const found = count(components, {
+          ...caseKeyParts(replacement.case),
+          describe: replacement.describe ?? [],
+        }, project)
+        // Only a complete retirement may stand in for a missing component case.
+        // A case its record still keeps (`split`) must run here with its exact
+        // describe, so a wrong-suite or wrong-describe case cannot pass as covered.
+        if (found === 0 && completeRetirements.has(replacement.case)) {
+          continue
+        }
         equal(found, 1, `Missing replacement: ${project} › ${replacement.case}`)
       }
     }
@@ -268,12 +356,22 @@ nodeTest('component and E2E proof never share a path', () => {
 
 nodeTest('retained surface boundaries still exist in both E2E projects', () => {
   const e2e = discover('e2e')
+  const missing: string[] = []
   for (const key of retainedSurfaceKeys) {
+    const keyIssue = caseKeyIssue(key)
+    if (keyIssue !== null) {
+      missing.push(`${key}: ${keyIssue}`)
+      continue
+    }
+    const reference = caseKeyParts(key)
     for (const project of browsers) {
-      const found = key.includes(' :: ')
-        ? count(e2e, caseKeyParts(key), project)
-        : e2e.filter(entry => entry.file === key && entry.project === project).length
-      assert.ok(found > 0, `Missing retained boundary: ${project} › ${key}`)
+      missing.push(...retainedSuiteIssues(
+        e2e,
+        { ...reference, project },
+        declaredSuites,
+        `${project} › ${key}`,
+      ))
     }
   }
+  assert.deepEqual(missing, [])
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))

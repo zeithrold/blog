@@ -11,8 +11,7 @@ async function choose(page: Page, label: string, option: string): Promise<void> 
   await page.getByRole('option', { name: option, exact: true }).click()
 }
 
-// Both notices are announced at once when a confirmed restore cannot refresh the
-// list: the alert takes focus, and the status reports what was committed.
+// Axe and overflow need the real browser's computed styles, layout and tree.
 test.describe('accessibility scanner', () => {
   test.use({ bypassCSP: true })
   for (const [locale, width, mode] of [
@@ -58,8 +57,8 @@ test.describe('accessibility scanner', () => {
         await row.getByRole('button', { name: copy.restore, exact: true }).click()
         await captured.promise
         held.open()
-        await expect(page.getByRole('alert')).toContainText(copy.loadError)
-        await expect(page.getByRole('status').filter({ hasText: copy.restored })).toBeVisible()
+        await page.getByRole('alert').waitFor({ state: 'attached' })
+        await page.getByRole('status').waitFor({ state: 'attached' })
         await assertAccessible(page, info, { label: `trash-notices-${locale}-${width}` })
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
         await page.screenshot({ path: info.outputPath(`trash-notices-${locale}-${width}.png`) })

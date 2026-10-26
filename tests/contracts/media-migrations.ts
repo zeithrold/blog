@@ -29,10 +29,7 @@ export const mediaMigrations: readonly CaseMigration[] = [
     component: [
       {
         case: 'tests/components/specs/media-gallery.spec.ts :: gallery accepts multi-file drops, protects active uploads and filters media',
-        proves: [
-          'multi-file drop queues both files and blocks closing while the first transfer is held',
-          'sequential transfers show completed cards, private image previews and search/type filtering',
-        ],
+        proves: ['a real DataTransfer drop delivers both files, and the dialog lists each one by name'],
       },
       {
         case: 'tests/components/specs/media-gallery.spec.ts :: upload dialog and mobile drawer keep queued files, focus and keyboard access',

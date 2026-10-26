@@ -1,5 +1,13 @@
 /* eslint-disable max-lines, style/max-len -- Verbatim case references stay on one line. */
 import type { DocumentsCatalogContract } from './documents-catalog'
+import { adminDomMigrations } from './admin-dom-migrations'
+import { documentsCatalogDomMigrations } from './documents-catalog-dom-migrations'
+import { editorChromeDomMigrations } from './editor-chrome-dom-migrations'
+import { mediaDomMigrations } from './media-dom-migrations'
+import { overlayDomMigrations } from './overlay-dom-migrations'
+import { publicationDomMigrations } from './publication-dom-migrations'
+import { referencesDomMigrations } from './references-dom-migrations'
+import { tableDomMigrations } from './table-dom-migrations'
 
 /**
  * Where a jsdom case now carries work an older native case owned.
@@ -520,4 +528,14 @@ export const domMigrations: readonly DomMigrationRecord[] = [
       },
     ],
   },
+  ...referencesDomMigrations,
+  ...documentsCatalogDomMigrations,
+  ...tableDomMigrations,
+  ...mediaDomMigrations,
+  ...adminDomMigrations,
+  ...editorChromeDomMigrations,
+  // The overlay package retired no case to jsdom; the module states that
+  // decision where the rest of the layer's records live.
+  ...overlayDomMigrations,
+  ...publicationDomMigrations,
 ]

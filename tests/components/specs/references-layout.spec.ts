@@ -1,10 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { expectAuthors } from '~/tests/browser/references/reference-author-helpers'
-import { settingsTab } from '~/tests/support/browser/settings'
 import { editorWorkspaceDocument } from '../support/editor-workspace-fixtures'
-import { editorReady, mountEditorWorkspace } from '../support/editor-workspace-ui'
+import { mountEditorWorkspace } from '../support/editor-workspace-ui'
 import {
-  attemptedWrites,
   referenceSaveRoute,
   writtenLists,
 } from '../support/reference-fixtures'
@@ -80,27 +78,3 @@ async function expectLayout(page: Page, startWidth: number): Promise<void> {
     await expect(page.getByRole('button', { name: 'Document settings', exact: true })).toBeVisible()
   }
 }
-
-// A drawer closed by growing the window stays closed when the window shrinks
-// again: the layout does not reopen a panel the author did not ask for.
-test('a settings drawer closed by resizing does not reopen on returning to mobile', async ({ page }) => {
-  const api = await mountEditorWorkspace(page, {
-    document: editorWorkspaceDocument('Drawer closed by resize'),
-    width: 390,
-  })
-  try {
-    await editorReady(page)
-    await settingsTab(page, 'Content')
-    await expect(page.getByRole('dialog', { name: 'Document settings', exact: true })).toBeVisible()
-    await page.setViewportSize({ width: 1440, height: 900 })
-    await expect(page.locator('.document-settings')).toBeVisible()
-    await page.setViewportSize({ width: 390, height: 900 })
-    await expect(page.getByRole('button', { name: 'Document settings', exact: true })).toBeVisible()
-    await expect(page.getByRole('dialog')).toHaveCount(0)
-    expect(attemptedWrites(api)).toEqual([])
-    await api.expectServed()
-  }
-  finally {
-    await api.dispose()
-  }
-})

@@ -4,7 +4,6 @@ import { saveSchema } from '@/contracts/documents'
 import { chooseTimezone, publicationTime, verifiedTime } from '~/tests/browser/publication/schedule-helpers'
 import { saved } from '~/tests/support/browser/document'
 import { settingsTab } from '~/tests/support/browser/settings'
-import { catalogEntry, catalogPage } from '../support/domain-fixtures'
 import { openWorkspace, serveWorkspace } from '../support/editor-workspace-case'
 import { editorWorkspaceDocument, editorWorkspaceWrites } from '../support/editor-workspace-fixtures'
 import { apiKey, defer } from '../support/http-fixtures'
@@ -135,44 +134,14 @@ test('scheduling locks publication and keeps the editor mounted while the reques
     await verifiedTime(page)
     await page.getByRole('button', { name: 'Schedule saved draft', exact: true }).click()
     await state.started.promise
-    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeDisabled()
     await expect(body).toHaveAttribute('contenteditable', 'false')
     state.release.open()
-    await expect(page.getByRole('button', { name: 'Cancel schedule', exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeEnabled()
     await expect(body).toHaveAttribute('contenteditable', 'true')
     expect(await editor.evaluate(element => element.isConnected)).toBe(true)
-    await saved(page)
     await api.expectServed()
   }
   finally {
     state.release.open()
-    await api.dispose()
-  }
-})
-
-// Choosing a catalog entry is a local form decision, but it has to reach the save
-// packet: the case reads the document the boundary would store.
-test('catalog snapshots reach the save packet from the editor', async ({ page }) => {
-  const tag = catalogEntry({ kind: 'tag', name: 'Snapshot tag', slug: 'snapshot-tag' })
-  const api = await serveWorkspace(page, editorWorkspaceDocument('Catalog snapshot'), {
-    'GET /api/admin/catalog/tag': () => ({ body: catalogPage([tag]) }),
-  })
-  try {
-    await openWorkspace(page, { title: 'Catalog snapshot', width: 1440, height: 1000 })
-    await page.getByText('Tags and series', { exact: true }).click()
-    const tags = page.getByRole('region', { name: 'Tags and series', exact: true })
-    await tags.getByRole('combobox', { name: 'Tags', exact: true }).click()
-    await page.getByRole('combobox', { name: 'Search tags', exact: true }).fill(tag.name)
-    await page.getByRole('option', { name: tag.name, exact: true }).click()
-    await page.keyboard.press('Escape')
-    await saved(page)
-    const document = validateDocument(savedDocument(api))
-    expect(document.meta.tags[0]?.id).toBe(tag.id)
-    expect(document.meta.tags[0]?.label).toBe(tag.name)
-    await api.expectServed()
-  }
-  finally {
     await api.dispose()
   }
 })

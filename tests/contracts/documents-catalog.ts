@@ -451,7 +451,7 @@ export const documentsCatalogContracts = [
       {
         file: 'tests/browser/documents/document-list-navigation.spec.ts',
         projects: both,
-        title: '120-character zh search chips fit at 320px and can be removed',
+        title: '120-character zh search chip ellipsizes and returns native focus at 320px',
       },
     ],
     dimensions: [
@@ -541,7 +541,7 @@ export const documentsCatalogContracts = [
       {
         file: 'tests/browser/documents/document-loading-polish.spec.ts',
         projects: both,
-        title: 'document loading and refresh stay readable in zh at 320px',
+        title: 'Chinese first-load and refresh indicator geometry survives reduced motion at 320px',
       },
       {
         file: 'tests/browser/documents/document-loading-polish.spec.ts',
@@ -1232,7 +1232,7 @@ export const documentsCatalogContracts = [
       {
         file: 'tests/components/specs/catalog-controls.spec.ts',
         projects: both,
-        title: 'New series discards a dirty form only after confirmation and resets it',
+        title: 'New series discard dialog returns native focus after cancel and confirm',
       },
     ],
     e2e: [],

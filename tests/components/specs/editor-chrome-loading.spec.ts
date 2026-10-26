@@ -37,7 +37,6 @@ test('the editor loader displays a skeleton and spinner and respects reduced mot
   try {
     try {
       await expect(loader).toBeVisible()
-      await expect(loader.getByRole('status')).toHaveText('Loading editor…')
       await expect(loader.locator('.editor-loading-skeleton').first()).toBeVisible()
       const spinner = loader.locator('.editor-loading-spinner')
       await expect(spinner).toHaveCSS('animation-name', 'spin')

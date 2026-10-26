@@ -30,8 +30,9 @@ export function assessControlMap(
     if (references.includes(undefined)) {
       issues.push(`Control cites an unknown rule: ${entry.id}`)
     }
-    if (!references.some(rule => rule !== undefined && rule.component.length + rule.e2e.length > 0)) {
-      issues.push(`Control has no browser wiring proof: ${entry.id}`)
+    if (!references.some(rule => rule !== undefined
+      && rule.dom.length + rule.component.length + rule.e2e.length > 0)) {
+      issues.push(`Control has no UI wiring proof: ${entry.id}`)
     }
   }
   return issues

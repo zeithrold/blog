@@ -73,7 +73,7 @@ for (const orientation of ['column', 'row'] as const) {
   })
 }
 
-test('the last table row and column cannot be deleted from the option menus', async ({ page }) => {
+test('blocked final-segment menus leave the live table unchanged', async ({ page }) => {
   const { api } = await mountTableWorkspace(page, tableDocument(1, 1))
   try {
     for (const orientation of ['Row', 'Column'] as const) {

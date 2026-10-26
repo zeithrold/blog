@@ -32,10 +32,10 @@ function c(file: string, title: string): string {
  *   The component cases assert the rendered wiring and request the client
  *   sends, not those rules a second time.
  * - The conflict notices, save-failure notices, timezone status and failed-plan
- *   explanation are React DOM state. They are Vitest-pilot candidates once the
- *   editor shell can mount without a browser; this change adds no dependency
- *   and keeps them in the native browser because they are reached through the
- *   production BlockNote editor and its coordinator.
+ *   explanation now have controller/data-boundary proofs in the DOM ledger.
+ *   Historical component successors remain recorded here after their retirement;
+ *   the second-generation ledger names the DOM cases that replace them. The real
+ *   Title field's dirty/save wiring remains an explicit component successor.
  * - The kept native browser reasons are viewport bounds, sticky-header and
  *   scroll/focus behaviour, the real contenteditable snapshot used by Compare
  *   changes, IndexedDB recovery on Use server version, the 390px settings
@@ -147,6 +147,12 @@ export const publicationRemainingMigrations: readonly CaseMigration[] = [
       c(`${E}/publication-save-errors.spec.ts`, 'publishing retains the save failure reason INVALID_DOCUMENT and permits correction'),
       c(`${E}/publication-save-errors.spec.ts`, 'publishing retains the save failure reason CONNECTION_FAILED and permits correction'),
     ],
+    /*
+     * Keep the three historical component nodes: the DOM ledger records their
+     * retirement rather than rewriting the first generation. The additional
+     * native successor proves the real Title field's wiring; it is not a
+     * retained legacy case and must still appear in both browser plans.
+     */
     component: [
       {
         case: c(`${C}/publication-remaining.spec.ts`, 'publishing retains the save failure reason DOCUMENT_TOO_LARGE and permits correction'),
@@ -170,6 +176,14 @@ export const publicationRemainingMigrations: readonly CaseMigration[] = [
           'the aborted autosave shows its connection reason and sends no publish request',
           'a retried publish before correction leaves the reason in place',
           'after correction one save and one publish succeed, the notice clears and the live link appears',
+        ],
+      },
+      {
+        case: c(`${C}/publication-remaining.spec.ts`, 'the real Title field drives dirty status and saves corrected metadata'),
+        proves: [
+          'the production Title field onChange marks the real draft dirty before autosave',
+          'two title edits save the expected metadata against successive document versions',
+          'the corrected title becomes the saved head rather than a test-side model update',
         ],
       },
     ],

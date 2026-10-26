@@ -33,7 +33,7 @@ export const tableInteractionMigrations: readonly AdminMigrationRecord[] = [
     ],
     component: [
       {
-        case: c(F.merged, 'merged column controls preserve spans and protect the final group'),
+        case: c(F.merged, 'merged column edits preserve spans and Undo restores the final group'),
         proves: [
           'the merged and final labels stay reachable and the bar exposes two groups',
           'the position-3 insert carries the merged cells and one Undo restores the table',
@@ -41,7 +41,7 @@ export const tableInteractionMigrations: readonly AdminMigrationRecord[] = [
         ],
       },
       {
-        case: c(F.merged, 'merged row controls preserve spans and protect the final group'),
+        case: c(F.merged, 'merged row edits preserve spans and Undo restores the final group'),
         proves: [
           'the merged and final labels stay reachable and the bar exposes two groups',
           'the position-3 insert carries the merged cells and one Undo restores the table',
@@ -97,14 +97,14 @@ export const tableInteractionMigrations: readonly AdminMigrationRecord[] = [
         ],
       },
       {
-        case: c(F.guards, 'desktop table keyboard help is discoverable in en'),
+        case: c(F.guards, 'desktop keyboard help follows the hovered table block in en'),
         proves: [
           'the hovered table opens its block action list and shows the English Alt+F10/Tab/Escape help',
           'reading the help sends no revision',
         ],
       },
       {
-        case: c(F.guards, 'desktop table keyboard help is discoverable in zh'),
+        case: c(F.guards, 'desktop keyboard help follows the hovered table block in zh'),
         proves: [
           'the hovered table opens its block action list and shows the Chinese Alt+F10/Tab/Escape help',
           'reading the help sends no revision',

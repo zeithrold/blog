@@ -258,7 +258,8 @@ export function mountPublication(input: PublicationMount): MountedPublication {
     },
     editTitle: (title) => {
       act(() => {
-        // The production title path: EditorSession.update calls both.
+        // Feed metadata directly through the DOM test boundary; this bypasses
+        // the product Title field's onChange path.
         const { model, draft } = state().workspace
         model.updateFields({ meta: { ...model.envelope.meta, title } })
         draft.changed()

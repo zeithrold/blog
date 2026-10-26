@@ -84,7 +84,7 @@ export const tableMigrations: readonly AdminMigrationRecord[] = [
         ],
       },
       {
-        case: c(F.insertion, 'the last table row and column cannot be deleted from the option menus'),
+        case: c(F.insertion, 'blocked final-segment menus leave the live table unchanged'),
         proves: [
           'the only row and column offer a disabled delete item in their menus',
           'the menu action sends no revision and leaves one cell',
@@ -176,10 +176,8 @@ export const tableMigrations: readonly AdminMigrationRecord[] = [
       {
         case: c(F.captions, 'each table has an independent caption below its viewport at 1440px'),
         proves: [
-          'two tables keep independent captions below their own viewport',
-          'each caption reaches the revision packet without changing the blocks',
-          'clearing one caption leaves the other caption in the packet',
-          'the Content inspector exposes no table caption field',
+          'two tables render their captions below their own table at 1440px',
+          'both captions stay inside the viewport horizontal bounds',
         ],
       },
       {

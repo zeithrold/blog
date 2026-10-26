@@ -1,5 +1,4 @@
 /* eslint-disable style/max-len -- Verbatim case references stay on one line. */
-/* eslint-disable max-lines -- One flat table maps every legacy case to its component cases. */
 import type { AdminMigrationRecord } from './admin-migrations'
 
 /**
@@ -69,13 +68,6 @@ const tableProves = [
   'the list then drops the row',
 ]
 
-const doiProves = [
-  'a doi.org link is normalised, sent as a bare DOI and fills the empty fields',
-  'the answer reports Information retrieved and writes nothing by itself',
-  'a second lookup keeps the curated title, author and URL',
-  'Save stays in view, and the saved draft carries the curated entries with the normalised DOI',
-]
-
 const resizeProves = [
   'the author name typed at the start width survives a resize to the other layout',
   'Save stays in view and the page does not scroll horizontally at either width',
@@ -125,15 +117,15 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
     ],
     component: [
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author rows edit, paste, reorder and save at 320px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'native author drag, bounds and axe hold at 320px'),
         proves: authorsProves,
       },
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author rows edit, paste, reorder and save at 390px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'native author drag, bounds and axe hold at 390px'),
         proves: authorsProves,
       },
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author rows edit, paste, reorder and save at 1440px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'native author drag, bounds and axe hold at 1440px'),
         proves: authorsProves,
       },
     ],
@@ -142,11 +134,11 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
   {
     id: 'reference.author-limits',
     legacy: [
-      c('tests/browser/references/reference-authors.spec.ts', 'author limits, expanded rows and duplicate names retain their identity'),
+      c('tests/browser/references/reference-authors.spec.ts', 'author validation delivers native focus to required controls'),
     ],
     component: [
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author limits, expanded rows and duplicate names retain their identity'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'author validation delivers native focus to required controls'),
         proves: [
           'saving without an author name focuses the author control instead of the title',
           'two authors with the same name stay two rows with their own identity',
@@ -162,21 +154,21 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
   {
     id: 'reference.author-subpages',
     legacy: [
-      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages preserve the reference draft and one dialog at 320px'),
-      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages preserve the reference draft and one dialog at 390px'),
-      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages preserve the reference draft and one dialog at 1440px'),
+      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages retain native focus, scroll and reachability at 320px'),
+      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages retain native focus, scroll and reachability at 390px'),
+      c('tests/browser/references/reference-author-page.spec.ts', 'author subpages retain native focus, scroll and reachability at 1440px'),
     ],
     component: [
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages preserve the reference draft and one dialog at 320px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages retain native focus, scroll and reachability at 320px'),
         proves: authorPageProves,
       },
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages preserve the reference draft and one dialog at 390px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages retain native focus, scroll and reachability at 390px'),
         proves: authorPageProves,
       },
       {
-        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages preserve the reference draft and one dialog at 1440px'),
+        case: c('tests/components/specs/references-authors.spec.ts', 'author subpages retain native focus, scroll and reachability at 1440px'),
         proves: authorPageProves,
       },
     ],
@@ -191,15 +183,15 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
     ],
     component: [
       {
-        case: c('tests/components/specs/references-form.spec.ts', 'reference fields validate and the saved draft keeps cited records at 320px'),
+        case: c('tests/components/specs/references-form.spec.ts', 'reference form geometry and focus return hold at 320px'),
         proves: fieldsProve,
       },
       {
-        case: c('tests/components/specs/references-form.spec.ts', 'reference fields validate and the saved draft keeps cited records at 390px'),
+        case: c('tests/components/specs/references-form.spec.ts', 'reference form geometry and focus return hold at 390px'),
         proves: fieldsProve,
       },
       {
-        case: c('tests/components/specs/references-form.spec.ts', 'reference fields validate and the saved draft keeps cited records at 1440px'),
+        case: c('tests/components/specs/references-form.spec.ts', 'reference form geometry and focus return hold at 1440px'),
         proves: fieldsProve,
       },
     ],
@@ -219,20 +211,7 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
       c('tests/browser/references/reference-doi.spec.ts', 'DOI lookup preserves manual entries and saves explicitly at 390px'),
       c('tests/browser/references/reference-doi.spec.ts', 'DOI lookup preserves manual entries and saves explicitly at 1440px'),
     ],
-    component: [
-      {
-        case: c('tests/components/specs/references-lookup.spec.ts', 'DOI lookup fills empty fields and keeps a curated draft at 320px'),
-        proves: doiProves,
-      },
-      {
-        case: c('tests/components/specs/references-lookup.spec.ts', 'DOI lookup fills empty fields and keeps a curated draft at 390px'),
-        proves: doiProves,
-      },
-      {
-        case: c('tests/components/specs/references-lookup.spec.ts', 'DOI lookup fills empty fields and keeps a curated draft at 1440px'),
-        proves: doiProves,
-      },
-    ],
+    component: [],
     retained: [],
   },
   {
@@ -309,31 +288,22 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
     legacy: [
       c('tests/browser/references/reference-boundaries.spec.ts', 'a settings drawer closed by resizing does not reopen on returning to mobile'),
     ],
-    component: [
-      {
-        case: c('tests/components/specs/references-layout.spec.ts', 'a settings drawer closed by resizing does not reopen on returning to mobile'),
-        proves: [
-          'the drawer is the dialog at 390px',
-          'growing the window shows the settings panel instead',
-          'shrinking back shows the drawer trigger with no dialog open',
-        ],
-      },
-    ],
+    component: [],
     retained: [],
   },
   {
     id: 'reference.cited-table-guards',
     legacy: [
-      c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (array)'),
-      c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (structured)'),
+      c('tests/browser/references/reference-boundaries.spec.ts', 'editing a native table citation unlocks removal (array)'),
+      c('tests/browser/references/reference-boundaries.spec.ts', 'editing a native table citation unlocks removal (structured)'),
     ],
     component: [
       {
-        case: c('tests/components/specs/references-citations.spec.ts', 'table citation guards update after editing (array)'),
+        case: c('tests/components/specs/references-citations.spec.ts', 'editing a native table citation unlocks removal (array)'),
         proves: tableProves,
       },
       {
-        case: c('tests/components/specs/references-citations.spec.ts', 'table citation guards update after editing (structured)'),
+        case: c('tests/components/specs/references-citations.spec.ts', 'editing a native table citation unlocks removal (structured)'),
         proves: tableProves,
       },
     ],
@@ -346,7 +316,7 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
     ],
     component: [
       {
-        case: c('tests/components/specs/references-publication.spec.ts', 'publication keeps reference mutations disabled until its response arrives'),
+        case: c('tests/components/specs/references-publication.spec.ts', 'published live link waits for a matching document revision read'),
         proves: [
           'an unused reference offers Add, Edit and Remove',
           'while the publish request is held every one of them is disabled',

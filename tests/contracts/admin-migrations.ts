@@ -58,6 +58,21 @@ function c(file: string, title: string): AdminMigrationCase {
   return `${file} :: ${title}`
 }
 
+/*
+ * The presentation accessibility journey runs as a width/locale matrix, so each
+ * variant is its own registered case and the ledger has to name the variant it
+ * retains. The title is built here once, in the same width-then-locale order the
+ * spec registers them, rather than repeating six literals in two records.
+ */
+const presentationWidths = [
+  320,
+  390,
+  1440,
+]
+const presentationLocales = ['en', 'zh'] as const
+const presentationAccessibility = presentationWidths.flatMap(width => presentationLocales.map(locale =>
+  c(F.presentation, `accessibility scanner: late controls retain layout, focus and interaction contracts at ${width}px in ${locale}`)))
+
 const openAndClose = 'compact admin menu animates opening and closing'
 const reducedMotion = 'compact admin menu keeps reduced motion, arrow keys and focus return at 390px'
 const spacing = 'compact admin navigation keeps vertical space around its trigger'
@@ -122,9 +137,9 @@ export const adminMigrations: readonly AdminMigrationRecord[] = [
     retained: [
       {
         cases: [
-          c(F.presentation, 'accessibility scanner: late controls retain layout, focus and interaction contracts'),
+          ...presentationAccessibility,
         ],
-        reason: 'Every width/locale/browser variant of this journey opens the compact menu and leaves through a section item, asserting the destination URL; that is a Next route push, not chrome behaviour.',
+        reason: 'Every width/locale/browser variant of this journey opens the compact menu and leaves through a section item, asserting the destination URL; that is a Next route push, not chrome behaviour. These six keys were one case titled "accessibility scanner: late controls retain layout, focus and interaction contracts" until the title gained its width and locale; the split only names each registered variant, and no assertion moved or was dropped.',
       },
     ],
   },
@@ -359,7 +374,7 @@ export const adminMigrations: readonly AdminMigrationRecord[] = [
     retained: [
       {
         cases: [
-          c(F.presentation, 'accessibility scanner: late controls retain layout, focus and interaction contracts'),
+          ...presentationAccessibility,
           c(F.adminManagement, 'global media uploads remain private and operations show real counters'),
         ],
         reason: 'The routed half stays with real navigation: the presentation journey selects every admin section through the compact menu and asserts the destination URL, a rendered heading and answered data, and the management case asserts the Operations panel summary. The overlay assertions the retired case also carried are the two component cases above plus the block-action case.',

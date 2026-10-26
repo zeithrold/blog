@@ -37,11 +37,11 @@ function c(file: string, title: string): string {
   return `${file} :: ${title}`
 }
 
-const scheduleSurvives = 'schedule input and verified times survive closing the compact inspector and resizing'
+const scheduleSurvives = 'compact settings drawer returns focus after close and reopen'
 const stickyToolbar = 'wrapped status keeps the sticky toolbar below the measured header at 320px'
 const loaderSkeleton = 'the editor loader displays a skeleton and spinner and respects reduced motion'
 const compactInspector = 'the compact inspector opens from the bottom and keeps its footer reachable while scrolling'
-const mobilePreview = 'mobile preview closes the action drawer and resizing never reopens a dismissed panel'
+const mobilePreview = 'mobile preview keeps the live draft and returns focus when closed'
 const syncConflict = 'mobile sync remains disabled when a draft requires conflict resolution'
 const syncStored = 'mobile sync writes pending changes privately and autosave remains independent'
 const publishStored = 'mobile publish drains pending edits and exposes the live document and unpublish through the drawer'

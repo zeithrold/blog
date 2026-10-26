@@ -47,6 +47,13 @@ async function section(page: Page, href: string): Promise<void> {
 
 // Two variants per browser at each width give 12 rows and cover every pair of
 // browser, locale, theme and width. No skipped projects or Cartesian explosion.
+// The width and locale are part of the registered title: one journey run six
+// times is six cases, and the ledger has to name the variant it retains.
+function accessibilityTitle(width: number, locale: string): string {
+  const subject = 'accessibility scanner: late controls retain layout, focus and interaction contracts'
+  return `${subject} at ${width}px in ${locale}`
+}
+
 for (const width of [
   320,
   390,
@@ -55,7 +62,7 @@ for (const width of [
   for (const locale of ['en', 'zh'] as const) {
     test.describe(`presentation journey ${width}px ${locale}`, () => {
       test.use({ bypassCSP: true, viewport: { width, height: 900 }, reducedMotion: 'reduce' })
-      test('accessibility scanner: late controls retain layout, focus and interaction contracts', runPresentation)
+      test(accessibilityTitle(width, locale), runPresentation)
     })
   }
 }

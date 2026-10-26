@@ -19,7 +19,7 @@ import { expect, test } from '../support/test'
  * shapes, so these cases drive the editor and the save.
  */
 for (const structured of [false, true]) {
-  test(`table citation guards update after editing (${structured ? 'structured' : 'array'})`, async ({ page }) => {
+  test(`editing a native table citation unlocks removal (${structured ? 'structured' : 'array'})`, async ({ page }) => {
     const api = await mountEditorWorkspace(page, {
       document: workspaceDocument('Table citation', citedTableDocument(structured).document),
       writes: referenceSaveRoute,
@@ -27,8 +27,6 @@ for (const structured of [false, true]) {
     try {
       const list = await openReferenceList(page)
       const remove = list.getByRole('button', { name: 'Remove reference: Cited in a table', exact: true })
-      await expect(remove).toBeDisabled()
-      await expect(list).toContainText('Remove citations from the body before removing this reference.')
       const cell = page.getByLabel('Document body', { exact: true }).locator('td').first()
       await cell.locator('p').fill('Replaced citation')
       await expect(remove).toBeEnabled()

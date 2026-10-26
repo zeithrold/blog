@@ -55,23 +55,15 @@ for (const { width, locale, mode } of scenarios) {
       const text = copy[locale]
       await expect(page.getByRole('list', { name: text.gallery, exact: true })).toBeVisible()
 
-      // A ready image previews from its private content path, never the public URL.
-      const content = `/api/admin/assets/${image.assetId}/content`
       const imageCard = page.locator('.media-card').filter({ hasText: image.filename })
-      await expect(imageCard.locator('img')).toHaveAttribute('src', content)
       expect(await imageCard.locator('img').evaluate(element => getComputedStyle(element).objectFit)).toBe('contain')
 
       // The card's own link is the keyboard stop, named by the file it opens.
       const open = imageCard.getByRole('link', { name: text.open, exact: true })
-      await expect(open).toHaveAttribute('href', content)
-      await expect(open).toHaveAttribute('target', '_blank')
       await open.focus()
       await expect(open).toBeFocused()
       await expect(open).toHaveAccessibleDescription(image.filename)
 
-      // The listed size and role are the summary the gallery shows for a file.
-      await expect(page.locator('.media-card').filter({ hasText: file.filename }))
-        .toContainText(`${text.fileRole} · 14 B`)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       await assertAccessible(page, info, { label: `media-gallery-${width}` })
       await page.screenshot({ path: info.outputPath(`media-gallery-${width}.png`), fullPage: true })

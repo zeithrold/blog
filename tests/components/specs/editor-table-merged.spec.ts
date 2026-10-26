@@ -33,7 +33,7 @@ import { expect, test } from '../support/test'
  */
 
 for (const orientation of ['column', 'row'] as const) {
-  test(`merged ${orientation} controls preserve spans and protect the final group`, async ({ page }) => {
+  test(`merged ${orientation} edits preserve spans and Undo restores the final group`, async ({ page }) => {
     const { api, open } = await mountTableWorkspace(page, mergedTableDocument(orientation))
     const initial = tableAt(open)
     try {

@@ -43,7 +43,7 @@ test('composition keeps Alt+F10 in the native cell without changing the document
 })
 
 for (const locale of ['en', 'zh'] as const) {
-  test(`desktop table keyboard help is discoverable in ${locale}`, async ({ page }) => {
+  test(`desktop keyboard help follows the hovered table block in ${locale}`, async ({ page }) => {
     const help = locale === 'en'
       ? 'In a table cell, Alt+F10 focuses column options. Tab reaches row options; Escape returns to the cell.'
       : '在表格单元格中，按 Alt+F10 进入列选项。按 Tab 可前往行选项，按 Escape 返回原单元格。'
@@ -57,7 +57,9 @@ for (const locale of ['en', 'zh'] as const) {
       const id = await table.evaluate(element => element.closest('[data-id]')?.getAttribute('data-id'))
       await page.getByRole('button', { name: locale === 'en' ? 'Open block menu' : '打开菜单', exact: true }).click()
       await expect(page.locator('.editor-block-action-list')).toHaveAttribute('data-block-id', id ?? '')
-      await expect(page.getByText(help, { exact: true })).toBeVisible()
+      const keyboardHelp = page.getByText(help, { exact: true })
+      await expect(keyboardHelp).toBeVisible()
+      await expect(keyboardHelp).toHaveCSS('display', 'block')
       expect(revisionCount(api)).toBe(0)
       await api.expectServed()
     }

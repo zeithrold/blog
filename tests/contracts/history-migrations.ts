@@ -27,6 +27,7 @@ export type RetainedHistory = {
 
 const e2e = 'tests/browser/history/history-boundaries.spec.ts'
 const page = 'tests/browser/history/history.spec.ts'
+const interleaving = 'tests/browser/history/history-interleaving.spec.ts'
 const conflict = 'tests/components/specs/history-conflict.spec.ts'
 const requirements = 'tests/components/specs/history-requirements.spec.ts'
 const mutations = 'tests/integration/history-mutations.integration.ts'
@@ -123,7 +124,15 @@ export const retainedHistoryCases: readonly RetainedHistory[] = [
     reason: 'One workflow asserts the stored head, the live revision and the published reader routes (/posts/<slug> gone, /posts/<slug>-updated readable), which need real D1 and the server-rendered reader.',
   },
   {
-    cases: ['tests/browser/history/history-interleaving.spec.ts'],
-    reason: 'The subject is native browser history and the editor before-leave guard: traversal, repairs and document saves only exist in a live page with the editor.',
+    cases: [
+      c(interleaving, 'two destination pops before restoration preserve the latest Back destination'),
+      c(interleaving, 'Stay here during a second restoration cancels that traversal before its repair arrives'),
+      c(interleaving, 'a delayed approved traversal cannot displace a newer clean browser destination'),
+      c(interleaving, 'legacy history restores, cancels and saves an ordinary Back traversal'),
+      c(interleaving, 'returning to the source during restoration dismisses the pending departure'),
+      c(interleaving, 'a history request supersedes an earlier internal link before restoration completes'),
+      c(interleaving, 'a branch write drains its rejected repair and later history still works'),
+    ],
+    reason: 'The subject is native browser history and the editor before-leave guard: traversal, repairs and document saves only exist in a live page with the editor. These seven keys were one file-level entry until it was named per registered case; the expansion adds no coverage and removes none.',
   },
 ]

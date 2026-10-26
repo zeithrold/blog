@@ -104,7 +104,7 @@ test('a control citing a rule outside the ledger is unresolved', () => {
   const unresolved = row({ contracts: [otherRule] })
   deepEqual(assessControlMap(search, [unresolved], [baseRule]), [
     'Control cites an unknown rule: documents.search',
-    'Control has no browser wiring proof: documents.search',
+    'Control has no UI wiring proof: documents.search',
   ])
 }).catch((error: unknown) => { throw error })
 
@@ -119,11 +119,11 @@ test('a control without a contract leaves an explicit gap', () => {
   const unclaimed = row({ contracts: [] })
   deepEqual(assessControlMap(search, [unclaimed], [baseRule]), [
     'Control still has an explicit coverage gap: documents.search',
-    'Control has no browser wiring proof: documents.search',
+    'Control has no UI wiring proof: documents.search',
   ])
 }).catch((error: unknown) => { throw error })
 
-test('a node-only rule is never browser wiring proof', () => {
+test('a node-only rule is never UI wiring proof', () => {
   const nodeOnly = rule({
     primary: 'unit',
     component: [],
@@ -134,9 +134,7 @@ test('a node-only rule is never browser wiring proof', () => {
       },
     ],
   })
-  deepEqual(assessControlMap(search, [mappedRow], [nodeOnly]), [
-    'Control has no browser wiring proof: documents.search',
-  ])
+  deepEqual(assessControlMap(search, [mappedRow], [nodeOnly]), ['Control has no UI wiring proof: documents.search'])
 }).catch((error: unknown) => { throw error })
 
 test('the canonical registry proves every primary layer and leaves no control gap', () => {

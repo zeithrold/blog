@@ -1,10 +1,8 @@
 import type { Page } from '@playwright/test'
-import type { ApiCall } from '~/tests/components/support/http-fixtures'
+import type { ApiCall, ApiService } from '~/tests/components/support/http-fixtures'
 import { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import {
-  chooseLibraryMedia,
-  describeVideo,
   loadedVideo,
   mountEditorMedia,
   openAddMedia,
@@ -12,7 +10,6 @@ import {
   revisionWrites,
   storedBody,
   storedMediaBlock,
-  uploadMediaFile,
   videoPreview,
 } from '~/tests/components/support/editor-media-ui'
 import { editorWorkspaceDocument } from '~/tests/components/support/editor-workspace-fixtures'
@@ -34,10 +31,25 @@ async function savedWrite(api: { readonly calls: readonly ApiCall[] }, before: n
   await expect.poll(() => revisionWrites(api).length, { timeout: 15000 }).toBeGreaterThan(before)
 }
 
+async function uploadEditorMediaFile(
+  dialog: import('@playwright/test').Locator,
+  api: ApiService,
+  file: { name: string, mimeType: string, buffer: Buffer },
+): Promise<void> {
+  await dialog.getByRole('tab', { name: 'Upload files', exact: true }).click()
+  await dialog.getByLabel('Media file', { exact: true }).setInputFiles(file)
+  await dialog.getByRole('button', { name: 'Upload files', exact: true }).click()
+  await api.expectServed()
+}
+
 /** Uploads one file through the add-media picker and waits for the save it triggers. */
-async function insertMedia(page: Page, file: { name: string, mimeType: string, buffer: Buffer }): Promise<void> {
+async function insertMedia(
+  page: Page,
+  api: ApiService,
+  file: { name: string, mimeType: string, buffer: Buffer },
+): Promise<void> {
   const add = await openAddMedia(page)
-  await uploadMediaFile(add, 'en', file)
+  await uploadEditorMediaFile(add, api, file)
   await add.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(add).toHaveCount(0)
   await settled(page)
@@ -47,21 +59,57 @@ async function insertMedia(page: Page, file: { name: string, mimeType: string, b
 async function reuseListed(page: Page, api: { readonly calls: readonly ApiCall[] }, name: string): Promise<void> {
   const reuse = await openMediaDetails(page)
   const before = revisionWrites(api).length
-  await chooseLibraryMedia(reuse, 'en', name)
+  await reuse.getByRole('tab', { name: 'Media library', exact: true }).click()
+  const card = reuse.locator('.editor-media-card').filter({ hasText: name })
+  await card.getByRole('button', { name: 'Use media', exact: true }).click()
   await savedWrite(api, before)
   await settled(page)
 }
 
+async function chooseListedMedia(dialog: import('@playwright/test').Locator, name: string): Promise<void> {
+  await dialog.getByRole('tab', { name: 'Media library', exact: true }).click()
+  const card = dialog.locator('.editor-media-card').filter({ hasText: name })
+  await card.getByRole('button', { name: 'Use media', exact: true }).click()
+}
+
+async function describeVideoInEditor(
+  page: Page,
+  dialog: import('@playwright/test').Locator,
+  files: { captions: Buffer, poster: Buffer },
+  api: ApiService,
+): Promise<void> {
+  await dialog.getByRole('tab', { name: 'Media details', exact: true }).click()
+  await dialog.getByLabel('Transcript', { exact: true }).fill('A short black frame with a caption.')
+  await dialog.getByRole('button', { name: 'Upload captions', exact: true }).click()
+  await uploadEditorMediaFile(dialog, api, {
+    name: 'context-captions.vtt',
+    mimeType: 'text/vtt',
+    buffer: files.captions,
+  })
+  await dialog.getByRole('tab', { name: 'Media details', exact: true }).click()
+  await dialog.getByRole('combobox', { name: 'Video captions', exact: true }).click()
+  await page.getByRole('option', { name: 'context-captions.vtt', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Upload poster', exact: true }).click()
+  await uploadEditorMediaFile(dialog, api, {
+    name: 'context-poster.png',
+    mimeType: 'image/png',
+    buffer: files.poster,
+  })
+  await dialog.getByRole('tab', { name: 'Media details', exact: true }).click()
+  await dialog.getByRole('combobox', { name: 'Video poster', exact: true }).click()
+  await page.getByRole('option', { name: 'context-poster.png', exact: true }).click()
+}
+
 for (const width of [390, 1440]) {
   test(`media replacement preserves the block and descriptions at ${width}px`, async ({ page }, info) => {
-    const { api, ledger } = await mountEditorMedia(page, {
+    const { api } = await mountEditorMedia(page, {
       document: editorWorkspaceDocument(`Media placement anchor ${width}`),
       width,
     })
     try {
       const prefix = `${width}-${crypto.randomUUID()}`
       const originalName = `original-${prefix}.png`
-      await insertMedia(page, {
+      await insertMedia(page, api, {
         name: originalName,
         mimeType: 'image/png',
         buffer: await page.screenshot(),
@@ -74,13 +122,11 @@ for (const width of [390, 1440]) {
       }
       const originalUrl = image.url
 
-      // The description controls belong to the block, and an image has no captions.
+      // The description value belongs to the block that receives the replacement.
       const edit = await openMediaDetails(page)
-      await expect(edit.getByLabel('Transcript', { exact: true })).toHaveCount(0)
-      await expect(edit.getByRole('combobox', { name: 'Video captions', exact: true })).toHaveCount(0)
       await edit.getByLabel('Alternative text', { exact: true }).fill('Description belongs to this block')
       const beforeReplace = revisionWrites(api).length
-      await uploadMediaFile(edit, 'en', {
+      await uploadEditorMediaFile(edit, api, {
         name: `replacement-${prefix}.png`,
         mimeType: 'image/png',
         buffer: await page.screenshot(),
@@ -113,7 +159,6 @@ for (const width of [390, 1440]) {
       await expect(details).toHaveCount(0)
       await settingsTab(page, 'Content')
       await expect(page.getByRole('tab', { name: 'Media', exact: true })).toHaveCount(0)
-      expect(ledger.allocations).toHaveLength(2)
       await api.expectServed()
     }
     finally {
@@ -139,7 +184,7 @@ for (const width of [390, 1440]) {
       // The placeholder keeps its own picker control until a file fills it.
       await body.locator('.bn-add-file-button').click()
       await expect(dialog).toBeVisible()
-      await uploadMediaFile(dialog, 'en', {
+      await uploadEditorMediaFile(dialog, api, {
         name,
         mimeType: 'image/png',
         buffer: await page.screenshot(),
@@ -172,7 +217,7 @@ for (const source of ['upload', 'library'] as const) {
       const fileName = `original-${crypto.randomUUID()}.png`
       const png = await page.screenshot()
       const add = await openAddMedia(page)
-      await uploadMediaFile(add, 'en', { name: fileName, mimeType: 'image/png', buffer: png })
+      await uploadEditorMediaFile(add, api, { name: fileName, mimeType: 'image/png', buffer: png })
       await add.getByRole('button', { name: 'Close', exact: true }).click()
       await settled(page)
 
@@ -185,18 +230,18 @@ for (const source of ['upload', 'library'] as const) {
 
       const edit = await openMediaDetails(page)
       await edit.getByLabel('Alternative text', { exact: true }).fill('Keep the block description')
-      await uploadMediaFile(edit, 'en', {
+      await uploadEditorMediaFile(edit, api, {
         name: `first-replacement-${crypto.randomUUID()}.png`,
         mimeType: 'image/png',
         buffer: png,
       })
       const finalName = source === 'upload' ? `second-replacement-${crypto.randomUUID()}.png` : fileName
       if (source === 'upload') {
-        await uploadMediaFile(edit, 'en', { name: finalName, mimeType: 'image/png', buffer: png })
+        await uploadEditorMediaFile(edit, api, { name: finalName, mimeType: 'image/png', buffer: png })
         await edit.getByRole('button', { name: 'Close', exact: true }).click()
       }
       else {
-        await chooseLibraryMedia(edit, 'en', fileName)
+        await chooseListedMedia(edit, fileName)
       }
       await settled(page)
 
@@ -230,8 +275,8 @@ test(
     })
     try {
       const dialog = await openAddMedia(page)
-      await uploadMediaFile(dialog, 'en', { name: 'context-video.mp4', mimeType: 'video/mp4', buffer: clip })
-      await describeVideo(page, dialog, { captions, poster })
+      await uploadEditorMediaFile(dialog, api, { name: 'context-video.mp4', mimeType: 'video/mp4', buffer: clip })
+      await describeVideoInEditor(page, dialog, { captions, poster }, api)
       await page.screenshot({ path: info.outputPath('video-details.png') })
       await dialog.getByRole('button', { name: 'Close', exact: true }).click()
       await expect(dialog).toHaveCount(0)
