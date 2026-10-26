@@ -8,9 +8,6 @@ import { serveApi } from '../support/http-fixtures'
 import { mountSurface } from '../support/mount'
 import { expect, test } from '../support/test'
 
-// The inline formula the author inserts from the toolbar, and the source it types into it.
-const inlineSource = 'a^2'
-
 for (const width of [1440, 390]) {
   test(`new inline formulas focus their source editor at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
@@ -30,16 +27,35 @@ for (const width of [1440, 390]) {
       await page.getByRole('button', { name: 'Inline formula', exact: true }).click()
       const dialog = page.getByRole('dialog', { name: 'Edit formula', exact: true })
       const source = dialog.getByLabel('Formula source', { exact: true })
-      // A new inline formula opens focused, so typing lands in its source without a click.
+      // Insertion from the native editor caret transfers focus to the formula source.
       await expect(source).toBeFocused()
-      await page.keyboard.type(inlineSource)
-      await expect(source).toHaveValue(inlineSource)
+      await page.keyboard.type('a^2')
+      await expect(source).toHaveValue('a^2')
       await dialog.getByRole('button', { name: 'Done', exact: true }).click()
-      await expect(body.locator('[data-inline-content-type="inlineMath"] math')).toContainText('2')
-      // The revision packet the client sends carries the inline formula; storage stays E2E.
-      await expect.poll(() => api.calls
-        .filter(call => call.method !== 'GET')
-        .some(call => JSON.stringify(call.json).includes('inlineMath'))).toBe(true)
+
+      const inlineMath = body.locator('[data-inline-content-type="inlineMath"]')
+      await expect(inlineMath).toHaveCount(1)
+      await expect(inlineMath.locator('math msup > mi')).toHaveText('a')
+      await expect(inlineMath.locator('math msup > mn')).toHaveText('2')
+
+      // Prove insertion at the browser-created caret without adding a new
+      // focus-return contract after the settings dialog closes.
+      const precedingText = await inlineMath.evaluate((inline) => {
+        const paragraph = inline.closest('[data-content-type="paragraph"]')
+        if (paragraph === null) {
+          throw new Error('The inserted formula is not inside its paragraph')
+        }
+        const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT)
+        let preceding = ''
+        for (let text = walker.nextNode(); text !== null; text = walker.nextNode()) {
+          if (inline.contains(text)) {
+            return preceding
+          }
+          preceding += text.textContent ?? ''
+        }
+        throw new Error('The inserted formula has no preview text')
+      })
+      expect(precedingText).toBe('An inline formula ')
       await api.expectServed()
     }
     finally {

@@ -6,7 +6,9 @@ import { editorChromeDomMigrations } from './editor-chrome-dom-migrations'
 import { mediaDomMigrations } from './media-dom-migrations'
 import { overlayDomMigrations } from './overlay-dom-migrations'
 import { publicationDomMigrations } from './publication-dom-migrations'
+import { readerDomMigrations } from './reader-dom-migrations'
 import { referencesDomMigrations } from './references-dom-migrations'
+import { sourceDomMigrations } from './source-dom-migrations'
 import { tableDomMigrations } from './table-dom-migrations'
 
 /**
@@ -528,7 +530,9 @@ export const domMigrations: readonly DomMigrationRecord[] = [
       },
     ],
   },
+  ...readerDomMigrations,
   ...referencesDomMigrations,
+  ...sourceDomMigrations,
   ...documentsCatalogDomMigrations,
   ...tableDomMigrations,
   ...mediaDomMigrations,

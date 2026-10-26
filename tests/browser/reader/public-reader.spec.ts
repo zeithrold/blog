@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { Block, Document } from '@/content/document'
 import { emptyDocument } from '@/content/document'
+import { READER_TABLE_CAPTION } from '~/tests/components/src/reader-fixtures'
 import { writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 
@@ -22,9 +23,42 @@ function heading(title: string, level: number): Block {
   }
 }
 
+function wideTable(id: string): Block {
+  return {
+    id,
+    type: 'table',
+    props: { textColor: 'default' },
+    content: {
+      type: 'tableContent',
+      columnWidths: [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+      ],
+      headerRows: 1,
+      rows: [
+        {
+          cells: Array.from({ length: 6 }, (_, index) => [
+            {
+              type: 'text' as const,
+              text: `Comparison-column-${index + 1}-${'x'.repeat(30)}`,
+              styles: {},
+            },
+          ]),
+        },
+      ],
+    },
+    children: [],
+  }
+}
+
 function readerDocument(slug: string): { document: Document, headingId: string } {
   const document = emptyDocument()
   const nestedHeading = heading('Inside nested details', 2)
+  const tableId = crypto.randomUUID()
   document.meta.title = 'Public reader navigation'
   document.meta.slug = `${slug}-${crypto.randomUUID()}`
   document.blocks = [
@@ -67,7 +101,9 @@ function readerDocument(slug: string): { document: Document, headingId: string }
         },
       ],
     },
+    wideTable(tableId),
   ]
+  document.tableAccessibility[tableId] = { caption: READER_TABLE_CAPTION }
   return { document, headingId: nestedHeading.id }
 }
 
@@ -75,7 +111,8 @@ async function publishReader(page: Page, document: Document): Promise<void> {
   await writeDocument(page, document)
   await page.getByRole('button', { name: 'Publish', exact: true }).click()
   await expect(page.getByText('Published', { exact: true })).toBeVisible()
-  await page.goto(`/posts/${document.meta.slug}`)
+  const response = await page.goto(`/posts/${document.meta.slug}`)
+  expect(response?.status()).toBe(200)
 }
 
 test('article contents reveal nested details and continue keyboard reading at the selected heading', async ({
@@ -84,11 +121,27 @@ test('article contents reveal nested details and continue keyboard reading at th
 }) => {
   const { document, headingId } = readerDocument('public-reader-navigation')
   await publishReader(page, document)
-  const contents = page.getByRole('navigation', { name: 'Reader sections', exact: true })
-  const link = contents.getByRole('link', { name: 'Inside nested details', exact: true })
+  // The wide-table check below needs a compact viewport, but every contents and
+  // header assertion after it is measured against this case's configured
+  // viewport. Capture the real one instead of assuming a hardcoded size.
+  const configuredViewport = page.viewportSize()
+  if (configuredViewport === null) {
+    throw new Error('The reader navigation case needs a configured viewport to restore')
+  }
+  await page.setViewportSize({ width: 360, height: 800 })
+  const tableRegion = page.locator('.reader-body .table-scroll')
+  await expect(tableRegion).toBeVisible()
+  expect(await tableRegion.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+  await tableRegion.focus()
+  await expect(tableRegion).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(async () => await tableRegion.evaluate(element => element.scrollLeft)).toBeGreaterThan(0)
+  await page.keyboard.press('ArrowLeft')
+  await expect.poll(async () => await tableRegion.evaluate(element => element.scrollLeft)).toBe(0)
+  expect(await page.evaluate(() => window.document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.setViewportSize(configuredViewport)
+  const link = page.locator('.table-of-contents a').filter({ hasText: 'Inside nested details' })
   const destination = page.locator(`#block-${headingId} h3`)
-  await expect(contents.getByRole('link')).toHaveCount(2)
-  await expect(page.locator('.reader details[open]')).toHaveCount(0)
   // The reader must leave a modified click to the browser. Chromium does not open
   // same-document fragment links in a new tab, so assert the reader stays untouched and
   // close whatever the browser opened before the rest of the test observes this page.

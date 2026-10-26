@@ -295,6 +295,22 @@ const declarationSites: readonly DeclarationSite[] = [
     7,
   ],
   [
+    'tests/browser/reader/public-reader.spec.ts :: article contents reveal nested details and continue keyboard reading at the selected heading',
+    118,
+  ],
+  [
+    'tests/browser/reader/typography.spec.ts :: reader headings, list markers and highlighted code survive preview and publication at 1440px',
+    100,
+  ],
+  [
+    'tests/browser/reader/typography.spec.ts :: reader headings, list markers and highlighted code survive preview and publication at 390px',
+    100,
+  ],
+  [
+    'tests/browser/reader/typography.spec.ts :: reader headings, list markers and highlighted code survive preview and publication at 320px',
+    100,
+  ],
+  [
     'tests/browser/references/reference-drawer-page.spec.ts :: touch dragging sorts authors without dismissing the drawer',
     8,
   ],

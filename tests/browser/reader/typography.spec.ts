@@ -1,14 +1,13 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import type { Block, Document } from '@/content/document'
 import { emptyDocument, validateDocument } from '@/content/document'
+import { READER_CODE_SOURCE } from '~/tests/components/src/reader-fixtures'
 import { writeDocument } from '~/tests/support/browser/document'
 import { settle } from '~/tests/support/browser/journey-layout'
 import { horizontalBounds } from '~/tests/support/browser/layout'
 import { draftPreview } from '~/tests/support/browser/preview'
 import { readerCodeColors, readerTypography } from '~/tests/support/browser/reader-presentation'
 import { expect, test } from '~/tests/support/browser/test'
-
-const source = `const journey = true\n\tconsole.log("<img src=x onerror=alert(1)>")\n// ${'long code '.repeat(35)}\n`
 
 function block(type: Block['type'], text: string, props: Block['props'] = {}): Block {
   const textProps = { textAlignment: 'left', textColor: 'default', backgroundColor: 'default' }
@@ -46,7 +45,7 @@ function documentFixture(width: number, language = 'typescript'): Document {
       checked: false,
     }),
     taskLink('After tasks'),
-    block('codeBlock', source, { language }),
+    block('codeBlock', READER_CODE_SOURCE, { language }),
     block('paragraph', 'After the code'),
   ]
   return validateDocument(document)
@@ -65,14 +64,7 @@ function taskLink(text: string): Block {
 
 async function readonlyTasks(root: Locator): Promise<void> {
   const tasks = root.getByRole('checkbox')
-  await expect(tasks).toHaveCount(2)
-  await expect(tasks.first()).toHaveAccessibleName('Finished task')
-  await expect(tasks.first()).toBeChecked()
-  await expect(tasks.last()).not.toBeChecked()
-  await expect(root.getByText('Nested task description', { exact: true })).toBeVisible()
   for (const task of await tasks.all()) {
-    await expect(task).toBeDisabled()
-    await expect(task).toHaveClass(/ztd-checkbox/)
     await expect(task).toHaveCSS('width', '24px')
     await expect(task).toHaveCSS('height', '24px')
     await horizontalBounds(root.page(), task)
@@ -91,16 +83,12 @@ async function checkReader(root: Locator): Promise<Locator> {
   await readonlyTasks(root)
   const sizes = await root.locator('h2, h3, h4').evaluateAll(elements =>
     elements.map(element => Number.parseFloat(getComputedStyle(element).fontSize)))
-  expect(sizes).toHaveLength(3)
   expect(sizes[0]).toBeGreaterThan(sizes[1] ?? 0)
   expect(sizes[1]).toBeGreaterThan(sizes[2] ?? 0)
   const pre = root.locator('pre[data-language="typescript"]')
   await readerCodeColors(pre)
-  expect(await pre.locator('code').textContent()).toBe(source)
-  await expect(pre.locator('img, script')).toHaveCount(0)
   expect(await pre.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
   await horizontalBounds(root.page(), pre)
-  await expect(root.locator('ol[start="4"]').last().locator(':scope > li')).toHaveCount(2)
   return pre
 }
 

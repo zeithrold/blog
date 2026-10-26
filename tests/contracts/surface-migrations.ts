@@ -39,35 +39,10 @@ export const surfaceMigrations: readonly CaseMigration[] = [
     retained: retainedHistoryCases,
   },
   ...historyRemainingMigrations,
-  {
-    id: 'reader.literal-code',
-    legacy: ['text', 'legacy-lang'].map(language =>
-      `tests/browser/reader/typography.spec.ts :: reader preserves unhighlighted ${language} source as literal text`),
-    component: ['text', 'legacy-lang'].map(language => ({
-      case: `tests/components/specs/reader-content.spec.ts :: reader preserves unhighlighted ${language} source as literal text`,
-      proves: [
-        'the real reader preserves literal source without highlighted tokens or injected images/scripts',
-        'heading scale, list markers and monospace code typography match the production stylesheet',
-      ],
-    })),
-    retained: [],
-  },
-  {
-    id: 'reader.table-caption',
-    legacy: [
-      'tests/browser/reader/public-reader.spec.ts :: article table captions name keyboard-scrollable regions without overflowing the mobile page',
-    ],
-    component: [
-      {
-        case: 'tests/components/specs/reader-content.spec.ts :: article table captions name keyboard-scrollable regions without overflowing the mobile page',
-        proves: [
-          'the caption names the focusable table region and the wide table scrolls on ArrowRight/ArrowLeft',
-          'the mobile page does not overflow horizontally',
-        ],
-      },
-    ],
-    retained: [],
-  },
+  // The reader proof boundary now lives in `reader-dom-migrations`: its single
+  // record carries the historical E2E and component keys, the jsdom successors
+  // and the four retained native cases, so a second entry here would duplicate
+  // ownership of the same legacy keys.
   {
     id: 'editor.formula-layout',
     legacy: [1440, 390].map(width =>
