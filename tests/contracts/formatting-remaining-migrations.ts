@@ -49,13 +49,11 @@ function accessibilityAt(width: number, locale: string): string {
 
 const boundedProves = [
   'the floating toolbar stays inside the viewport and its width cap at this width',
-  'the compact layout keeps five 44px touch targets on one row; the wide layout exposes strike, colours and the link entry',
-  'Bold reaches the revision packet for only the selected range and leaves the suffix plain',
+  'the compact layout keeps five 44px touch targets on one row at the measured position',
 ]
 const advancedProves = [
-  'the options drawer exposes strike, colours, link, alignment, nest and unnest and Escape returns to the retained selection',
-  'keyboard activation focuses Close, Tab reaches Strike and applying it writes only the selected range',
-  'centring the block and applying the blue colour plus a link each reach the revision packet without disturbing the suffix',
+  'the drawer opens with Close focused, Tab reaches Strike, and native selection survives the Escape that dismisses it',
+  'both compact widths keep the drawer, colour target and URL field inside their measured bounds with 44px targets',
 ]
 
 const retainedBounded = [
@@ -113,8 +111,8 @@ export const formattingRemainingMigrations: readonly CaseMigration[] = [
       {
         case: c(F.component, 'crossing the mobile breakpoint releases its drawer and retains the editor selection'),
         proves: [
-          'the drawer unmounts when the viewport crosses 701px and the selection survives both crossings',
-          'each layout keeps its bounded toolbar control inventory',
+          'the selection survives both crossings of the 701px breakpoint',
+          'each layout keeps its bounded toolbar controls at the measured position',
         ],
       },
     ],
@@ -161,7 +159,7 @@ export const formattingRemainingMigrations: readonly CaseMigration[] = [
       proves: [
         'forward and backward cross-block selections keep the toolbar next to the current range',
         'scrolling, the viewport resize and the header gap keep the placement while the selection is unchanged',
-        'the surface passes Axe and Escape dismisses the toolbar back to the body',
+        'the surface passes Axe against real computed styles and native focus returns to the body',
       ],
     })),
     retained: [],
@@ -176,7 +174,7 @@ export const formattingRemainingMigrations: readonly CaseMigration[] = [
         case: c(F.component, 'keyboard viewport keeps the native toolbar and returns to selection positioning'),
         describe: ['native virtual keyboard branch'],
         proves: [
-          'the virtual keyboard branch mounts the native mobile toolbar and Bold applies to the retained range',
+          'the virtual keyboard branch mounts the native mobile toolbar over the retained range',
           'restoring the viewport returns to selection-positioned floating placement',
         ],
       },
@@ -206,7 +204,7 @@ export const formattingRemainingMigrations: readonly CaseMigration[] = [
         case: c(F.component, 'rapid viewport changes finish at the current selection without stale placement'),
         proves: [
           'rapid width changes settle on the current selection without stale placement',
-          'the toolbar stays in view below the header and Bold still writes only the range',
+          'the toolbar stays in view below the header after the race',
         ],
       },
     ],

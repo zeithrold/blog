@@ -3,6 +3,7 @@ import type { DocumentsCatalogContract } from './documents-catalog'
 import { adminDomMigrations } from './admin-dom-migrations'
 import { documentsCatalogDomMigrations } from './documents-catalog-dom-migrations'
 import { editorChromeDomMigrations } from './editor-chrome-dom-migrations'
+import { formattingDomMigrations } from './formatting-dom-migrations'
 import { mediaDomMigrations } from './media-dom-migrations'
 import { overlayDomMigrations } from './overlay-dom-migrations'
 import { publicationDomMigrations } from './publication-dom-migrations'
@@ -538,6 +539,7 @@ export const domMigrations: readonly DomMigrationRecord[] = [
   ...mediaDomMigrations,
   ...adminDomMigrations,
   ...editorChromeDomMigrations,
+  ...formattingDomMigrations,
   // The overlay package retired no case to jsdom; the module states that
   // decision where the rest of the layer's records live.
   ...overlayDomMigrations,

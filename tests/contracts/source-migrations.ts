@@ -387,18 +387,18 @@ export const sourceMigrations: readonly AdminMigrationRecord[] = [
       c('tests/browser/editor/formatting/format-toolbar-input.spec.ts', 'fourteen Shift+ArrowRight presses retain the complete selection and bounded toolbar'),
     ],
     component: [
+      // Historical intermediate identity, kept so the two-generation chain stays
+      // machine-readable: this case was fully retired and its successor is the
+      // jsdom case recorded in `formatting-dom-migrations`. It is NOT a current
+      // native proof, which is why the native plan no longer lists it.
       {
         case: c('tests/components/specs/editor-formatting.spec.ts', 'bold affects only the selected range and undo restores plain text'),
-        proves: [
-          'the toolbar Bold control marks exactly the selected range in the revision packet',
-          'undo removes the mark and restores the plain paragraph',
-        ],
+        proves: ['historical component identity for the Bold/undo proof; the assertion now runs in the DOM layer'],
       },
       {
         case: c('tests/components/specs/editor-formatting.spec.ts', 'the colour matrices mark their choice and apply it to the selected range'),
         proves: [
           'both colour matrices keep ten swatches in five columns and mark the chosen swatches pressed',
-          'text and background colours apply to the selected range only in the revision packet',
           'Escape closes the dialog and returns focus to the editor',
         ],
       },

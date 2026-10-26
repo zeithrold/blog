@@ -1,78 +1,27 @@
 /* eslint-disable style/max-len -- Verbatim legacy case titles stay on one line. */
-/* eslint-disable max-lines -- One matrix mirrors every retired formatting case. */
-import type { Page } from '@playwright/test'
-import type { ComponentLocale } from '../src/contract'
-import type { ApiService } from '../support/http-fixtures'
+/* eslint-disable max-lines -- One matrix keeps the exact keys of browser-specific formatting residuals. */
 import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { horizontalBounds, withinViewport } from '~/tests/support/browser/layout'
 import {
-  applyColorAndLink,
-  checkToolbar,
-  closeOptions,
   expectFormattingPosition,
-  expectPacketAlignment,
-  formattingLink,
   formattingToolbar,
   longParagraphs,
   longParagraphText,
   openFormatting,
-  openOptions,
   remainingCopy,
   repeatedParagraphs,
   selectAcrossBlocks,
   selectLeadingRange,
   tabToControl,
 } from '../support/editor-format-remaining'
-import { expectPacketContent, formatSelected, formatSuffix } from '../support/editor-formatting-fixtures'
+import { formatSelected, formatSuffix } from '../support/editor-formatting-fixtures'
 import { expect, test } from '../support/test'
 
 const phrase = `${formatSelected}${formatSuffix}`
 const phraseLength = formatSelected.length
 
-/** Opens the drawer, checks the advanced actions, then dismisses it with Escape. */
-async function assertAdvancedDrawer(page: Page, locale: ComponentLocale): Promise<void> {
-  const copy = remainingCopy[locale]
-  const drawer = await openOptions(page, locale)
-  for (const name of [
-    copy.strike,
-    copy.colors,
-    copy.link,
-    copy.center,
-    copy.nest,
-    copy.unnest,
-  ]) {
-    await expect(drawer.getByRole('button', { name, exact: true })).toBeVisible()
-  }
-  await page.keyboard.press('Escape')
-  await expect(drawer).not.toBeVisible()
-  await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString()))
-    .toBe(formatSelected)
-}
-
-/** Opens the drawer from the keyboard and applies Strike to the retained range. */
-async function activateStrike(page: Page, locale: ComponentLocale, browserName: string): Promise<void> {
-  const copy = remainingCopy[locale]
-  const more = formattingToolbar(page, locale).getByRole('button', { name: copy.more, exact: true })
-  await more.focus()
-  await more.press('Enter')
-  const drawer = page.getByRole('dialog', { name: copy.drawer, exact: true })
-  const strike = drawer.getByRole('button', { name: copy.strike, exact: true })
-  await expect(drawer.getByRole('button', { name: copy.close, exact: true })).toBeFocused()
-  await tabToControl(page, browserName)
-  await expect(strike).toBeFocused()
-  await page.keyboard.press('Enter')
-}
-
-/** Centres the selected block through the drawer and reads the request back. */
-async function assertCenter(page: Page, locale: ComponentLocale, api: ApiService): Promise<void> {
-  const drawer = await openOptions(page, locale)
-  await drawer.getByRole('button', { name: remainingCopy[locale].center, exact: true }).click()
-  await expectPacketAlignment(api, 'center')
-}
-
-// Every floating-toolbar width and locale the old E2E matrix covered. Bold is
-// asserted against the revision packet, not a stored reload: the retained E2E
-// case owns what survives the real page reload.
+// Keep measured toolbar geometry at each former width/locale. DOM owns control
+// inventory, formatting effects and request shape; retained E2E cases own reload.
 for (const width of [
   320,
   390,
@@ -85,17 +34,32 @@ for (const width of [
       await page.setViewportSize({ width, height: 740 })
       const { api, body } = await openFormatting(page, repeatedParagraphs(phrase, 1), locale)
       try {
-        const identity = await body.elementHandle()
         await selectLeadingRange(page, body, phraseLength, formatSelected)
-        await checkToolbar(page, locale, width)
-        await formattingToolbar(page, locale)
-          .getByRole('button', { name: remainingCopy[locale].bold, exact: true })
-          .click()
-        await expectPacketContent(api, [
-          { type: 'text', text: formatSelected, styles: { bold: true } },
-          { type: 'text', text: formatSuffix, styles: {} },
-        ])
-        expect(await identity.evaluate(element => element.isConnected)).toBe(true)
+        const bar = formattingToolbar(page, locale)
+        await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString()))
+          .toBe(formatSelected)
+        await expect(bar).toBeVisible()
+        await horizontalBounds(page, bar)
+        const bounds = await bar.boundingBox()
+        expect(bounds?.width).toBeLessThanOrEqual(Math.min(640, width - 24) + 1)
+        if (width <= 700) {
+          const row: number[] = []
+          for (const name of [
+            remainingCopy[locale].type,
+            remainingCopy[locale].bold,
+            remainingCopy[locale].italic,
+            remainingCopy[locale].underline,
+            remainingCopy[locale].more,
+          ]) {
+            const button = await bar.getByRole('button', { name, exact: true }).boundingBox()
+            expect(button?.width).toBeGreaterThanOrEqual(44)
+            expect(button?.height).toBeGreaterThanOrEqual(44)
+            if (button !== null) {
+              row.push(button.y)
+            }
+          }
+          expect(Math.max(...row) - Math.min(...row)).toBeLessThanOrEqual(1)
+        }
         await api.expectServed()
       }
       finally {
@@ -111,34 +75,63 @@ for (const scenario of [
 ] as const) {
   test(`mobile advanced formatting preserves selection and native actions at ${scenario.width}px`, async ({ page, browserName }) => {
     const { width, locale } = scenario
+    const copy = remainingCopy[locale]
     await page.setViewportSize({ width, height: 740 })
     const { api, body } = await openFormatting(page, repeatedParagraphs(phrase, 1), locale)
     try {
-      const identity = await body.elementHandle()
       await selectLeadingRange(page, body, phraseLength, formatSelected)
-      await assertAdvancedDrawer(page, locale)
-      await activateStrike(page, locale, browserName)
-      await expectPacketContent(api, [
-        { type: 'text', text: formatSelected, styles: { strike: true } },
-        { type: 'text', text: formatSuffix, styles: {} },
-      ])
-      await closeOptions(page, locale)
+      const more = formattingToolbar(page, locale).getByRole('button', { name: copy.more, exact: true })
+      await more.click()
+      const drawer = page.getByRole('dialog', { name: copy.drawer, exact: true })
+      await drawer.waitFor({ state: 'visible' })
+      await horizontalBounds(page, drawer)
+      await page.keyboard.press('Escape')
+      await drawer.waitFor({ state: 'hidden' })
+      await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString()))
+        .toBe(formatSelected)
+      await expect(body).toBeFocused()
+
+      await more.focus()
+      await more.press('Enter')
+      const keyboardDrawer = page.getByRole('dialog', { name: copy.drawer, exact: true })
+      const close = keyboardDrawer.getByRole('button', { name: copy.close, exact: true })
+      await expect(close).toBeFocused()
+      await tabToControl(page, browserName)
+      const strike = keyboardDrawer.getByRole('button', { name: copy.strike, exact: true })
+      await expect(strike).toBeFocused()
+      await page.keyboard.press('Enter')
+      await keyboardDrawer.waitFor({ state: 'hidden' })
+      const struck = body.locator('s')
+      await expect(struck).toHaveCount(1)
+      await expect(struck).toHaveText(formatSelected)
+      await expect(body).toHaveText(phrase)
+
+      await more.click()
+      const colorDrawer = page.getByRole('dialog', { name: copy.drawer, exact: true })
+      await colorDrawer.waitFor({ state: 'visible' })
+      await horizontalBounds(page, colorDrawer)
+      await colorDrawer.getByRole('button', { name: copy.colors, exact: true }).click()
+      const colors = page.getByRole('dialog', { name: copy.colors, exact: true })
+      const blue = colors.locator('[data-test="text-color-blue"]')
+      await horizontalBounds(page, blue)
+      const blueBounds = await blue.boundingBox()
+      expect(blueBounds?.width).toBeGreaterThanOrEqual(44)
+      expect(blueBounds?.height).toBeGreaterThanOrEqual(44)
+      // The color page is a dialog named Colors; its own Close exits the sub-page.
+      await colors.getByRole('button', { name: copy.close, exact: true }).click()
+      await colors.waitFor({ state: 'hidden' })
+
+      // This reselect only prepares the following Link entry; it does not test range retention through a color click.
       await selectLeadingRange(page, body, phraseLength, formatSelected)
-      await assertCenter(page, locale, api)
-      await closeOptions(page, locale)
-      await selectLeadingRange(page, body, phraseLength, formatSelected)
-      await applyColorAndLink(page, body, locale)
-      await expectPacketContent(api, [
-        {
-          type: 'link',
-          href: formattingLink,
-          content: [
-            { type: 'text', text: formatSelected, styles: { strike: true, textColor: 'blue' } },
-          ],
-        },
-        { type: 'text', text: formatSuffix, styles: {} },
-      ])
-      expect(await identity.evaluate(element => element.isConnected)).toBe(true)
+      await formattingToolbar(page, locale)
+        .getByRole('button', { name: copy.more, exact: true })
+        .click()
+      await page.getByRole('dialog', { name: copy.drawer, exact: true })
+        .getByRole('button', { name: copy.link, exact: true })
+        .click()
+      const url = page.getByRole('textbox', { name: copy.url, exact: true })
+      await url.waitFor({ state: 'visible' })
+      await horizontalBounds(page, url)
       await api.expectServed()
     }
     finally {
@@ -151,17 +144,25 @@ test('crossing the mobile breakpoint releases its drawer and retains the editor 
   await page.setViewportSize({ width: 700, height: 740 })
   const { api, body } = await openFormatting(page, repeatedParagraphs(phrase, 1))
   try {
-    const identity = await body.elementHandle()
     await selectLeadingRange(page, body, phraseLength, formatSelected)
-    const drawer = await openOptions(page, 'en')
+    await formattingToolbar(page, 'en')
+      .getByRole('button', { name: remainingCopy.en.more, exact: true })
+      .click()
+    const drawer = page.getByRole('dialog', { name: remainingCopy.en.drawer, exact: true })
+    await drawer.waitFor({ state: 'visible' })
+    await horizontalBounds(page, drawer)
     await page.setViewportSize({ width: 701, height: 740 })
-    await expect(drawer).not.toBeVisible()
-    await selectLeadingRange(page, body, phraseLength, formatSelected)
-    await checkToolbar(page, 'en', 701)
+    await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString()))
+      .toBe(formatSelected)
+    const wideToolbar = formattingToolbar(page, 'en')
+    await horizontalBounds(page, wideToolbar)
+    expect((await wideToolbar.boundingBox())?.width).toBeLessThanOrEqual(Math.min(640, 701 - 24) + 1)
     await page.setViewportSize({ width: 700, height: 740 })
-    await selectLeadingRange(page, body, phraseLength, formatSelected)
-    await checkToolbar(page, 'en', 700)
-    expect(await identity.evaluate(element => element.isConnected)).toBe(true)
+    await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString()))
+      .toBe(formatSelected)
+    const compactToolbar = formattingToolbar(page, 'en')
+    await horizontalBounds(page, compactToolbar)
+    expect((await compactToolbar.boundingBox())?.width).toBeLessThanOrEqual(Math.min(640, 700 - 24) + 1)
     await api.expectServed()
   }
   finally {
@@ -195,7 +196,12 @@ test.describe('formatting accessibility scanner', () => {
         await expect(formattingToolbar(page, locale).locator('..')).toHaveCSS('transition-duration', '0s')
         await assertAccessible(page, info, { label: `format-toolbar-${width}-${locale}` })
         if (width <= 700) {
-          const drawer = await openOptions(page, locale)
+          await formattingToolbar(page, locale)
+            .getByRole('button', { name: remainingCopy[locale].more, exact: true })
+            .click()
+          const drawer = page.getByRole('dialog', { name: remainingCopy[locale].drawer, exact: true })
+          await drawer.waitFor({ state: 'visible' })
+          await horizontalBounds(page, drawer)
           await expect.poll(async () => await drawer.evaluate(element => getComputedStyle(element).animationDuration))
             .toBe('0s')
           await assertAccessible(page, info, { label: `format-options-${width}-${locale}` })
@@ -243,7 +249,6 @@ for (const width of [
       }).toBeGreaterThanOrEqual(7)
       expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(selection)
       await assertAccessible(page, info, { label: `formatting-position-${width}` })
-      await page.screenshot({ path: info.outputPath(`formatting-position-${width}.png`) })
       await page.keyboard.press('Escape')
       await expect(bar).not.toBeVisible()
       await expect(body).toBeFocused()
@@ -257,7 +262,7 @@ for (const width of [
 
 test.describe('native virtual keyboard branch', () => {
   test.use({ isMobile: true, hasTouch: true, viewport: { width: 390, height: 900 } })
-  test('keyboard viewport keeps the native toolbar and returns to selection positioning', async ({ page }, info) => {
+  test('keyboard viewport keeps the native toolbar and returns to selection positioning', async ({ page }) => {
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 1 })
     })
@@ -284,14 +289,16 @@ test.describe('native virtual keyboard branch', () => {
       await expect(keyboardBar).toBeVisible()
       await horizontalBounds(page, keyboardBar)
       await keyboardBar.getByRole('button', { name: 'Bold', exact: true }).tap()
-      await expect(body.locator('strong')).toHaveText('A selection')
+      const bold = body.locator('strong')
+      await expect(bold).toHaveCount(1)
+      await expect(bold).toHaveText('A selection')
+      await expect(body).toHaveText(longParagraphText)
       await page.evaluate(() => {
         Reflect.deleteProperty(window.visualViewport ?? {}, 'height')
         window.visualViewport?.dispatchEvent(new Event('resize'))
       })
       await expect(keyboardBar).toHaveCount(0)
       await expectFormattingPosition(page, bar)
-      await page.screenshot({ path: info.outputPath('formatting-keyboard-restored.png') })
       await api.expectServed()
     }
     finally {
@@ -329,7 +336,7 @@ test('refocusing during the close animation measures the retained selection agai
   }
 })
 
-test('rapid viewport changes finish at the current selection without stale placement', async ({ page }, info) => {
+test('rapid viewport changes finish at the current selection without stale placement', async ({ page }) => {
   await page.setViewportSize({ width: 701, height: 900 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const { api, body } = await openFormatting(page, repeatedParagraphs('Selected range '.repeat(24), 1))
@@ -368,8 +375,10 @@ test('rapid viewport changes finish at the current selection without stale place
     })).toBe(true)
     expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('Selected range')
     await bar.getByRole('button', { name: 'Bold', exact: true }).click()
-    await expect(body.locator('strong')).toHaveText('Selected range')
-    await page.screenshot({ path: info.outputPath('formatting-rapid-resize.png') })
+    const bold = body.locator('strong')
+    await expect(bold).toHaveCount(1)
+    await expect(bold).toHaveText('Selected range')
+    await expect(body).toHaveText('Selected range '.repeat(24))
     await api.expectServed()
   }
   finally {

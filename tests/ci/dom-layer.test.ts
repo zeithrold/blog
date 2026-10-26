@@ -416,6 +416,48 @@ nodeTest('a retained identity keeps its registered title across both generations
   )
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
 
+/*
+ * A case retired completely into jsdom still keeps its historical identity. The
+ * first-generation record holds K as a component node, the second-generation
+ * record owns K in `legacy` and names a real jsdom successor, and K must be gone
+ * from the native plan. Deleting the identity instead of the execution is what
+ * this pins: the expected key is a literal, never read back from the data.
+ */
+const retiredBoldIdentity = 'tests/components/specs/editor-formatting.spec.ts :: bold affects only the selected range'
+  + ' and undo restores plain text'
+
+nodeTest('a completely retired case keeps its identity and loses only its execution', () => {
+  const { file, title } = parts(retiredBoldIdentity)
+  const issues: string[] = []
+  const historical = surfaceMigrations.some(migration =>
+    migration.component.some(entry => entry.case === retiredBoldIdentity))
+  if (!historical) {
+    issues.push('the first-generation component node is missing')
+  }
+  const owner = domMigrations.find(migration => migration.legacy.includes(retiredBoldIdentity))
+  if (owner === undefined) {
+    issues.push('no DOM record owns the historical key')
+  }
+  else {
+    if (owner.retained.flatMap(group => group.cases).includes(retiredBoldIdentity)) {
+      issues.push('a completely retired case must not be retained')
+    }
+    const domPlan = discoverDomCases()
+    if (owner.dom.length === 0) {
+      issues.push('the record names no jsdom successor')
+    }
+    for (const successor of owner.dom) {
+      if (!domPlan.some(entry => `${entry.file} :: ${entry.title}` === successor.case)) {
+        issues.push(`${successor.case}: successor is not a real jsdom case`)
+      }
+    }
+  }
+  if (browserCases('components').some(entry => entry.file === file && entry.title === title)) {
+    issues.push('the retired case is still registered in the component plan')
+  }
+  assert.deepEqual(issues, [])
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
+
 nodeTest('the retained publication E2E identity passes only with both projects', () => {
   const file = 'tests/browser/publication/publication-errors.spec.ts'
   const title = 'correcting a rejected draft clears its reasons and publishes the saved content'
