@@ -13,6 +13,17 @@ export type SessionProps = EditorProps & {
   reopen: (document: OpenDocument, recovered?: boolean) => void
 }
 
+/**
+ * The workspace fields the Content tab's sections read: the opened document, the
+ * modelled envelope and node items, the editor locale and the busy flag. A full
+ * `Workspace` satisfies it.
+ */
+export type ContentSettingsWorkspace = {
+  readonly props: Pick<SessionProps, 'initial'>
+  readonly model: Pick<DocumentModel, 'envelope' | 'nodeItems' | 'editorLocale'>
+  readonly busy: boolean
+}
+
 export type Workspace = {
   props: SessionProps
   model: DocumentModel

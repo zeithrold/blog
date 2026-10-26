@@ -17,6 +17,32 @@ import type { AdminMigrationRecord } from './admin-migrations'
  * component case keeps one parameterised case per kind instead of two hand-split ones. The
  * retained `node selection true` pair still covers both kinds end to end with the Worker.
  */
+// The link entry matrix the retired E2E ran: both entry points in English and in the 320px
+// Chinese layout, so the localized validation text and the toolbar/drawer wiring stay covered.
+const linkEntryMatrix = [
+  { entry: 'keyboard', width: 1440, locale: 'en' },
+  { entry: 'toolbar', width: 390, locale: 'en' },
+  { entry: 'keyboard', width: 320, locale: 'zh' },
+  { entry: 'toolbar', width: 320, locale: 'zh' },
+].flatMap(({ entry, width, locale }) => [
+  {
+    case: c('tests/components/specs/editor-links.spec.ts', `${entry} invalid destinations are refused at ${width}px in ${locale}`),
+    proves: [
+      'empty, spaced, ftp, protocol-relative, credential-bearing and over-long destinations keep the editor open and focused',
+      `each refusal marks the field invalid and shows the localized message (${locale}) without creating a link`,
+      'no revision packet leaves the client for any refused destination',
+    ],
+  },
+  {
+    case: c('tests/components/specs/editor-links.spec.ts', `${entry} destinations normalize and undo restores the range at ${width}px in ${locale}`),
+    proves: [
+      'site-relative, upper-case scheme, bare host and fragment destinations normalize to the expected href',
+      'each applied link lands in the revision packet against the selected range only',
+      'undo removes the link from the range',
+    ],
+  },
+])
+
 export const sourceMigrations: readonly AdminMigrationRecord[] = [
   {
     id: 'editor.source-entry',
@@ -315,6 +341,82 @@ export const sourceMigrations: readonly AdminMigrationRecord[] = [
           c('tests/browser/editor/source/formula-editor.spec.ts', 'display formula rows and multiline source roundtrip at 390px'),
         ],
         reason: 'These cases own the block formula save, reload and draft-reader roundtrip, which only the built application can prove.',
+      },
+    ],
+  },
+  {
+    id: 'editor.links',
+    legacy: [
+      c('tests/browser/editor/links/link-validation.spec.ts', 'link entry rejects invalid addresses before changing the draft at 1440px'),
+      c('tests/browser/editor/links/link-validation.spec.ts', 'link entry rejects invalid addresses before changing the draft at 390px'),
+      c('tests/browser/editor/links/link-normalization.spec.ts', 'toolbar links validate and normalize destinations at 1440px in en'),
+      c('tests/browser/editor/links/link-normalization.spec.ts', 'keyboard links validate and normalize destinations at 320px in zh'),
+      c('tests/browser/editor/links/link-normalization.spec.ts', 'toolbar links validate and normalize destinations at 320px in zh'),
+    ],
+    component: [
+      {
+        case: c('tests/components/specs/editor-links.spec.ts', 'the desktop shortcut opens one link editor focused on its destination'),
+        proves: [
+          'the platform shortcut opens one Create link editor with the destination focused',
+          'a repeated shortcut keeps a single editor',
+          'cancel closes it, returns focus to the body and writes nothing',
+        ],
+      },
+      {
+        case: c('tests/components/specs/editor-links.spec.ts', 'the compact formatting drawer reaches the same link entry at 390px'),
+        proves: [
+          'the More formatting options drawer opens the link entry focused on its destination',
+          'a typed destination applies to the selection and reaches the revision packet',
+        ],
+      },
+      ...linkEntryMatrix,
+    ],
+    retained: [
+      {
+        cases: [
+          c('tests/browser/editor/links/link-normalization.spec.ts', 'links validate and normalize destinations at 1440px in en'),
+        ],
+        reason: 'The one retained link persistence representative: it proves the normalized destination and the undo reach the Worker and the stored document.',
+      },
+    ],
+  },
+  {
+    id: 'editor.formatting',
+    legacy: [
+      c('tests/browser/editor/formatting/desktop-text-colors.spec.ts', 'desktop text and highlight matrices preserve the selected range and native styles'),
+      c('tests/browser/editor/formatting/format-toolbar-input.spec.ts', 'fourteen Shift+ArrowRight presses retain the complete selection and bounded toolbar'),
+    ],
+    component: [
+      {
+        case: c('tests/components/specs/editor-formatting.spec.ts', 'bold affects only the selected range and undo restores plain text'),
+        proves: [
+          'the toolbar Bold control marks exactly the selected range in the revision packet',
+          'undo removes the mark and restores the plain paragraph',
+        ],
+      },
+      {
+        case: c('tests/components/specs/editor-formatting.spec.ts', 'the colour matrices mark their choice and apply it to the selected range'),
+        proves: [
+          'both colour matrices keep ten swatches in five columns and mark the chosen swatches pressed',
+          'text and background colours apply to the selected range only in the revision packet',
+          'Escape closes the dialog and returns focus to the editor',
+        ],
+      },
+      {
+        case: c('tests/components/specs/editor-formatting.spec.ts', 'fourteen Shift+ArrowRight presses retain the complete selection and a bounded toolbar'),
+        proves: [
+          'fourteen Shift+ArrowRight presses select the whole phrase',
+          'the toolbar stays inside the 701px viewport',
+          'the selection and toolbar never write to the draft',
+        ],
+      },
+    ],
+    retained: [
+      {
+        cases: [
+          c('tests/browser/editor/formatting/format-toolbar-input.spec.ts', 'touch taps preserve a partial selection through bold and the mobile color drawer'),
+        ],
+        reason: 'Purpose-built replacement: the retained touch formatting case still proves bold and text colour reach the Worker and survive a reload.',
       },
     ],
   },

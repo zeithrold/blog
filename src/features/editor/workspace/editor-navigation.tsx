@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import type { DepartureState } from '@/features/editor/workspace/editor-departure'
-import type { DepartureQueue } from '@/features/editor/workspace/editor-departure-source'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { DepartureQueue, DepartureWorkspace } from '@/features/editor/workspace/editor-departure-source'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -22,7 +21,10 @@ import { useEditorLabels } from '@/i18n/use-labels'
 import { useBlogTranslation } from '@/i18n/use-translation'
 import { useHistoryNavigationGuard, useInternalNavigationGuard } from '@/shared/admin/navigation-guard-context'
 
-export function EditorNavigation({ workspace, queue }: { workspace: Workspace, queue: DepartureQueue }): ReactNode {
+export function EditorNavigation({ workspace, queue }: {
+  workspace: DepartureWorkspace
+  queue: DepartureQueue
+}): ReactNode {
   const router = useRouter()
   const [source] = useState(() => new EditorDepartureSource(workspace, queue, href => router.push(href)))
   const [controller] = useState(() => new EditorDeparture(source))

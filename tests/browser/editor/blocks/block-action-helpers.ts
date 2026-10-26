@@ -86,6 +86,75 @@ export function blockAction(page: Page, locale: Locale, action: 'remove' | 'colo
   return blockActions(page).getByRole('button', { name: labels[locale][action], exact: true })
 }
 
+export const colorLabels = {
+  en: { text: 'Text', background: 'Background', close: 'Close' },
+  zh: { text: '文本', background: '背景色', close: '关闭' },
+} as const
+
+/**
+ * A tap on a block reveals the compact controls; a tap on the handle opens the
+ * action drawer, whose bounds must stay inside the phone viewport.
+ */
+export async function openTouchActions(page: Page, index: number, locale: Locale): Promise<Locator> {
+  const block = paragraph(page, index)
+  await block.scrollIntoViewIfNeeded()
+  await block.tap()
+  const handle = page.getByRole('button', { name: labels[locale].menu, exact: true })
+  await expect(handle).toBeVisible()
+  await withinViewport(page, handle)
+  await handle.tap()
+  const drawer = blockActions(page)
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('[data-vaul-handle]')).toBeVisible()
+  await withinViewport(page, drawer)
+  const bounds = await drawer.boundingBox()
+  expect(bounds?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 4)
+  expect(bounds?.height).toBeLessThanOrEqual((page.viewportSize()?.height ?? 0) * 0.9 + 2)
+  expect(await drawer.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    return Math.abs(box.bottom - window.innerHeight)
+  })).toBeLessThanOrEqual(2)
+  for (const action of ['remove', 'colors'] as const) {
+    const button = blockAction(page, locale, action)
+    await expect(button.locator('svg').first()).toBeVisible()
+    expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+  }
+  await expect(page.locator('.editor-desktop-block-actions')).toHaveCount(0)
+  return drawer
+}
+
+/** Opens the color page of the open drawer: the same drawer, never a second dialog. */
+export async function openTouchColors(page: Page, index: number, locale: Locale): Promise<Locator> {
+  const drawer = blockActions(page)
+  if (!await drawer.isVisible()) {
+    await openTouchActions(page, index, locale)
+  }
+  const colors = blockAction(page, locale, 'colors')
+  if (await colors.isVisible()) {
+    await colors.tap()
+  }
+  await expect(drawer.locator('[data-test="text-color-red"]')).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(1)
+  await expect(page.locator('.bn-color-picker-dropdown')).toHaveCount(0)
+  await withinViewport(page, drawer)
+  return drawer
+}
+
+/** Two named color groups of ten swatches, every swatch a real touch target. */
+export async function checkColorChoices(drawer: Locator, locale: Locale): Promise<void> {
+  const text = drawer.getByRole('group', { name: colorLabels[locale].text, exact: true })
+  const background = drawer.getByRole('group', { name: colorLabels[locale].background, exact: true })
+  await expect(text).toBeVisible()
+  await expect(background).toBeVisible()
+  await expect(text.locator('[data-test^="text-color-"]')).toHaveCount(10)
+  await expect(background.locator('[data-test^="background-color-"]')).toHaveCount(10)
+  for (const color of await drawer.locator('[data-test*="-color-"]').all()) {
+    const size = await color.boundingBox()
+    expect(size?.width).toBeGreaterThanOrEqual(44)
+    expect(size?.height).toBeGreaterThanOrEqual(44)
+  }
+}
+
 export async function tabToControl(page: Page, browserName: string, backward = false): Promise<void> {
   // Safari's default keyboard policy requires Option+Tab to include buttons.
   const keys = `${browserName === 'webkit' ? 'Alt+' : ''}${backward ? 'Shift+' : ''}Tab`

@@ -42,11 +42,16 @@ const F = {
   adminPolish: 'tests/browser/admin/admin-polish.spec.ts',
   appearance: 'tests/browser/admin/appearance.spec.ts',
   adminManagement: 'tests/browser/admin/admin-management.spec.ts',
+  services: 'tests/browser/admin/services.spec.ts',
+  catalogControls: 'tests/browser/catalog/catalog-controls-polish.spec.ts',
+  publicationJourney: 'tests/browser/journeys/publication.spec.ts',
+  fullServices: 'tests/integration/full-services.integration.ts',
   presentation: 'tests/browser/journeys/presentation.spec.ts',
   navigation: 'tests/components/specs/admin-navigation.spec.ts',
   controls: 'tests/components/specs/admin-controls.spec.ts',
   editorUi: 'tests/components/specs/admin-editor-ui.spec.ts',
   editorState: 'tests/components/specs/admin-editor-state.spec.ts',
+  editorServices: 'tests/components/specs/admin-editor-services.spec.ts',
 } as const
 
 function c(file: string, title: string): AdminMigrationCase {
@@ -68,6 +73,9 @@ const appearanceStates = '36 bilingual appearance states preserve the editor and
 const compactDrawer = 'compact settings drawer keeps keyboard focus and axe on the editor at 320px'
 const badgeGeometry = 'status badges share one geometry across locales and narrow layouts'
 const badgeParity = 'the unsaved-changes status keeps one appearance between the editor and the catalog page'
+const pasteSanitizer = 'bounded HTML paste preserves supported formatting and removes active content'
+const scheduleLock = 'scheduling locks publication and keeps the editor mounted while the request is pending'
+const catalogSnapshot = 'catalog snapshots reach the save packet from the editor'
 
 const animationProves = [
   'opening sets data-state=open and plays ztd-menu-enter at 0.15s',
@@ -381,5 +389,69 @@ export const adminMigrations: readonly AdminMigrationRecord[] = [
       },
     ],
     retained: [],
+  },
+  {
+    id: 'admin.paste-sanitizer',
+    legacy: [
+      c(F.services, pasteSanitizer),
+    ],
+    component: [
+      {
+        case: c(F.editorServices, pasteSanitizer),
+        proves: [
+          'a pasted heading and bold run stay in the native editor as formatted blocks',
+          'a javascript: link and a script element never reach the rendered body',
+          'the acknowledged save packet carries a heading block and unique block ids',
+        ],
+      },
+    ],
+    retained: [],
+  },
+  {
+    id: 'admin.schedule-lock',
+    legacy: [
+      c(F.services, 'scheduling locks publication and keeps the native editor mounted while the request is pending'),
+    ],
+    component: [
+      {
+        case: c(F.editorServices, scheduleLock),
+        proves: [
+          'the held schedule submit disables Publish and makes the editor read-only',
+          'releasing it renders the pending job with Cancel schedule and re-enables Publish and the editor',
+          'the editor node stays mounted through the pending request',
+        ],
+      },
+    ],
+    retained: [],
+  },
+  {
+    id: 'admin.editor-catalog-snapshot',
+    legacy: [
+      c(F.services, 'catalog snapshots and schedule pinning are usable from the editor'),
+    ],
+    component: [
+      {
+        case: c(F.editorServices, catalogSnapshot),
+        proves: ['a catalog entry chosen in the inspector reaches the save packet with its id and label'],
+      },
+    ],
+    retained: [
+      {
+        cases: [
+          c(F.catalogControls, 'catalog Selects search, support multiple tags and replace series'),
+          c(F.publicationJourney, 'long task: fix preflight, pin and cancel schedules, recover authentication and resume maintenance'),
+          c(F.adminManagement, 'global media uploads remain private and operations show real counters'),
+        ],
+        reason: 'The retired case also asserted three server facts. The inspector Select behaviour stays with the editor catalog case, schedule revision pinning and the newer draft staying private stay with the publication journey (pending job revisionId and public HTML), and the Operations summary stays with the management case.',
+      },
+    ],
+    notMigrated: [
+      {
+        cases: [
+          c(F.fullServices, 'full services against one Worker'),
+        ],
+        reason: 'A document saved with catalog tag metadata is proved at the integration layer: the runtime flow stores meta.tags, publishes it and renames the tag, so no browser case has to re-check stored metadata.',
+      },
+    ],
   },
 ]

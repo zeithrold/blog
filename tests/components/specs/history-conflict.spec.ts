@@ -6,11 +6,18 @@ import { mountHistory } from '~/tests/components/support/history-surface'
 import { failure, serveApi } from '~/tests/components/support/http-fixtures'
 import { expect, test } from '~/tests/components/support/test'
 
-/** The same comparison Select the retained E2E case reads, on a real component. */
-async function expectBaseline(page: Page, copy: HistoryCopy, sequence: number): Promise<void> {
+/**
+ * The native focus delivery the jsdom selection case cannot hold.
+ *
+ * `history-state-selection` proves the refreshed baseline, the preserved selection
+ * and the single refused write. This case keeps only the part that needs a real
+ * engine: opening the comparison list marks the chosen option `aria-selected`, and
+ * Escape returns focus to the trigger.
+ */
+async function expectNativeFocus(page: Page, copy: HistoryCopy, sequence: number): Promise<void> {
   const selection = page.getByRole('combobox', { name: copy.compare, exact: true })
+  // Wait for the refreshed baseline before the list opens.
   await expect(selection).toContainText(`${copy.revision} ${sequence}`)
-  await expect(selection).toContainText(copy.currentDraft)
   await selection.click()
   await expect(page.getByRole('option', { name: new RegExp(`^${copy.revision} ${sequence} .*${copy.currentDraft}$`) }))
     .toHaveAttribute('aria-selected', 'true')
@@ -44,15 +51,7 @@ test(
       await page.getByRole('button', { name: new RegExp(`^${copy.revision} ${fixture.first.sequence} `) }).click()
       await page.getByRole('button', { name: copy.restore, exact: true }).click()
       await page.getByRole('dialog').getByRole('button', { name: copy.confirm, exact: true }).click()
-      await expect(page.getByRole('status').filter({ hasText: copy.conflict })).toBeVisible()
-      await expect(page.locator('.history-selection'))
-        .toHaveAttribute('data-selected-revision', fixture.first.revisionId)
-      await expectBaseline(page, copy, external.revision.sequence)
-      // The conflict was answered by refreshing, not by repeating the refused write.
-      const writes = api.calls.filter(call => call.method === 'POST')
-      expect(writes.map(call => call.json)).toEqual([
-        { expectedVersion: fixture.initial.version, revisionId: fixture.first.revisionId },
-      ])
+      await expectNativeFocus(page, copy, external.revision.sequence)
       await api.expectServed()
     }
     finally {

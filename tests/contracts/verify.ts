@@ -5,16 +5,16 @@ import { z } from 'zod'
 import { currentRun, verificationRoot } from '~/tests/support/verification/paths'
 import { sourceIdentity } from '~/tests/support/verification/source'
 import { assessControlMap } from './accountability'
-import { assessContracts } from './assess'
+import { assessContracts, assessDomPlan } from './assess'
 import { documentsCatalogControlMap } from './control-map'
-import { discoverBrowserCases } from './discovery'
+import { discoverBrowserCases, discoverDomCases } from './discovery'
 import { assessLegacyControls, migratedControls } from './legacy'
 import { documentsCatalogContracts, migrationServerContracts } from './registry'
 import { layerEvidenceSchema } from './schema'
 
 async function readReports(): Promise<unknown[]> {
   const files = (await readdir(verificationRoot)).filter(file =>
-    /^(?:unit|integration|component|e2e)(?:-[\w-]+)?\.json$/.test(file))
+    /^(?:unit|integration|dom|component|e2e)(?:-[\w-]+)?\.json$/.test(file))
   return await Promise.all(files.map(async file =>
     JSON.parse(await readFile(path.join(verificationRoot, file), 'utf8')) as unknown))
 }
@@ -48,6 +48,7 @@ function legacyPassed(legacy: ReturnType<typeof legacyAssessment>): boolean {
 function reportIssues(result: {
   issues: { contract: string, layer: string, reason: string }[]
   controlIssues: string[]
+  domPlanIssues: string[]
   legacy: ReturnType<typeof legacyAssessment>
 }): void {
   for (const issue of result.issues) {
@@ -55,6 +56,7 @@ function reportIssues(result: {
   }
   const issues = [
     ...result.controlIssues,
+    ...result.domPlanIssues,
     ...result.legacy?.planIssues ?? [],
   ]
   for (const issue of issues) {
@@ -73,14 +75,22 @@ async function verify(): Promise<void> {
   const assessment = assessContracts(contracts, reports, run.id, source)
   const controlIssues = assessControlMap(migratedControls, documentsCatalogControlMap, documentsCatalogContracts)
   const legacy = legacyAssessment(reports, scope, run)
+  // The jsdom layer is part of every full batch, whether or not a rule cites it
+  // yet, so its own plan and completeness are checked here rather than inferred
+  // from an exit status that a skipped case would not change.
+  const domPlanIssues = scope === 'all'
+    ? assessDomPlan(reports, discoverDomCases(), { runId: run.id, source })
+    : []
   const result = {
     scope,
     runId: run.id,
     source,
     contracts: contracts.length,
     ...assessment,
-    passed: assessment.passed && controlIssues.length === 0 && legacyPassed(legacy),
+    passed: assessment.passed && controlIssues.length === 0 && legacyPassed(legacy)
+      && domPlanIssues.length === 0,
     controlIssues,
+    domPlanIssues,
     legacy,
   }
   await writeFile(path.join(verificationRoot, 'contract-coverage.json'), JSON.stringify(result, null, 2))

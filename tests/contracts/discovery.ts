@@ -1,4 +1,4 @@
-import type { BrowserReference, CaseEvidence } from './types'
+import type { BrowserReference, CaseEvidence, NodeReference } from './types'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import process from 'node:process'
@@ -69,6 +69,62 @@ export function nativeCaseKey(test: Pick<CaseEvidence, 'file' | 'title' | 'descr
     test.project,
     test.file,
     test.describe,
+    test.title,
+  ])
+}
+
+/*
+ * The `dom` layer is discovered natively, like the browser layers: `vitest list`
+ * collects the modules and executes nothing. A case is its file plus its suite
+ * path, so a focused run cannot stand in for the layer's full plan.
+ */
+const domPlanSchema = z.array(z.strictObject({
+  name: z.string().min(1),
+  file: z.string().min(1),
+  // Listing carries a declaration site and no result: nothing executed.
+  location: z.strictObject({
+    line: z.number().int().positive(),
+    column: z.number().int().positive(),
+  }),
+}))
+
+const ancestorSeparator = ' > '
+
+/** Vitest joins a case with its suites by `>`; list mode exposes no other path. */
+export function splitDomName(fullName: string): { describe: string[], title: string } {
+  const parts = fullName.split(ancestorSeparator)
+  const title = parts.pop() ?? fullName
+  return { describe: parts, title }
+}
+
+/** Collect native registrations, including loop-generated titles, without running cases. */
+export function discoverDomCases(config = 'vitest.dom.config.ts'): NodeReference[] {
+  const output = execFileSync('pnpm', [
+    'exec',
+    'vitest',
+    'list',
+    '--config',
+    config,
+    '--staticParse=false',
+    '--includeTaskLocation',
+    // Keep this last: Vitest also accepts a filename as the value of --json.
+    '--json',
+  ], { encoding: 'utf8', timeout: 60000, maxBuffer: 16 * 1024 * 1024 })
+  return domPlanSchema.parse(JSON.parse(output)).map(entry => ({
+    file: path.relative(process.cwd(), entry.file).split(path.sep).join('/'),
+    ...splitDomName(entry.name),
+  }))
+}
+
+/** A DOM case is named without a project: the layer is jsdom, not an engine. */
+export function domCaseKey(
+  test: Pick<CaseEvidence, 'file' | 'title'> & { readonly describe?: readonly string[] },
+): string {
+  return JSON.stringify([
+    test.file,
+    [
+      ...test.describe ?? [],
+    ],
     test.title,
   ])
 }

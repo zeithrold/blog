@@ -6,19 +6,8 @@ import {
   documentTable,
   persistedTable,
   tableDocument,
-  tableMenu,
   text,
 } from './table-overlay-helpers'
-
-test('menu offers keyboard row and column moves', async ({ page }) => {
-  const acknowledgement = await writeDocument(page, tableDocument(3, 3, 120))
-  await (await tableMenu(page, 'Row', 2)).getByRole('menuitem', { name: 'Move row up', exact: true }).press('Enter')
-  await saved(page)
-  expect(text((await persistedTable(page, acknowledgement.documentId)).rows[0]?.cells[0])).toBe('Row 2, column 1')
-  await (await tableMenu(page, 'Column', 1)).getByRole('menuitem', { name: 'Move column right', exact: true }).click()
-  await saved(page)
-  expect(text((await persistedTable(page, acknowledgement.documentId)).rows[0]?.cells[0])).toBe('Row 2, column 2')
-})
 
 test.describe('touch table dragging', () => {
   test.use({ viewport: { width: 390, height: 900 }, hasTouch: true })

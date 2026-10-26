@@ -4,35 +4,25 @@ import { openDocumentSchema } from '@/contracts/documents'
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
 
+/**
+ * The stored half of the compact document actions. Draft and publication
+ * persistence, the live revision and the public page need the real Worker and
+ * its own D1, so these cases stay E2E. Their chrome - header rows, the action
+ * drawer, dialogs and focus return - is proved against the same production
+ * components in `tests/components/specs/editor-chrome-mobile-actions.spec.ts`,
+ * and `tests/contracts/editor-chrome-migrations.ts` records which assertion
+ * lives where.
+ */
+
 type Locale = 'en' | 'zh'
-const labels = {
-  en: {
-    language: 'English',
-    back: 'All documents',
-    compactBack: 'Back',
-    publish: 'Publish',
-    more: 'More document actions',
-    sync: 'Sync draft now',
-    close: 'Close',
-    remove: 'Delete document',
-    cancel: 'Cancel',
-  },
-  zh: {
-    language: '简体中文',
-    back: '所有文档',
-    compactBack: '返回',
-    publish: '发布',
-    more: '更多文档操作',
-    sync: '立即同步草稿',
-    close: '关闭',
-    remove: '删除文档',
-    cancel: '取消',
-  },
-} as const
+const languages: Readonly<Record<Locale, string>> = {
+  en: 'English',
+  zh: '简体中文',
+}
 
 async function language(page: Page, locale: Locale): Promise<void> {
   await page.getByRole('combobox', { name: /^(Language|语言)$/ }).click()
-  await page.getByRole('option', { name: labels[locale].language, exact: true }).click()
+  await page.getByRole('option', { name: languages[locale], exact: true }).click()
   await expect(page.getByRole('option')).toHaveCount(0)
 }
 
@@ -62,99 +52,6 @@ async function box(locator: Locator): Promise<{ top: number, bottom: number, hei
     return { top: bounds.top, bottom: bounds.bottom, height: bounds.height }
   })
 }
-
-for (const width of [320, 390]) {
-  for (const locale of ['en', 'zh'] as const) {
-    test(`mobile actions fit two header rows at ${width}px in ${locale} and return focus after dialogs`, async ({
-      page,
-    }, info) => {
-      await page.setViewportSize({ width, height: 740 })
-      await writeDocument(page, documentWithBody('A compact mobile writing workspace'))
-      if (locale === 'zh') {
-        await language(page, locale)
-      }
-      const text = labels[locale]
-      const header = page.locator('.workspace-header')
-      const back = header.getByRole('link', { name: text.back, exact: true })
-      const publish = header.getByRole('button', { name: text.publish, exact: true })
-      const more = header.getByRole('button', { name: text.more, exact: true })
-      await expect.poll(async () => await back.innerText()).toBe(text.compactBack)
-      await expect(publish).toBeVisible()
-      await expect(header.getByRole('button', { name: /^(Save|保存)$/ })).toHaveCount(0)
-      const positions = await Promise.all([
-        box(back),
-        box(publish),
-        box(more),
-        box(header),
-      ])
-      const [backBox, publishBox, moreBox, headerBox] = positions
-      const center = (bounds: { top: number, height: number }): number => bounds.top + bounds.height / 2
-      expect(Math.abs(center(backBox) - center(publishBox))).toBeLessThanOrEqual(2)
-      expect(Math.abs(center(moreBox) - center(publishBox))).toBeLessThanOrEqual(2)
-      expect(publishBox.height).toBeGreaterThanOrEqual(44)
-      expect(moreBox.height).toBeGreaterThanOrEqual(44)
-      expect(headerBox.height).toBeLessThanOrEqual(110)
-      const statusBox = await box(header.locator('.workspace-status'))
-      expect(statusBox.top).toBeGreaterThanOrEqual(publishBox.bottom)
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-      await page.screenshot({ path: info.outputPath(`mobile-editor-header-${locale}-${width}.png`) })
-
-      await more.click()
-      const drawer = page.getByRole('dialog', { name: text.more, exact: true })
-      await expect(drawer).toBeVisible()
-      await expect(drawer.locator('[data-slot="drawer-handle"]')).toBeVisible()
-      await expect(drawer).toContainText(locale === 'zh' ? /自动保存/ : /automatically/)
-      await expect(drawer.getByRole('button', { name: text.sync, exact: true })).toBeDisabled()
-      await expect(page.getByRole('menu')).toHaveCount(0)
-      await page.screenshot({ path: info.outputPath(`mobile-editor-actions-${locale}-${width}.png`) })
-      await drawer.getByRole('button', { name: text.close, exact: true }).click()
-      await expect(drawer).toHaveCount(0)
-      await expect(more).toBeFocused()
-      await more.click()
-      await page.keyboard.press('Escape')
-      await expect(drawer).toHaveCount(0)
-      await expect(more).toBeFocused()
-
-      await more.click()
-      await drawer.getByRole('button', { name: text.remove, exact: true }).click()
-      await expect(drawer).toHaveCount(0)
-      const confirmation = page.getByRole('dialog')
-      await expect(confirmation).toBeVisible()
-      await confirmation.getByRole('button', { name: text.cancel, exact: true }).click()
-      await expect(confirmation).toHaveCount(0)
-      await expect(more).toBeFocused()
-      await expect(page.getByLabel('Document body', { exact: true }))
-        .toContainText('A compact mobile writing workspace')
-    })
-  }
-}
-
-test('mobile preview closes the action drawer and resizing never reopens a dismissed panel', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await writeDocument(page, documentWithBody('A current draft opened from mobile actions'))
-  const more = page.getByRole('button', { name: 'More document actions', exact: true })
-  const drawer = page.getByRole('dialog', { name: 'More document actions', exact: true })
-  await more.click()
-  await drawer.getByRole('button', { name: 'Preview', exact: true }).click()
-  const preview = page.getByRole('dialog', { name: 'Draft preview', exact: true })
-  await expect(drawer).toHaveCount(0)
-  await expect(preview.getByRole('heading', { name: 'Mobile document actions', exact: true })).toBeVisible()
-  await expect(preview).toContainText('A current draft opened from mobile actions')
-  await preview.getByRole('button', { name: 'Close preview', exact: true }).click()
-  await expect(preview).toHaveCount(0)
-  await expect(more).toBeFocused()
-  await more.click()
-  await expect(drawer).toBeVisible()
-  await page.setViewportSize({ width: 1440, height: 1000 })
-  await expect(drawer).toHaveCount(0)
-  await expect(page.getByRole('menu')).toHaveCount(0)
-  await page.setViewportSize({ width: 390, height: 844 })
-  await expect(drawer).toHaveCount(0)
-  await more.click()
-  await expect(drawer).toBeVisible()
-  await drawer.getByRole('button', { name: 'Close', exact: true }).click()
-  await expect(more).toBeFocused()
-})
 
 test('mobile sync writes pending changes privately and autosave remains independent', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })

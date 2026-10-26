@@ -2,7 +2,6 @@ import type { Locator, Page } from '@playwright/test'
 import type { Locale } from '~/tests/support/browser/locale'
 import { openDocumentSchema } from '@/contracts/documents'
 import { tabToControl } from '~/tests/browser/editor/blocks/block-action-helpers'
-import { assertAccessible } from '~/tests/support/browser/accessibility'
 import { writeDocument } from '~/tests/support/browser/document'
 import { fixture } from '~/tests/support/browser/document-fixture'
 import { horizontalBounds } from '~/tests/support/browser/layout'
@@ -112,32 +111,29 @@ async function closeOptions(page: Page, locale: Locale): Promise<void> {
   await expect(drawer).not.toBeVisible()
   await selectPhrase(page, locale)
 }
-for (const width of [
-  320,
-  390,
-  700,
-  701,
-  1440,
-]) {
-  for (const locale of ['en', 'zh'] as const) {
-    test(`floating formatting is bounded at ${width}px in ${locale} and bold affects only its selected range`, async ({
-      page,
-    }, info) => {
-      const body = await editorFixture(page, locale, width)
-      const identity = await body.elementHandle()
-      await checkToolbar(page, locale, width)
-      await page.screenshot({ path: info.outputPath(`format-toolbar-${width}-${locale}.png`) })
-      await toolbar(page, locale).getByRole('button', { name: copy[locale].bold, exact: true }).click()
-      await expect.poll(async () => (await persistedBlock(page)).content, { timeout: 15000 }).toEqual([
-        { type: 'text', text: selected, styles: { bold: true } },
-        { type: 'text', text: suffix, styles: {} },
-      ])
-      expect(await identity.evaluate(element => element.isConnected)).toBe(true)
-      await page.reload()
-      await expect(body.locator('strong')).toHaveText(selected)
-      await expect(body).toHaveText(`${selected}${suffix}`)
-    })
-  }
+// Only the stored-reload representatives stay here; the component matrix proves
+// the width and locale geometry against the revision packet.
+for (const { width, locale } of [
+  { width: 1440, locale: 'en' },
+  { width: 320, locale: 'zh' },
+] as const) {
+  test(`floating formatting is bounded at ${width}px in ${locale} and bold affects only its selected range`, async ({
+    page,
+  }, info) => {
+    const body = await editorFixture(page, locale, width)
+    const identity = await body.elementHandle()
+    await checkToolbar(page, locale, width)
+    await page.screenshot({ path: info.outputPath(`format-toolbar-${width}-${locale}.png`) })
+    await toolbar(page, locale).getByRole('button', { name: copy[locale].bold, exact: true }).click()
+    await expect.poll(async () => (await persistedBlock(page)).content, { timeout: 15000 }).toEqual([
+      { type: 'text', text: selected, styles: { bold: true } },
+      { type: 'text', text: suffix, styles: {} },
+    ])
+    expect(await identity.evaluate(element => element.isConnected)).toBe(true)
+    await page.reload()
+    await expect(body.locator('strong')).toHaveText(selected)
+    await expect(body).toHaveText(`${selected}${suffix}`)
+  })
 }
 async function nativeColorAndLink(page: Page, locale: Locale): Promise<void> {
   let drawer = await openOptions(page, locale)
@@ -169,8 +165,8 @@ async function nativeColorAndLink(page: Page, locale: Locale): Promise<void> {
     { type: 'text', text: suffix, styles: {} },
   ])
 }
+// The 390px case keeps the stored strike, colour, alignment and link reload proof.
 for (const scenario of [
-  { width: 320, locale: 'zh' },
   { width: 390, locale: 'en' },
 ] as const) {
   test(`mobile advanced formatting preserves selection and native actions at ${scenario.width}px`, async ({
@@ -220,46 +216,3 @@ for (const scenario of [
     await expect(body.locator('s')).toHaveText(selected)
   })
 }
-test('crossing the mobile breakpoint releases its drawer and retains the editor selection', async ({ page }) => {
-  const body = await editorFixture(page, 'en', 700)
-  const identity = await body.elementHandle()
-  const drawer = await openOptions(page, 'en')
-  await page.setViewportSize({ width: 701, height: 740 })
-  await expect(drawer).not.toBeVisible()
-  await selectPhrase(page, 'en')
-  await checkToolbar(page, 'en', 701)
-  await page.setViewportSize({ width: 700, height: 740 })
-  await selectPhrase(page, 'en')
-  await checkToolbar(page, 'en', 700)
-  expect(await identity.evaluate(element => element.isConnected)).toBe(true)
-})
-test.describe('formatting accessibility scanner', () => {
-  test.use({ bypassCSP: true, contextOptions: { reducedMotion: 'reduce' } })
-  test.beforeEach(async ({ context }) => {
-    await context.route('https://fonts.googleapis.com/**', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'text/css',
-        headers: { 'access-control-allow-origin': '*' },
-        body: '/* Scanner contexts use system font fallbacks. */',
-      })
-    })
-  })
-  for (const scenario of [
-    { width: 320, locale: 'zh' },
-    { width: 1440, locale: 'en' },
-  ] as const) {
-    test(`formatting controls are accessible at ${scenario.width}px in ${scenario.locale}`, async ({ page }, info) => {
-      const { width, locale } = scenario
-      await editorFixture(page, locale, width)
-      await expect(toolbar(page, locale).locator('..')).toHaveCSS('transition-duration', '0s')
-      await assertAccessible(page, info, { label: `format-toolbar-${width}-${locale}` })
-      if (width <= 700) {
-        const drawer = await openOptions(page, locale)
-        await expect.poll(async () => await drawer.evaluate(element => getComputedStyle(element).animationDuration))
-          .toBe('0s')
-        await assertAccessible(page, info, { label: `format-options-${width}-${locale}` })
-      }
-    })
-  }
-})

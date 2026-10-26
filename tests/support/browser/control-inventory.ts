@@ -7,9 +7,7 @@ import { editorControls } from './editor-control-inventory'
 export const controlInventory: ControlContract[] = [
   ...controls('history-selection', [
     'history/history',
-    'tests/components/specs/history-boundaries.spec.ts',
     'tests/components/specs/history-conflict.spec.ts',
-    'tests/components/specs/history-reconciliation.spec.ts',
     'tests/components/specs/history-requirements.spec.ts',
   ], [
     'loaded',
@@ -98,8 +96,9 @@ export const controlInventory: ControlContract[] = [
   ...controls('publication', [
     'editor/editor',
     'publication/publication-locate',
-    'publication/publication-save-errors',
-    'publication/schedule-boundaries',
+    'publication/publication-errors',
+    'tests/components/specs/publication-remaining.spec.ts',
+    'tests/components/specs/publication-remaining-schedule.spec.ts',
     'tests/components/specs/editor-workspace.spec.ts',
     'tests/components/specs/editor-preflight.spec.ts',
     'tests/components/specs/editor-locate.spec.ts',
@@ -131,11 +130,10 @@ export const controlInventory: ControlContract[] = [
   ]),
   ...controls('history', [
     'history/history',
-    'tests/components/specs/history-boundaries.spec.ts',
     'tests/components/specs/history-conflict.spec.ts',
-    'tests/components/specs/history-reconciliation.spec.ts',
     'tests/components/specs/history-requirements.spec.ts',
-    'history/preview-history-a11y',
+    'tests/components/specs/editor-history-remaining-a11y.spec.ts',
+    'tests/components/specs/editor-history-remaining-conflict.spec.ts',
     'history/conflict',
     'editor/editor-safety',
     'journeys/recovery',
@@ -171,7 +169,8 @@ export const controlInventory: ControlContract[] = [
   ...controls('preview-reader', [
     'reader/public-reader',
     'history/preview-history-polish',
-    'history/preview-history-a11y',
+    'tests/components/specs/editor-history-remaining-preview.spec.ts',
+    'tests/components/specs/editor-history-remaining-a11y.spec.ts',
     'journeys/content',
     'journeys/lifecycle',
     'journeys/presentation',

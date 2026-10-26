@@ -5,6 +5,7 @@ export const editorControls: ControlContract[] = [
   ...controls('editor-actions', [
     'editor/source/formula-editor',
     'editor/mobile-editor-actions',
+    'tests/components/specs/editor-chrome-mobile-actions.spec.ts',
     'publication/publication-locate',
     'journeys/content',
   ], [
@@ -23,9 +24,9 @@ export const editorControls: ControlContract[] = [
   ...controls('editor', [
     'editor/editor',
     'editor/editor-safety',
-    'editor/blocks/command-palette',
-    'editor/blocks/block-actions',
+    'tests/components/specs/editor-block-remaining.spec.ts',
     'editor/blocks/block-color-drawer',
+    'tests/components/specs/editor-chrome-layout.spec.ts',
     'journeys/content',
     'journeys/recovery',
   ], [
@@ -52,8 +53,8 @@ export const editorControls: ControlContract[] = [
   ...controls('formatting', [
     'editor/formatting/format-toolbar',
     'editor/formatting/format-toolbar-input',
-    'editor/formatting/desktop-text-colors',
-    'editor/formatting/formatting-position-races',
+    'tests/components/specs/editor-formatting.spec.ts',
+    'tests/components/specs/editor-format-remaining.spec.ts',
   ], [
     'selected',
     'open',
@@ -70,9 +71,12 @@ export const editorControls: ControlContract[] = [
   ]),
   ...controls('links', [
     'editor/links/link-lifecycle',
-    'editor/links/link-keyboard-command',
     'editor/links/link-targets',
-    'editor/links/link-validation',
+    'tests/components/specs/editor-links.spec.ts',
+    'tests/components/specs/editor-link-remaining-keyboard.spec.ts',
+    'tests/components/specs/editor-link-remaining-entry.spec.ts',
+    'tests/components/specs/editor-link-remaining-targets.spec.ts',
+    'tests/components/specs/editor-link-remaining-focus.spec.ts',
     'editor/links/link-normalization',
   ], [
     'empty',
@@ -87,8 +91,6 @@ export const editorControls: ControlContract[] = [
     ['Edit / Remove / Open link', 'Act on the intended link without changing surrounding text.'],
   ]),
   ...controls('tables', [
-    'editor/tables/table-keyboard-controls',
-    'editor/tables/table-drag',
     'editor/tables/table-overlay-polish',
     'editor/tables/table-caption',
     'tests/components/specs/editor-tables.spec.ts',
@@ -98,6 +100,9 @@ export const editorControls: ControlContract[] = [
     'tests/components/specs/editor-table-layout.spec.ts',
     'tests/components/specs/editor-table-drag.spec.ts',
     'tests/components/specs/editor-table-mobile.spec.ts',
+    'tests/components/specs/editor-table-merged.spec.ts',
+    'tests/components/specs/editor-table-keyboard-guards.spec.ts',
+    'tests/components/specs/editor-table-slash.spec.ts',
   ], [
     'selected',
     'open',
@@ -163,7 +168,8 @@ export const editorControls: ControlContract[] = [
     'tests/components/specs/media-transfer.spec.ts',
     'media/media-inputs',
     'media/editor-media-flow',
-    'media/editor-video-details',
+    'tests/components/specs/editor-media.spec.ts',
+    'tests/components/specs/media-picker.spec.ts',
     'admin/admin-management',
     'journeys/content',
   ], [
@@ -197,6 +203,8 @@ export const editorControls: ControlContract[] = [
     'tests/components/specs/references-authors.spec.ts',
     'tests/components/specs/references-lookup.spec.ts',
     'tests/components/specs/references-layout.spec.ts',
+    'tests/components/specs/references-citations.spec.ts',
+    'tests/components/specs/references-publication.spec.ts',
     'references/reference-settings',
     'journeys/content',
   ], [

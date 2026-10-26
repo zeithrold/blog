@@ -64,11 +64,25 @@ const layout4Class = [
 
 const layout5Class = [utility11Class, '[&_li]:items-center [&_li]:gap-[6px]'].join(' ')
 
+/**
+ * What this panel consumes of the editor workspace.
+ *
+ * Only the opened document, the acknowledged head/live pair, the busy flag and
+ * the runner are read, so the panel declares exactly those. A whole `Workspace`
+ * still satisfies it; nothing here changes what the panel does at runtime.
+ */
+export type EditorHistoryWorkspace = {
+  readonly props: Pick<Workspace['props'], 'initial'>
+  readonly draft: Pick<Workspace['draft'], 'ack'>
+  readonly busy: boolean
+  readonly run: Workspace['run']
+}
+
 export function EditorHistory({
   workspace,
   restore,
 }: {
-  workspace: Workspace
+  workspace: EditorHistoryWorkspace
   restore: (revision: string) => Promise<void>
 }): ReactNode {
   const locale = useFrontendPreferences().preferences.locale
@@ -126,7 +140,7 @@ export function EditorHistory({
 }
 
 function HistoryToolbar({ workspace, loading, load }: {
-  workspace: Workspace
+  workspace: EditorHistoryWorkspace
   loading: boolean
   load: () => void
 }): ReactNode {
@@ -194,7 +208,7 @@ function HistoryItems({
   locale,
 }: {
   history: RevisionHistory
-  workspace: Workspace
+  workspace: EditorHistoryWorkspace
   setConfirm: (id: string) => void
   locale: string
 }): ReactNode {

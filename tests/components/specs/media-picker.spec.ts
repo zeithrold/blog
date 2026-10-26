@@ -6,7 +6,7 @@ import { Buffer } from 'node:buffer'
 import { editorWorkspaceDocument, editorWorkspaceSaveAck } from '~/tests/components/support/editor-workspace-fixtures'
 import { editorReady, mountEditorWorkspace } from '~/tests/components/support/editor-workspace-ui'
 import { editorWorkspaceCopy } from '~/tests/components/support/expected-copy'
-import { mediaHandlers, serveMediaPreviews } from '~/tests/components/support/media-boundary'
+import { mediaHandlers, mediaLedger, serveMediaPreviews } from '~/tests/components/support/media-boundary'
 import { assetFor } from '~/tests/components/support/media-fixtures'
 import { expect, test } from '~/tests/components/support/test'
 import { assertAccessible } from '~/tests/support/browser/accessibility'
@@ -75,7 +75,7 @@ async function openPicker(page: Page, options: PickerOptions): Promise<{
     },
   })
   // Registered after the case's API route so the private bytes answer first.
-  await serveMediaPreviews(page)
+  await serveMediaPreviews(page, { ledger })
   await editorReady(page, locale)
   await page.getByRole('button', { name: copy[locale].add, exact: true }).click()
   const dialog = page.getByRole('dialog', { name: copy[locale].dialog, exact: true })
@@ -122,7 +122,7 @@ for (const [locale, mode, width] of [
     page,
   }, info) => {
     const text = copy[locale]
-    const ledger: MediaLedger = { allocations: [], transfers: [] }
+    const ledger = mediaLedger()
     const { api, dialog } = await openPicker(page, { locale, mode, width, ledger })
     try {
       const prefix = `picker-${width}`
@@ -226,7 +226,7 @@ for (const [locale, mode, width] of [
   }, info) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     const text = copy[locale]
-    const ledger: MediaLedger = { allocations: [], transfers: [] }
+    const ledger = mediaLedger()
     const { api, dialog } = await openPicker(page, { locale, mode, width, ledger })
     try {
       await assertPickerLayout(page, dialog)

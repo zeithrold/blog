@@ -16,6 +16,8 @@ const uploadWidths = [
   682,
   1440,
 ] as const
+const mediaFlowWidths = [390, 1440] as const
+const replacementSources = ['upload', 'library'] as const
 
 export const mediaMigrations: readonly CaseMigration[] = [
   {
@@ -99,5 +101,54 @@ export const mediaMigrations: readonly CaseMigration[] = [
       })),
     ],
     retained: [],
+  },
+  // The editor's own save request carries these payloads; R2, private routing,
+  // Range/CSP and reload persistence stay with media.spec.ts and the services
+  // integration cases.
+  {
+    id: 'media.editor-media',
+    legacy: [
+      ...mediaFlowWidths.map(width =>
+        `tests/browser/media/editor-media-flow.spec.ts :: media replacement preserves the block and descriptions at ${width}px`),
+      ...mediaFlowWidths.map(width =>
+        `tests/browser/media/editor-media-flow.spec.ts :: slash image opens media sources and fills its original placeholder at ${width}px`),
+      ...replacementSources.map(source =>
+        `tests/browser/media/media-continuous-replacement.spec.ts :: consecutive ${source} replacements keep the same media block within one editing window`),
+      'tests/browser/media/editor-video-details.spec.ts :: video descriptions select uploaded captions and posters without inserting extra blocks',
+    ],
+    component: [
+      ...mediaFlowWidths.map(width => ({
+        case: `tests/components/specs/editor-media.spec.ts :: media replacement preserves the block and descriptions at ${width}px`,
+        proves: [
+          'the saved revision keeps every block id, one image and the alternative text; the replacement changes the URL and choosing the original restores it',
+          'an image has no transcript or caption controls and Content settings has no Media tab',
+        ],
+      })),
+      ...mediaFlowWidths.map(width => ({
+        case: `tests/components/specs/editor-media.spec.ts :: slash image opens media sources and fills its original placeholder at ${width}px`,
+        proves: [
+          'Escape closes the picker and the add-file control reopens it, and the upload fills the placeholder paragraph id under /assets/',
+        ],
+      })),
+      ...replacementSources.map(source => ({
+        case: `tests/components/specs/editor-media.spec.ts :: consecutive ${source} replacements keep the same media block within one editing window`,
+        proves: [
+          'one window of consecutive replacements keeps every block id and one image, ends on the final name and keeps the original URL only when the library reused it',
+        ],
+      })),
+      {
+        case: 'tests/components/specs/editor-media.spec.ts :: video descriptions select uploaded captions and posters without inserting extra blocks',
+        proves: [
+          'captions and poster travel the real upload boundary, the save packet keeps one media block, the transcript, and the caption/poster allocation ids the ledger recorded',
+        ],
+      },
+    ],
+    retained: [
+      {
+        cases: mediaFlowWidths.map(width =>
+          `tests/browser/media/editor-media-flow.spec.ts :: media replacement preserves the block and descriptions at ${width}px`),
+        reason: 'only the built app proves a saved replacement still reloads with its alternative text',
+      },
+    ],
   },
 ]

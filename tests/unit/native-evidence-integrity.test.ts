@@ -91,6 +91,7 @@ function unitContract(id: string, reference: NodeReference): VerificationContrac
     primary: 'unit',
     unit: [reference],
     integration: [],
+    dom: [],
     component: [],
     e2e: [],
     dimensions: ['validation'],

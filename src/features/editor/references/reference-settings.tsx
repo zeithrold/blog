@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { Document } from '@/content/document'
 import type { Envelope } from '@/features/editor/workspace/document-model'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { ContentSettingsWorkspace } from '@/features/editor/workspace/editor-types'
 import { FileText, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import {
@@ -19,7 +19,7 @@ type Reference = Document['references'][number]
 type Session = { reference: Reference, creating: boolean, key: number }
 
 export function ReferenceSettings({ workspace, update, open, setOpen }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   update: (patch: Partial<Envelope>) => void
   open: boolean
   setOpen: (open: boolean) => void
@@ -78,7 +78,7 @@ export function ReferenceSettings({ workspace, update, open, setOpen }: {
 }
 
 function ReferenceContent({ workspace, edit, update }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   edit: (reference: Reference, creating: boolean, trigger: HTMLButtonElement) => void
   update: (patch: Partial<Envelope>) => void
 }): ReactNode {
@@ -101,7 +101,7 @@ function ReferenceContent({ workspace, edit, update }: {
 }
 
 function ReferenceList({ workspace, edit, update }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   edit: (reference: Reference, creating: boolean, trigger: HTMLButtonElement) => void
   update: (patch: Partial<Envelope>) => void
 }): ReactNode {

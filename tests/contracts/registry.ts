@@ -1,10 +1,23 @@
 import type { BrowserReference, NodeReference, VerificationContract } from './types'
 import { componentMigrations } from './component-migrations'
 import { documentsCatalogContracts as baseline } from './documents-catalog'
+import { domMigrations } from './dom-migrations'
 import { historyServerProofs } from './history-migrations'
+import { historyRemainingServerProofs } from './history-remaining-migrations'
 
 export function caseKey(reference: NodeReference): string {
   return `${reference.file} :: ${reference.title}`
+}
+
+export const retainedDomCaseKeys = new Set(domMigrations.flatMap(migration =>
+  migration.retained.flatMap(group => group.cases)))
+
+export function domReferenceKey(reference: NodeReference): string {
+  return JSON.stringify([
+    reference.file,
+    reference.describe ?? [],
+    reference.title,
+  ])
 }
 
 export const retainedCaseKeys = new Set(componentMigrations.flatMap(migration =>
@@ -47,6 +60,34 @@ function componentReferences(): Map<string, BrowserReference[]> {
 
 const references = componentReferences()
 
+// A jsdom case enters a rule the same way a component case does: only through a
+// reviewed migration record, so the old case it succeeds stays on the ledger.
+function domReferences(): Map<string, NodeReference[]> {
+  const ids = new Set<string>(baseline.map(contract => contract.id))
+  const byContract = new Map<string, NodeReference[]>()
+  for (const migration of domMigrations) {
+    for (const successor of migration.dom) {
+      const reference: NodeReference = {
+        ...caseReference(successor.case),
+        describe: successor.describe ?? [],
+      }
+      for (const id of successor.contracts ?? []) {
+        if (!ids.has(id)) {
+          throw new Error(`DOM migration cites an unknown contract: ${id}`)
+        }
+        const entries = byContract.get(id) ?? []
+        if (!entries.some(entry => domReferenceKey(entry) === domReferenceKey(reference))) {
+          entries.push(reference)
+        }
+        byContract.set(id, entries)
+      }
+    }
+  }
+  return byContract
+}
+
+const domByContract = domReferences()
+
 // Current proof, composed from the reviewed boundary rules and their explicit
 // assertion migrations. Retained router/SSR/real-persistence cases stay E2E.
 export const documentsCatalogContracts: VerificationContract[] = baseline.map((contract) => {
@@ -54,17 +95,21 @@ export const documentsCatalogContracts: VerificationContract[] = baseline.map((c
     ...contract.component,
     ...references.get(contract.id) ?? [],
   ]
+  const dom = domByContract.get(contract.id) ?? []
   const e2e = contract.e2e.filter(reference => !retiredCaseKeys.has(caseKey(reference)))
   const primary = contract.primary === 'e2e' && e2e.length === 0 && component.length > 0
     ? 'component'
     : contract.primary
-  return { ...contract, primary, component, e2e }
+  return { ...contract, primary, dom, component, e2e }
 })
 
 // Mocked HTTP acknowledgements prove client behavior, not stored server state.
 // These exact Worker cases preserve the backend assertions retired from E2E.
 const migratedServerProofs = [
-  ...historyServerProofs.flatMap(proof => proof.integration.map(key => ({
+  ...[
+    ...historyServerProofs,
+    ...historyRemainingServerProofs,
+  ].flatMap(proof => proof.integration.map(key => ({
     ...caseReference(key),
     behavior: proof.proves.join('; '),
   }))),
@@ -88,6 +133,7 @@ export const migrationServerContracts: VerificationContract[] = migratedServerPr
     primary: 'integration',
     unit: [],
     integration: [reference],
+    dom: [],
     component: [],
     e2e: [],
     dimensions: ['persistence'],

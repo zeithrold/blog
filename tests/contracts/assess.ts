@@ -1,10 +1,12 @@
 import type { z } from 'zod'
-import type { Browser, CaseEvidence, Layer, SourceIdentity, VerificationContract } from './types'
+import type { Browser, CaseEvidence, Layer, NodeReference, SourceIdentity, VerificationContract } from './types'
+import { domCaseKey } from './discovery'
 import { contractSchema, layerEvidenceSchema } from './schema'
 
 const layers: Layer[] = [
   'unit',
   'integration',
+  'dom',
   'component',
   'e2e',
 ]
@@ -78,4 +80,83 @@ export function assessContracts(
     layerIssues(contract, layer, reports, { runId, source })
       .map(reason => ({ contract: contract.id, layer, reason }))))
   return { passed: issues.length === 0, issues }
+}
+
+/**
+ * The `dom` layer's plan obligation, for the batch it belongs to.
+ *
+ * It is mandatory for a full batch, independent of what any rule cites: `check:base`
+ * runs the layer, so its absence is a failure, not a question. Otherwise an empty
+ * `contract.dom` would quietly turn the layer into an optional one, and a batch
+ * that never ran jsdom would still report `passed`.
+ *
+ * A case counts as an execution only when it *is* a jsdom result: no Playwright
+ * project, passed, and not retried. `complete` is a summary, so it is never
+ * trusted in place of those facts — a report that claims completeness while a case
+ * names chromium, was skipped or only passed on a retry fails here, and such a case
+ * cannot satisfy the plan either.
+ */
+export function assessDomPlan(
+  evidence: readonly unknown[],
+  expected: readonly NodeReference[],
+  context: { runId: string, source: SourceIdentity },
+): string[] {
+  const { runId, source } = context
+  const reports = evidence.map(report => layerEvidenceSchema.parse(report))
+    .filter(report => report.layer === 'dom')
+  const current = reports.filter(report => report.runId === runId
+    && report.source.revision === source.revision
+    && report.source.fingerprint === source.fingerprint)
+  if (current.length === 0) {
+    return [
+      reports.length === 0
+        ? 'No DOM execution report in this batch: run `pnpm test:dom` after `pnpm test:prepare`'
+        : `Only stale DOM execution reports (${reports.length}): none belongs to this prepared run and source`,
+    ]
+  }
+  const entries = current.flatMap(report => report.cases)
+  const issues = [
+    ...current.filter(report => !report.complete)
+      .map(() => 'DOM execution report is incomplete'),
+    ...entries.flatMap(caseIssues),
+  ]
+  const required = expected.map(reference => domCaseKey(reference))
+  if (required.length === 0 || new Set(required).size !== required.length) {
+    return [
+      ...issues,
+      'DOM discovery must contain a nonempty, unique case plan',
+    ]
+  }
+  const counts = new Map<string, number>()
+  for (const entry of entries.filter(isJsdomExecution)) {
+    const key = domCaseKey(entry)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const planned = new Set(required)
+  return [
+    ...issues,
+    ...required.filter(key => counts.get(key) !== 1)
+      .map(key => `Expected exactly one DOM execution, found ${counts.get(key) ?? 0}: ${key}`),
+    ...Array.from(counts.keys()).filter(key => !planned.has(key)).map(key => `Unexpected DOM execution: ${key}`),
+  ]
+}
+
+/** A jsdom case is one that can be cited: native, passed, and not retried. */
+function isJsdomExecution(entry: CaseEvidence): boolean {
+  return entry.project === undefined && entry.status === 'passed' && entry.retry === 0
+}
+
+function caseIssues(entry: CaseEvidence): string[] {
+  const label = `${entry.file} > ${entry.title}`
+  const issues: string[] = []
+  if (entry.project !== undefined) {
+    issues.push(`${label}: a jsdom case names no browser project (${entry.project})`)
+  }
+  if (entry.status !== 'passed') {
+    issues.push(`${label}: ${entry.status}`)
+  }
+  if (entry.retry !== 0) {
+    issues.push(`${label}: passed only after ${entry.retry} attempt(s)`)
+  }
+  return issues
 }

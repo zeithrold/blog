@@ -1,8 +1,15 @@
 /* eslint-disable style/max-len -- Verbatim case references stay on one line. */
 import type { CaseMigration } from './types'
 import { adminMigrations } from './admin-migrations'
+import { blockRemainingMigrations } from './block-remaining-migrations'
+import { editorChromeMigrations } from './editor-chrome-migrations'
+import { formattingRemainingMigrations } from './formatting-remaining-migrations'
 import { historyMigrations, retainedHistoryCases } from './history-migrations'
+import { historyRemainingMigrations } from './history-remaining-migrations'
+import { linkRemainingMigrations } from './link-remaining-migrations'
 import { mediaMigrations } from './media-migrations'
+import { overlayMigrations } from './overlay-migrations'
+import { publicationRemainingMigrations } from './publication-remaining-migrations'
 import { referenceMigrations } from './reference-migrations'
 import { sourceMigrations } from './source-migrations'
 import { tableMigrations } from './table-migrations'
@@ -12,10 +19,16 @@ import { tableMigrations } from './table-migrations'
 // the full component plan remains an execution obligation in the default gate.
 export const surfaceMigrations: readonly CaseMigration[] = [
   ...adminMigrations,
+  ...editorChromeMigrations,
+  ...formattingRemainingMigrations,
+  ...linkRemainingMigrations,
   ...mediaMigrations,
+  ...overlayMigrations,
   ...referenceMigrations,
   ...sourceMigrations,
   ...tableMigrations,
+  ...blockRemainingMigrations,
+  ...publicationRemainingMigrations,
   {
     id: 'history.notice-error-conflict',
     legacy: historyMigrations.map(migration => migration.legacy),
@@ -25,6 +38,7 @@ export const surfaceMigrations: readonly CaseMigration[] = [
     })),
     retained: retainedHistoryCases,
   },
+  ...historyRemainingMigrations,
   {
     id: 'reader.literal-code',
     legacy: ['text', 'legacy-lang'].map(language =>

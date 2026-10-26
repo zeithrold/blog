@@ -31,6 +31,7 @@ function rule(fields: Partial<VerificationContract> = {}): VerificationContract 
     primary: 'component',
     unit: [],
     integration: [],
+    dom: [],
     component: [browserCase],
     e2e: [],
     dimensions: [],

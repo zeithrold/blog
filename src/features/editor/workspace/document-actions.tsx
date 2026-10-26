@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
+import type { Draft } from '@/features/editor/draft/persistence'
 import type { DocumentAction } from '@/features/editor/workspace/document-actions-panel'
+import type { DocumentModel } from '@/features/editor/workspace/document-model'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import type { UiText } from '@/i18n/use-translation'
 import { ArrowUpRight, Eye, History, RefreshCw, Trash2, Undo2 } from 'lucide-react'
@@ -11,8 +13,21 @@ import { useEditorLabels } from '@/i18n/use-labels'
 import { ConfirmDialog } from '@/shared/admin/confirm-dialog'
 
 type Confirmation = 'unpublish' | 'delete'
+
+/**
+ * The editor fields this menu reads to list its entries and to run one: the
+ * acknowledged draft, its coordinator, the media upload state and the busy
+ * flag. A full `Workspace` satisfies it.
+ */
+export type DocumentActionsWorkspace = {
+  readonly draft: Pick<Draft, 'ack' | 'status' | 'coordinator'>
+  readonly model: Pick<DocumentModel, 'uploading' | 'composingRef'>
+  readonly busy: boolean
+  readonly run: Workspace['run']
+}
+
 type Props = {
-  workspace: Workspace
+  workspace: DocumentActionsWorkspace
   publish: (unpublish?: boolean) => Promise<void>
   remove: () => Promise<void>
   livePath: string | null
@@ -138,7 +153,7 @@ function DocumentConfirmation({
 }
 
 function documentActions(
-  workspace: Workspace,
+  workspace: DocumentActionsWorkspace,
   livePath: string | null,
   text: UiText,
 ): DocumentAction[] {

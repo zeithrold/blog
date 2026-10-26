@@ -93,14 +93,3 @@ export async function linkSaved(page: Page, locale: Locale): Promise<void> {
     .toBeVisible({ timeout: 15000 })
   await expect(page.getByRole('alert')).toHaveCount(0)
 }
-
-export async function expectSelectionRestored(page: Page, body: Locator): Promise<void> {
-  await expect(body).toBeFocused()
-  await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString())).toBe(linkSelected)
-}
-
-export async function collapseLinkSelection(page: Page, body: Locator): Promise<void> {
-  await selectLinkPhrase(page, body)
-  await page.keyboard.press('ArrowRight')
-  await expect.poll(async () => await page.evaluate(() => window.getSelection()?.isCollapsed)).toBe(true)
-}

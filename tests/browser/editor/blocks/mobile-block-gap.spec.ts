@@ -1,46 +1,21 @@
 import { saved, writeDocument } from '~/tests/support/browser/document'
 import { expect, test } from '~/tests/support/browser/test'
-import { blockAction, blockActions, paragraph, reveal } from './block-action-helpers'
+import { blockAction, blockActions, paragraph } from './block-action-helpers'
 import {
   documentBlocks,
-  documentLayout,
   expectControlsInBlockGap,
-  expectMobileBlockSpacing,
   firstNestedGapItem,
   gapDocument,
-  hideBlockControls,
   topLevelBlocks,
 } from './mobile-block-gap-helpers'
 
-for (const width of [390, 320]) {
-  test(`mobile blocks use full width and stable control gaps at ${width}px`, async ({ page }, info) => {
-    await page.setViewportSize({ width, height: 900 })
-    await writeDocument(page, gapDocument())
-    await page.evaluate(async () => await document.fonts.ready)
-    const stored = await documentBlocks(page)
-    await expectMobileBlockSpacing(page)
-    const layout = await documentLayout(page)
-    for (const index of [1, 4]) {
-      const block = await reveal(page, index)
-      await expectControlsInBlockGap(page, block)
-      expect(await documentLayout(page)).toEqual(layout)
-      await page.screenshot({ path: info.outputPath(`block-gap-${width}-${index}.png`) })
-      await hideBlockControls(page)
-      expect(await documentLayout(page)).toEqual(layout)
-    }
-    const nested = firstNestedGapItem(page)
-    await nested.evaluate(element => element.scrollIntoView({ block: 'center' }))
-    await nested.hover()
-    await expectControlsInBlockGap(page, nested)
-    expect(await documentLayout(page)).toEqual(layout)
-    await hideBlockControls(page)
-    expect(await documentBlocks(page)).toEqual(stored)
-    await page.reload()
-    await expectMobileBlockSpacing(page)
-    expect(await documentBlocks(page)).toEqual(stored)
-  })
-}
-
+/**
+ * The one stored-structure representative for the block suite: inserting a
+ * heading after the tapped block, deleting it, and deleting a nested child all
+ * round-trip through the production Worker, and the reload renders the stored
+ * structure. The gap geometry itself is proved against the real component by
+ * `tests/components/specs/editor-block-remaining.spec.ts`.
+ */
 test.describe('touch controls in the block gap', () => {
   test.use({ hasTouch: true, viewport: { width: 320, height: 900 } })
 

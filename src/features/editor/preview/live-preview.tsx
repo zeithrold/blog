@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { PreviewModel } from '@/features/editor/preview/preview-model'
 import { Eye, X } from 'lucide-react'
 import { lazy, Suspense, useCallback, useMemo, useRef, useState } from 'react'
 import {
@@ -76,7 +76,11 @@ const Reader = lazy(async () => ({
   default: (await import('@/features/reader/document')).DocumentReader,
 }))
 export function DraftPreviewProvider({ workspace, children }: {
-  workspace: Workspace
+  /**
+   * The provider reads only the live editor's snapshot, change feed, composing
+   * flag and envelope; the editor workspace satisfies this.
+   */
+  workspace: { readonly model: PreviewModel }
   children: ReactNode
 }): ReactNode {
   const [open, setOpen] = useState(false)
@@ -120,7 +124,7 @@ export function DraftPreviewProvider({ workspace, children }: {
               </Button>
             </DialogClose>
           </header>
-          <PreviewContent workspace={workspace} open={open} />
+          <PreviewContent model={workspace.model} open={open} />
         </DialogContent>
       </Dialog>
     </DraftPreviewContext>
@@ -144,9 +148,9 @@ export function LivePreview(): ReactNode {
   )
 }
 
-function PreviewContent({ workspace, open }: { workspace: Workspace, open: boolean }): ReactNode {
+function PreviewContent({ model, open }: { model: PreviewModel, open: boolean }): ReactNode {
   const text = useEditorLabels()
-  const { document, error } = usePreview(workspace.model, open)
+  const { document, error } = usePreview(model, open)
   return (
     <div className={layout2Class} tabIndex={0} role="region" aria-label={text('Draft reader preview')}>
       {error !== ''

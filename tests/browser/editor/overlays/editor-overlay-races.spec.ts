@@ -1,48 +1,11 @@
-import { tableDocument } from '~/tests/browser/editor/tables/table-overlay-helpers'
 import { locateTable, publicationTables } from '~/tests/browser/publication/publication-locate-helpers'
-import { saved, writeDocument } from '~/tests/support/browser/document'
 import { deferOverlayClose } from '~/tests/support/browser/overlay-close-probe'
 import { settingsTab } from '~/tests/support/browser/settings'
 import { expect, test } from '~/tests/support/browser/test'
 
-for (const reverse of [false, true]) {
-  test(`old block-menu closes preserve the newer focus with reverse=${String(reverse)}`, async ({ page }) => {
-    const errors: string[] = []
-    page.on('pageerror', error => errors.push(error.message))
-    await writeDocument(page, tableDocument())
-    await deferOverlayClose(page, '.editor-desktop-block-actions')
-    const menu = page.locator('.editor-desktop-block-actions')
-    const open = async (): Promise<void> => {
-      const table = page.getByLabel('Document body', { exact: true }).locator('table')
-      await table.getByText('First cell', { exact: true }).hover()
-      await page.getByRole('button', { name: 'Open block menu', exact: true }).click()
-      await expect(menu.getByRole('button', { name: 'Delete', exact: true })).toBeFocused()
-    }
-    await open()
-    await page.keyboard.press('Escape')
-    await expect.poll(async () => await page.evaluate(() => window.overlayCloseProbe.count())).toBe(1)
-    await open()
-    if (reverse) {
-      await page.keyboard.press('Escape')
-      await expect.poll(async () => await page.evaluate(() => window.overlayCloseProbe.count())).toBe(2)
-      const title = page.getByRole('textbox', { name: 'Title', exact: true })
-      await title.click()
-      await page.evaluate(() => window.overlayCloseProbe.release(true))
-      await expect(title).toBeFocused()
-    }
-    else {
-      await page.evaluate(() => window.overlayCloseProbe.release())
-      await expect(menu).toBeVisible()
-      await expect(menu.getByRole('button', { name: 'Delete', exact: true })).toBeFocused()
-      await page.keyboard.press('Escape')
-      await expect(menu).toHaveCount(0)
-      await expect(page.getByLabel('Document body', { exact: true })).toBeFocused()
-    }
-    expect(errors).toEqual([])
-    await saved(page)
-  })
-}
-
+// Retained: the held close is released after the routed mobile menu navigates to
+// Tags, so only the built application can prove the new route, its input focus
+// and the unchanged URL. The desktop menu races run on the component surface.
 test('a delayed mobile publication locator leaves the new route and input alone', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

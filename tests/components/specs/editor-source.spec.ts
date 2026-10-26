@@ -159,6 +159,14 @@ test('reverse cross-block selection keeps Mod+A at document scope', async ({ pag
   const { api, body } = await openSourceWorkspace(page, 'math', 'around')
   try {
     await body.getByRole('button', { name: edit.math, exact: true }).click()
+    await expect(page.locator('[data-content-type="math"] .bn-preview-with-source-popup'))
+      .toHaveAttribute('data-open', 'true')
+    // The range is injected through the DOM, so the editor has to own keyboard focus first: the
+    // open control lives outside the editor DOM, and ProseMirror neither commits a DOM selection
+    // nor writes its own back while it does not own focus.
+    await body.focus()
+    await expect.poll(async () => await page.evaluate(() =>
+      Boolean(document.activeElement?.closest('.ProseMirror')))).toBe(true)
     await body.evaluate((element) => {
       const source = element.querySelector('[data-content-type="math"] code')
       const paragraph = element.querySelector('[data-content-type="paragraph"] .bn-inline-content')

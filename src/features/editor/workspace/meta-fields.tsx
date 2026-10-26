@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Envelope } from '@/features/editor/workspace/document-model'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { ContentSettingsWorkspace } from '@/features/editor/workspace/editor-types'
 import { useId } from 'react'
 import { ChoiceSelect } from '@/components/ui/choice-select'
 import { Checkbox, Input, Label, Textarea, useFrontendPreferences } from '@/components/ui/ztd-me/client'
@@ -28,7 +28,7 @@ export function MetaFields({
   update,
   livePath,
 }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   update: (patch: Partial<Envelope>) => void
   livePath: string | null
 }): ReactNode {
@@ -63,7 +63,7 @@ function SlugField({
   update,
   livePath,
 }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   update: (patch: Partial<Envelope>) => void
   livePath: string | null
 }): ReactNode {
@@ -115,7 +115,7 @@ function LanguageFields({
   workspace,
   update,
 }: {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   update: (patch: Partial<Envelope>) => void
 }): ReactNode {
   const { preferences } = useFrontendPreferences()

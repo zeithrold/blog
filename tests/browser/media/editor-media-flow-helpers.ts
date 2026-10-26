@@ -1,24 +1,9 @@
 import type { Locator, Page } from '@playwright/test'
 import type { Buffer } from 'node:buffer'
 import { expect } from '@playwright/test'
-import { openDocumentSchema } from '@/contracts/documents'
 import { withinViewport } from '~/tests/support/browser/layout'
 
 type FilePayload = { name: string, mimeType: string, buffer: Buffer }
-type Document = ReturnType<typeof openDocumentSchema.parse>['document']
-
-export function firstImage(document: Document): Document['blocks'][number] {
-  const image = document.blocks.find(block => block.type === 'image')
-  if (image === undefined) {
-    throw new Error('The document has no image block')
-  }
-  return image
-}
-
-export async function editorDocument(page: Page): Promise<ReturnType<typeof openDocumentSchema.parse>> {
-  const path = new URL(page.url()).pathname.replace('/admin/documents/', '/api/admin/documents/')
-  return openDocumentSchema.parse(await (await page.request.get(path)).json())
-}
 
 export async function uploadFile(dialog: Locator, file: FilePayload): Promise<void> {
   await dialog.getByRole('tab', { name: 'Upload files', exact: true }).click()

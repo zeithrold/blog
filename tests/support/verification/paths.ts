@@ -5,12 +5,19 @@ import path from 'node:path'
 import process from 'node:process'
 import { z } from 'zod'
 
-export const verificationRoot = path.join(
+// One prepared batch owns one directory: `proofs/` holds the layer evidence the
+// contract gate reads, and the sibling folders retain tool artifacts beside it.
+export const verificationDirectory = path.join(
   tmpdir(),
   'blog-tests',
   process.env.BLOG_VERIFICATION_RUN_ID ?? process.env.BLOG_TEST_RUN_ID ?? 'verification',
-  'proofs',
 )
+
+export const verificationRoot = path.join(verificationDirectory, 'proofs')
+
+// A runner's own report and the receipt that binds it to a layer proof. These are
+// never layer evidence: nothing that assesses contracts reads this folder.
+export const domArtifactRoot = path.join(verificationDirectory, 'dom')
 
 const runSchema = z.strictObject({
   id: z.uuid(),

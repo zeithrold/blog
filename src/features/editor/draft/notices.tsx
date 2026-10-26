@@ -91,12 +91,18 @@ export function DraftNotices({
     </>
   )
 }
-function RecoveryNotice({
+/**
+ * The workspace fields the local recovery notice reads: the session it reopens
+ * and the busy flag it disables its actions with. A full `Workspace` satisfies it.
+ */
+export type RecoveryNoticeWorkspace = Pick<Workspace, 'props' | 'busy'>
+
+export function RecoveryNotice({
   workspace,
   local,
   dismiss,
 }: {
-  workspace: Workspace
+  workspace: RecoveryNoticeWorkspace
   local: Recovery
   dismiss: () => void
 }): ReactNode {
@@ -127,7 +133,7 @@ function RecoveryNotice({
   )
 }
 function RecoveryActions({ workspace, local, dismiss }: {
-  workspace: Workspace
+  workspace: RecoveryNoticeWorkspace
   local: Recovery
   dismiss: () => void
 }): ReactNode {

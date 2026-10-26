@@ -3,11 +3,19 @@ import { z } from 'zod'
 export const layerSchema = z.enum([
   'unit',
   'integration',
+  'dom',
   'component',
   'e2e',
 ])
 const referenceSchema = z.strictObject({
   file: z.string().regex(/^tests\/.+\.(?:test|integration|spec)\.ts$/),
+  title: z.string().min(1),
+  describe: z.array(z.string()).optional(),
+})
+// A DOM case is a Vitest case in the jsdom harness. It names no project: the
+// layer exists because the behavior needs a document, not an engine.
+const domReferenceSchema = z.strictObject({
+  file: z.string().regex(/^tests\/dom\/.+\.test\.tsx$/),
   title: z.string().min(1),
   describe: z.array(z.string()).optional(),
 })
@@ -20,6 +28,7 @@ export const contractSchema = z.strictObject({
   primary: layerSchema,
   unit: z.array(referenceSchema),
   integration: z.array(referenceSchema),
+  dom: z.array(domReferenceSchema).default([]),
   component: z.array(browserReferenceSchema),
   e2e: z.array(browserReferenceSchema),
   dimensions: z.array(z.string()),

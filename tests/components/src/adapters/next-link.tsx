@@ -8,7 +8,15 @@ import type { AnchorHTMLAttributes, ReactNode } from 'react'
 export default function HostLink({
   href,
   children,
+  onNavigate,
   ...attributes
-}: { href: string, children?: ReactNode } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>): ReactNode {
+}: {
+  href: string
+  children?: ReactNode
+  onNavigate?: unknown
+} & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'>): ReactNode {
+  // Next's client-navigation event has no native-anchor equivalent. Do not
+  // forward it as a DOM prop or pretend this host adapter exercises the guard.
+  void onNavigate
   return <a href={href} {...attributes}>{children}</a>
 }

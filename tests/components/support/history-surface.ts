@@ -24,29 +24,3 @@ export async function chooseRevision(
   }
   await page.getByRole('button', { name: new RegExp(`^${copy.revision} ${sequence} `) }).click()
 }
-
-/** The confirmation dialog is the only path from a selection to a history write. */
-export async function confirmAction(
-  page: Page,
-  copy: HistoryCopy,
-  action: 'restore' | 'publish',
-): Promise<void> {
-  await page.getByRole('button', { name: action === 'restore' ? copy.restore : copy.publish, exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: copy.confirm, exact: true }).click()
-}
-
-/** A refused refresh keeps the confirmed action visible but locks every control. */
-export async function expectRefreshRequired(page: Page, copy: HistoryCopy, notice: string): Promise<void> {
-  await expect(page.getByRole('status').filter({ hasText: notice })).toBeVisible()
-  await expect(page.getByRole('alert')).toContainText(copy.refreshRequired)
-  await expect(page.getByRole('button', { name: copy.restore, exact: true })).toBeDisabled()
-  await expect(page.getByRole('button', { name: copy.publish, exact: true })).toBeDisabled()
-  await expect(page.getByRole('combobox', { name: copy.compare, exact: true })).toBeDisabled()
-}
-
-/** Refresh history clears the alert and unlocks what the stale state locked. */
-export async function expectRefreshRecovers(page: Page, copy: HistoryCopy): Promise<void> {
-  await page.getByRole('button', { name: copy.refresh, exact: true }).click()
-  await expect(page.getByRole('alert')).toHaveCount(0)
-  await expect(page.getByRole('combobox', { name: copy.compare, exact: true })).toBeEnabled()
-}

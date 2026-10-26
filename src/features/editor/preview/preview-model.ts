@@ -7,7 +7,15 @@ type Preview = {
   error: string
 }
 
-export function usePreview(model: DocumentModel, open: boolean): Preview {
+/**
+ * What the preview reads of the editor workspace: the live editor's change feed,
+ * its serialized draft and the composing flag. `DocumentModel` satisfies it.
+ */
+export type PreviewModel = Pick<DocumentModel, 'snapshot' | 'composingRef' | 'envelope'> & {
+  readonly editor: Pick<DocumentModel['editor'], 'onChange' | 'focus'>
+}
+
+export function usePreview(model: PreviewModel, open: boolean): Preview {
   const [document, setDocument] = useState<Document | null>(null)
   const [error, setError] = useState('')
   const { editor, snapshot, composingRef, envelope } = model

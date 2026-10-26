@@ -2,13 +2,13 @@ import type { z } from 'zod'
 import type { ChoiceOption } from '@/components/ui/choice-select'
 import type { catalogItemSchema } from '@/contracts/catalog'
 import type { Envelope } from '@/features/editor/workspace/document-model'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { ContentSettingsWorkspace } from '@/features/editor/workspace/editor-types'
 import { catalogListSchema } from '@/contracts/catalog'
 import { useAdminResource } from '@/shared/admin/resource'
 
 export type CatalogItem = z.infer<typeof catalogItemSchema>
 export type CatalogProps = {
-  workspace: Workspace
+  workspace: ContentSettingsWorkspace
   update: (patch: Partial<Envelope>) => void
   kind: 'tag' | 'series'
 }

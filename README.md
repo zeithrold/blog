@@ -22,6 +22,7 @@ pnpm lint
 pnpm check:css
 pnpm typecheck
 pnpm test:unit
+pnpm test:dom
 pnpm build
 pnpm test:integration
 pnpm test:ci-plan
@@ -139,6 +140,11 @@ values. These diagnostics do not change assertions, retries or performance-budge
 ## Test organization
 
 `tests/unit` contains Node unit tests; `tests/integration` contains tests against the built Worker.
+`tests/dom` runs Vitest in jsdom: the real client, hook, React and schemas with only `fetch`
+replaced. It is a native layer of `check:base` next to unit and integration, and it proves no
+engine, Worker, route or hydration, so its cases carry no Playwright project and never stand in
+for a browser layer. Its `next/link` alias renders host anchor markup and is not evidence of Next
+routing; that stays in E2E.
 `tests/components` exercises real application components in a production Vite bundle, with
 only HTTP and framework-host routing boundaries replaced. Its routing adapter is not evidence of
 native application navigation. Font verification still uses actual Google CSS and font responses.
@@ -149,6 +155,10 @@ head/live isolation and allocation replay belong to real Worker integration test
 representative persistence/reload, SSR and application-routing journeys.
 `tests/contracts` records business rules, exact native case references and the old-to-new assertion
 mapping. `registry.ts` composes the current references; the migration ledger retains historical names.
+A jsdom case enters a rule only through `dom-migrations.ts`, which also names the old case it
+succeeds, so a rule cannot cite the DOM layer without keeping its history. `tests/ci` checks both
+sides against native discovery: every declared DOM case is exactly one case of the jsdom plan, and
+an old case is accepted as retired only when the record retired it.
 The first slice retires 22 logical E2E cases and retains 24 documents/catalog cases in both browsers.
 Subsequent batches are recorded in `surface-migrations.ts` and its domain tables. Retire the old
 case in the same change once its replacement assertions pass locally; a green legacy CI run is
@@ -193,8 +203,11 @@ other resource failures and failed mutations still fail the task.
 
 `pnpm check` prepares a shared run and executes every layer before `pnpm test:contracts` verifies
 coverage. To collect the same evidence manually, run `pnpm test:prepare` first, then the native unit,
-integration, component and E2E commands without editing the source between them. Set `TMPDIR=/tmp`
-and a shared `BLOG_VERIFICATION_RUN_ID` to retain one evidence batch across commands.
+DOM, integration, component and E2E commands without editing the source between them. Set
+`TMPDIR=/tmp` and a shared `BLOG_VERIFICATION_RUN_ID` to retain one evidence batch across commands.
+Each native run binds itself to the manifest that existed when it *started* and records a null run id
+when that manifest is missing or replaced, so a parallel `test:prepare` cannot relabel one run's
+results as another's.
 `pnpm test:controls` is an alias for the final contract check, not a second browser run.
 The documents/catalog rules require exact case results. Other controls keep linked-suite obligations;
 as replacements pass locally, their evidence links can move directly to component suites and the old

@@ -66,6 +66,7 @@ jobs:
             /tmp/blog-tests/${{ env.BLOG_VERIFICATION_RUN_ID }}/proofs/run.json
             /tmp/blog-tests/${{ env.BLOG_VERIFICATION_RUN_ID }}/proofs/unit*.json
             /tmp/blog-tests/${{ env.BLOG_VERIFICATION_RUN_ID }}/proofs/integration*.json
+            /tmp/blog-tests/${{ env.BLOG_VERIFICATION_RUN_ID }}/proofs/dom*.json
           retention-days: 7
           if-no-files-found: error
       - name: Retain native verification evidence

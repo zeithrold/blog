@@ -1,10 +1,25 @@
+import type { Draft } from '@/features/editor/draft/persistence'
+import type { DocumentModel } from '@/features/editor/workspace/document-model'
 import type { DepartureSource } from '@/features/editor/workspace/editor-departure'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
 import type { MediaUploadQueue } from '@/features/media/upload-queue'
 
 export type DepartureQueue = Pick<MediaUploadQueue<string>, 'snapshot'>
 
-export function departureWaiting(workspace: Workspace, queue: DepartureQueue): boolean {
+/**
+ * The workspace fields this policy reads, and nothing else.
+ *
+ * A whole `Workspace` satisfies it, so the editor is unchanged; naming the
+ * boundary is what lets a case mount the real source and the real dialog over a
+ * real `DraftCoordinator` and a real upload queue without building the engine,
+ * the session or the client a departure never touches.
+ */
+export type DepartureWorkspace = {
+  readonly busy: boolean
+  readonly model: Pick<DocumentModel, 'composingRef' | 'hasUploads' | 'waitUploads'>
+  readonly draft: Pick<Draft, 'coordinator' | 'persistLocal'>
+}
+
+export function departureWaiting(workspace: DepartureWorkspace, queue: DepartureQueue): boolean {
   return workspace.busy || workspace.model.hasUploads()
     || workspace.model.composingRef.current || queue.snapshot().running
 }
@@ -15,12 +30,12 @@ export function unfinishedUploads(queue: DepartureQueue): boolean {
 
 export class EditorDepartureSource implements DepartureSource {
   constructor(
-    private workspace: Workspace,
+    private workspace: DepartureWorkspace,
     private queue: DepartureQueue,
     readonly navigate: (href: string) => void,
   ) {}
 
-  update(workspace: Workspace, queue: DepartureQueue): void {
+  update(workspace: DepartureWorkspace, queue: DepartureQueue): void {
     this.workspace = workspace
     this.queue = queue
   }

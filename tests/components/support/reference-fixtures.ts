@@ -3,7 +3,11 @@ import type { Document } from '@/content/document'
 import type { ReferenceMetadata } from '@/content/reference-metadata'
 import type { OpenDocument } from '@/contracts/documents'
 import { validateDocument } from '@/content/document'
-import { editorWorkspaceDocument, editorWorkspaceSaveAck } from './editor-workspace-fixtures'
+import {
+  editorWorkspaceDocument,
+  editorWorkspaceSaveAck,
+  tableBlock,
+} from './editor-workspace-fixtures'
 
 /**
  * The stored shapes the reference settings render.
@@ -41,6 +45,66 @@ export function citedReferenceDocument(title = 'Reference management'): OpenDocu
       },
     ]
   })
+}
+
+/**
+ * A document whose first block is a table and whose first cell cites its only
+ * reference. A stored table can carry a cell as inline content or as a
+ * `tableCell` node, so a case picks which encoding the citation arrives in.
+ */
+export function citedTableDocument(structured = false): OpenDocument {
+  const reference = {
+    id: crypto.randomUUID(),
+    title: 'Cited in a table',
+    authors: ['Author'],
+    year: null,
+    url: '',
+    doi: '',
+  }
+  return editorWorkspaceDocument('Table citation', (document) => {
+    document.references = [reference]
+    document.blocks.unshift(tableBlock())
+    const table = document.blocks[0]?.content
+    if (table === undefined || Array.isArray(table) || table.rows[0] === undefined) {
+      throw new Error('A table block must carry table content')
+    }
+    table.rows[0].cells[0] = [
+      {
+        type: 'citation',
+        props: { referenceId: reference.id, locator: '' },
+      },
+    ]
+    if (structured) {
+      for (const row of table.rows) {
+        row.cells = row.cells.map(cell => Array.isArray(cell)
+          ? {
+              type: 'tableCell',
+              props: { textAlignment: 'left', textColor: 'default', backgroundColor: 'default' },
+              content: cell,
+            }
+          : cell)
+      }
+    }
+  })
+}
+
+/** The workspace envelope for a body the case built itself. */
+export function workspaceDocument(title: string, body: Document): OpenDocument {
+  return { ...editorWorkspaceDocument(title), document: body }
+}
+
+/** The text one table cell carries in a stored document. */
+export function tableCellText(document: Document, row = 0, column = 0): string {
+  const content = document.blocks.find(block => block.type === 'table')?.content
+  if (content === undefined || Array.isArray(content)) {
+    return ''
+  }
+  const cell = content.rows[row]?.cells[column]
+  if (cell === undefined) {
+    return ''
+  }
+  const inlines = Array.isArray(cell) ? cell : cell.content
+  return inlines.map(inline => ('text' in inline ? inline.text : '')).join('')
 }
 
 /** The metadata a DOI lookup answers with: every field the form can fill. */
@@ -82,6 +146,11 @@ export function writtenReferences(call: ApiCall): Document['references'] {
 /** The reference list each revision write carried, oldest first. */
 export function writtenLists(calls: readonly ApiCall[]): Document['references'][] {
   return calls.filter(call => call.method === 'PUT').map(writtenReferences)
+}
+
+/** The document each revision write carried, oldest first. */
+export function writtenDocuments(calls: readonly ApiCall[]): Document[] {
+  return calls.filter(call => call.method === 'PUT').map(writtenDocument)
 }
 
 /** Everything the surface tried to write, so a draft can prove it wrote nothing. */

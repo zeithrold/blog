@@ -1,4 +1,4 @@
-export type Layer = 'unit' | 'integration' | 'component' | 'e2e'
+export type Layer = 'unit' | 'integration' | 'dom' | 'component' | 'e2e'
 export type Browser = 'chromium' | 'webkit'
 
 export type NodeReference = { file: string, title: string, describe?: readonly string[] }
@@ -20,6 +20,8 @@ export type VerificationContract = {
   primary: Layer
   unit: readonly NodeReference[]
   integration: readonly NodeReference[]
+  /** Native jsdom cases: a real document and React, no engine and no project. */
+  dom: readonly NodeReference[]
   component: readonly BrowserReference[]
   e2e: readonly BrowserReference[]
   dimensions: readonly string[]

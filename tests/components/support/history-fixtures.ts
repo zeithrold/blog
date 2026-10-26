@@ -1,9 +1,9 @@
 import type { Document } from '@/content/document'
-import type { Acknowledgement, OpenDocument } from '@/contracts/documents'
+import type { OpenDocument } from '@/contracts/documents'
 import type { History } from '@/features/history/history-page-model'
 import type { ApiCall, ApiHandler, ApiReply } from '~/tests/components/support/http-fixtures'
 import { emptyDocument } from '@/content/document'
-import { acknowledgementSchema, openDocumentSchema } from '@/contracts/documents'
+import { openDocumentSchema } from '@/contracts/documents'
 import { historySchema } from '@/contracts/history'
 
 /** One stored revision: the history item the page lists and the document behind it. */
@@ -105,21 +105,6 @@ export function storedRevision(value: HistoryCase, call: ApiCall): ApiReply {
     throw new Error(`The history page asked for an unknown revision ${requested}`)
   }
   return { body: { revisionId: known.revisionId, contentSha256: sha256, document: known.document } }
-}
-
-/** The acknowledgement a confirmed restore or publish returns. */
-export function historyAcknowledgement(
-  value: HistoryCase,
-  overrides: Partial<Acknowledgement> = {},
-): Acknowledgement {
-  return acknowledgementSchema.parse({
-    documentId: value.initial.documentId,
-    version: value.initial.version + 1,
-    headRevisionId: value.initial.headRevisionId,
-    liveRevisionId: value.initial.liveRevisionId,
-    liveGeneration: value.initial.liveGeneration,
-    ...overrides,
-  })
 }
 
 /** The served document after the case's own server state changed. */

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { RevealPublicationProblem } from '@/features/editor/publication/publication-issue-list'
 import type { ScheduleModel, useScheduleList } from '@/features/editor/publication/schedule-controller'
 import type { Envelope } from '@/features/editor/workspace/document-model'
-import type { Workspace } from '@/features/editor/workspace/editor-types'
+import type { ContentSettingsWorkspace, Workspace } from '@/features/editor/workspace/editor-types'
 import { FileText, Send } from 'lucide-react'
 import { useRef, useState } from 'react'
 import {
@@ -158,9 +158,13 @@ function SettingsTabs(props: SettingsTabsProps): ReactNode {
   )
 }
 
-function ContentSettings({ workspace, update, livePath, referenceOpen, setReferenceOpen }:
-  Omit<SettingsProps, 'restore' | 'schedules'>
-  & Pick<SettingsTabsProps, 'referenceOpen' | 'setReferenceOpen'>): ReactNode {
+export function ContentSettings({ workspace, update, livePath, referenceOpen, setReferenceOpen }: {
+  workspace: ContentSettingsWorkspace
+  update: (patch: Partial<Envelope>) => void
+  livePath: string | null
+  referenceOpen: boolean
+  setReferenceOpen: (open: boolean) => void
+}): ReactNode {
   const text = useEditorLabels()
   return (
     <TabsContent forceMount value="content">

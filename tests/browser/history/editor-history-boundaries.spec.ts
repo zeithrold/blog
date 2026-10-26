@@ -50,7 +50,6 @@ for (const retry of [true, false]) {
     await expect(page).toHaveURL(new RegExp(`/admin/documents/${original.documentId}$`))
     await withinViewport(page, dialog)
     await assertAccessible(page, info, { label: `history-save-failure-${String(retry)}` })
-    await page.screenshot({ path: info.outputPath(`history-save-failure-${String(retry)}.png`) })
     if (retry) {
       await page.unroute('**/revisions')
     }

@@ -12,11 +12,12 @@ import type { AdminMigrationRecord } from './admin-migrations'
  * application can prove it: the reference copy stored by the Worker and read back after a
  * reload, a citation that lives in a table's body, the publish lock, and physical touch.
  *
- * Counts, per browser. The six reference E2E files ran 25 cases; 19 of them retire
- * into 21 new component cases declared below (references-form 5, references-authors 7,
- * references-lookup 6, references-layout 3). Six stay in E2E: the reference store roundtrip
- * (2 widths, one per settings layout, down from 3), the two table citation guards, the publish
- * lock and the CDP touch drag. The reference metadata request itself
+ * Counts, per browser. The six reference E2E files ran 25 cases; 23 of them retire into 24
+ * component cases declared below (references-form 5, references-authors 7, references-lookup 6,
+ * references-layout 3, references-citations 2, references-publication 1). Two stay in E2E: one
+ * store roundtrip at the drawer layout (down from 3 widths) and the CDP touch drag. `legacy`
+ * lists the retained roundtrip as well, so `legacy` minus `retained` is the 23 retired cases.
+ * The reference metadata request itself
  * (`GET /api/admin/reference-metadata`)
  * is server code and stays proved by `tests/unit/reference-metadata.test.ts` and the Worker
  * integration cases; these component cases prove what the form does with an answer.
@@ -59,6 +60,13 @@ const fieldsProve = [
   'editing keeps the reference id, and cancelling an edit writes nothing and returns focus to the row',
   'the form keeps its fields inside the dialog: Year and URL share a row above 600px and stack below it',
   'removing the created reference writes the document back to its cited reference only',
+]
+
+const tableProves = [
+  'a reference cited from a table cell cannot be removed, with the reason beside it',
+  'replacing the cell in the real table editor enables Remove',
+  'the save carries the replaced cell text and a reference list that no longer holds the citation',
+  'the list then drops the row',
 ]
 
 const doiProves = [
@@ -198,10 +206,9 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
     retained: [
       {
         cases: [
-          c('tests/browser/references/reference-settings.spec.ts', 'reference drafts save and keep cited records intact at 390px'),
-          c('tests/browser/references/reference-settings.spec.ts', 'reference drafts save and keep cited records intact at 1440px'),
+          c('tests/browser/references/reference-settings.spec.ts', 'reference drafts save explicitly and keep cited records intact at 390px'),
         ],
-        reason: 'The stored copy is the point: the reference a case creates and renames is read back from the Worker, removing it restores the cited fixture exactly, and the reloaded document still shows its citation. Two widths keep one proof per settings layout instead of the original three.',
+        reason: 'The stored copy is the point: the reference a case creates and renames is read back from the Worker, removing it restores the cited fixture exactly, and the reloaded document still shows its citation. One width at the drawer layout keeps that proof; the 320 and 1440 executions retire into the component cases above, which cover all three widths and the side panel layout.',
       },
     ],
   },
@@ -320,31 +327,34 @@ export const referenceMigrations: readonly AdminMigrationRecord[] = [
       c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (array)'),
       c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (structured)'),
     ],
-    component: [],
-    retained: [
+    component: [
       {
-        cases: [
-          c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (array)'),
-          c('tests/browser/references/reference-boundaries.spec.ts', 'table citation guards update after editing (structured)'),
-        ],
-        reason: 'The guard is about a citation stored inside a table cell: the case replaces the cell in the real editor, saves, reloads and reads the stored document back.',
+        case: c('tests/components/specs/references-citations.spec.ts', 'table citation guards update after editing (array)'),
+        proves: tableProves,
+      },
+      {
+        case: c('tests/components/specs/references-citations.spec.ts', 'table citation guards update after editing (structured)'),
+        proves: tableProves,
       },
     ],
+    retained: [],
   },
   {
     id: 'reference.publication-lock',
     legacy: [
       c('tests/browser/references/reference-boundaries.spec.ts', 'publication keeps reference mutations disabled until its response arrives'),
     ],
-    component: [],
-    retained: [
+    component: [
       {
-        cases: [
-          c('tests/browser/references/reference-boundaries.spec.ts', 'publication keeps reference mutations disabled until its response arrives'),
+        case: c('tests/components/specs/references-publication.spec.ts', 'publication keeps reference mutations disabled until its response arrives'),
+        proves: [
+          'an unused reference offers Add, Edit and Remove',
+          'while the publish request is held every one of them is disabled',
+          'releasing the publish answer shows the live link and re-enables them',
         ],
-        reason: 'The publish lock comes from the routed application publishing the saved draft; the case holds the real publish request and reads the live link afterwards.',
       },
     ],
+    retained: [],
   },
 ]
 

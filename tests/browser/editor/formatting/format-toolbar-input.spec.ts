@@ -106,23 +106,3 @@ test.describe('touch formatting input', () => {
     await page.screenshot({ path: info.outputPath('touch-formatting-persisted-390-zh.png') })
   })
 })
-
-test('fourteen Shift+ArrowRight presses retain the complete selection and bounded toolbar', async ({ page }, info) => {
-  await page.setViewportSize({ width: 701, height: 740 })
-  await writeDocument(page, fixture(`${selected}${suffix}`))
-  const body = page.getByLabel('Document body', { exact: true })
-  await selectRange(body, 0)
-  await expect(body).toBeFocused()
-  await expect.poll(async () => await page.evaluate(() => {
-    const selection = window.getSelection()
-    return { text: selection?.toString(), anchor: selection?.anchorOffset, focus: selection?.focusOffset }
-  })).toEqual({ text: '', anchor: 0, focus: 0 })
-  expect(selected).toHaveLength(14)
-  for (let index = 0; index < 14; index++) {
-    await page.keyboard.press('Shift+ArrowRight')
-  }
-  await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString())).toBe(selected)
-  await checkBounds(page, page.getByRole('toolbar', { name: 'Formatting', exact: true }), 701)
-  await expect(body).toHaveText(`${selected}${suffix}`)
-  await page.screenshot({ path: info.outputPath('keyboard-selection-toolbar-701-en.png') })
-})

@@ -1,6 +1,7 @@
 /* eslint-disable style/max-len -- Verbatim case references stay on one line. */
 /* eslint-disable max-lines -- One flat table maps every table case to its replacement. */
 import type { AdminMigrationRecord } from './admin-migrations'
+import { tableInteractionMigrations } from './table-interaction-migrations'
 
 /**
  * Where the retired table browser cases now run.
@@ -14,15 +15,15 @@ import type { AdminMigrationRecord } from './admin-migrations'
  * Worker tests and the retained cases below.
  *
  * Control inventory affected by the retired E2E files: `editor/tables/table-width-limits`
- * was retired whole, so the `tables` surface row names the component specs that
- * replace it. The alignment, scrollbar, mobile and pointer cases also move into
- * component specs, and those paths are listed beside the surviving E2E files.
+ * and `editor/tables/table-keyboard-controls` were retired whole, and
+ * `editor/tables/table-drag` now holds only CDP-skip touch cases, so it was
+ * removed from the evidence list. The `tables` surface row names the component
+ * specs that replace them; `table-overlay-polish` (slash) and `table-caption`
+ * (390px) remain as evidence files.
  *
- * Remaining E2E table cases: the merged control/span cases, slash-table
- * creation, the composition and keyboard-help cases, menu-driven row/column
- * moves, and the CDP physical-touch sessions (the component reporter has no
- * approved skip policy for them). Caption and formatting at 390px stay as the
- * save/reload representatives.
+ * Remaining E2E table cases: caption and formatting at 390px, the slash
+ * save/reload representative, and the CDP physical-touch sessions (the
+ * component reporter has no approved skip policy for them).
  */
 
 const F = {
@@ -381,4 +382,5 @@ export const tableMigrations: readonly AdminMigrationRecord[] = [
     ],
     retained: [],
   },
+  ...tableInteractionMigrations,
 ]
