@@ -1,9 +1,10 @@
+import type { Transaction } from 'prosemirror-state'
 import type { editorSchema } from '@/features/editor/engine/schema'
 import type { Envelope } from '@/features/editor/workspace/document-model'
 import DOMPurify from 'dompurify'
-import { DOMParser as ProseMirrorDOMParser } from 'prosemirror-model'
+import { DOMParser as ProseMirrorDOMParser, Slice } from 'prosemirror-model'
 import { isPlainBlockSelection } from '@/features/editor/blocks/source/source-selection'
-import { pastedDocument } from '@/features/editor/engine/clipboard-document'
+import { pastedDocument, validateClipboardDocument } from '@/features/editor/engine/clipboard-document'
 import { nativeBlocks } from '@/features/editor/engine/native'
 
 type Editor = typeof editorSchema.BlockNoteEditor
@@ -144,11 +145,17 @@ function pasteFormatted(
     const html = context.editor.blocksToFullHTML(nativeBlocks(document))
     const container = window.document.createElement('div')
     container.innerHTML = html
-    const slice = ProseMirrorDOMParser.fromSchema(context.editor.pmSchema).parseSlice(container)
-    // Use native selection fitting, but do not run Markdown paste rules again
-    // after validation (they would also reinterpret literal stars in HTML).
-    context.editor.transact(tr => tr.replaceSelection(slice).scrollIntoView())
-    context.update(patch)
+    const parsedSlice = ProseMirrorDOMParser.fromSchema(context.editor.pmSchema).parseSlice(container)
+    // Never open through isolating table/cell nodes when fitting the slice.
+    const slice = Slice.maxOpen(parsedSlice.content, false)
+    context.editor.transact((tr) => {
+      tr.replaceSelection(slice).scrollIntoView()
+      assignSplitIDs(tr)
+      // document reads the active transaction. Throwing here aborts dispatch,
+      // so nesting/size violations never enter the editor or its undo history.
+      validateClipboardDocument({ ...context.fields, ...patch }, context.editor.document)
+      context.update(patch)
+    })
   }
   catch {
     context.reject(
@@ -157,6 +164,24 @@ function pasteFormatted(
     )
   }
   return true
+}
+
+function assignSplitIDs(tr: Transaction): void {
+  const seen = new Set<string>()
+  // Fitting can split an existing paragraph, copying its ID to both halves.
+  // Assign the new half's identity before validation, rather than waiting for
+  // BlockNote's post-dispatch UniqueID plugin.
+  tr.doc.descendants((node, position) => {
+    if (node.type.name !== 'blockContainer') {
+      return
+    }
+    const id: unknown = node.attrs.id
+    const next = typeof id === 'string' && !seen.has(id) ? id : crypto.randomUUID()
+    seen.add(next)
+    if (next !== id) {
+      tr.setNodeMarkup(position, undefined, { ...node.attrs, id: next })
+    }
+  })
 }
 
 function sanitizeHTML(html: string): string {

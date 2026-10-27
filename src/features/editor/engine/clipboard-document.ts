@@ -16,7 +16,7 @@ export function pastedDocument(
   patch: Pick<Envelope, 'mediaAccessibility' | 'tableAccessibility'>
 } {
   const normalized: unknown = JSON.parse(JSON.stringify(pasted))
-  const existing = currentDocument(fields, current)
+  const existing = validateClipboardDocument(fields, current)
   const incoming = envelope.parse({
     ...fields,
     blocks: normalized,
@@ -57,16 +57,18 @@ export function pastedDocument(
     ...existing.blocks,
     ...incoming,
   ]
-  const combined = validateDocument({ ...fields, blocks, ...documentAccessibility(patch, blocks) })
-  if (new TextEncoder().encode(stableJSON(combined)).byteLength > 524288) {
-    throw new Error('Document exceeds the supported size.')
-  }
+  const combined = validateClipboardDocument({ ...fields, ...patch }, blocks)
   return { document: { ...combined, blocks: incoming }, patch }
 }
-function currentDocument(fields: Envelope, current: unknown): Document {
+
+export function validateClipboardDocument(fields: Envelope, current: unknown): Document {
   const normalized: unknown = JSON.parse(JSON.stringify(current))
   const blocks = envelope.parse({ ...fields, blocks: normalized }).blocks
-  return validateDocument({ ...fields, blocks, ...documentAccessibility(fields, blocks) })
+  const document = validateDocument({ ...fields, blocks, ...documentAccessibility(fields, blocks) })
+  if (new TextEncoder().encode(stableJSON(document)).byteLength > 524288) {
+    throw new Error('Document exceeds the supported size.')
+  }
+  return document
 }
 function remapNotes(block: Document['blocks'][number], ids: Map<string, string>): void {
   for (const inline of allInlines(block)) {

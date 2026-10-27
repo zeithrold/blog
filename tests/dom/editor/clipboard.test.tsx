@@ -1,7 +1,8 @@
+import type { Block } from '@/content/document'
 import { BlockNoteEditor } from '@blocknote/core'
 import { TextSelection } from 'prosemirror-state'
 import { afterEach, expect, it, vi } from 'vitest'
-import { emptyDocument } from '@/content/document'
+import { emptyDocument, validateDocument } from '@/content/document'
 import { paste } from '@/features/editor/engine/clipboard'
 import { nativeBlocks } from '@/features/editor/engine/native'
 import { editorSchema } from '@/features/editor/engine/schema'
@@ -15,9 +16,8 @@ afterEach(() => {
   document.body.replaceChildren()
 })
 
-function setup() {
+function setup(fields = emptyDocument()) {
   vi.stubGlobal('ClipboardEvent', Event)
-  const fields = emptyDocument()
   const editor = BlockNoteEditor.create({ schema: editorSchema, initialContent: nativeBlocks(fields) })
   const container = document.createElement('div')
   document.body.append(container)
@@ -40,7 +40,7 @@ function setup() {
       reject: (message) => { rejected.push(message) },
     })
   }
-  return { editor, receive, rejected }
+  return { editor, receive, rejected, fields }
 }
 
 it('parses Chinese and English inline Markdown and supports undo', () => {
@@ -160,4 +160,77 @@ it('retains unsupported media Markdown for plain-text recovery without mutating 
   receive({ 'text/plain': '![external](https://example.com/image.png)' })
   expect(editor.document).toEqual(before)
   expect(rejected).toHaveLength(1)
+})
+
+it('preserves a one-cell table and its accessibility identity', () => {
+  const { editor, receive, rejected, fields } = setup()
+  receive({ 'text/html': '<table><tr><td>cell</td></tr></table>' })
+  const table = editor.document.find(block => block.type === 'table')
+  expect(table?.type).toBe('table')
+  expect(table?.content).toMatchObject({
+    rows: [
+      { cells: [
+        { type: 'tableCell', content: [
+          { type: 'text', text: 'cell' },
+        ] },
+      ] },
+    ],
+  })
+  expect(table === undefined ? null : fields.tableAccessibility[table.id]).toEqual({ caption: '' })
+  expect(rejected).toEqual([])
+})
+
+it('does not absorb a paragraph suffix into a pasted table', () => {
+  const { editor, receive, rejected } = setup()
+  const id = editor.document[0]?.id ?? ''
+  editor.updateBlock(id, { content: 'Before after' })
+  editor.setTextCursorPosition(id, 'start')
+  editor.transact(tr => tr.setSelection(TextSelection.create(tr.doc, tr.selection.from + 7)))
+  receive({ 'text/html': '<table><tr><td>A</td><td>B</td></tr></table>' })
+  expect(editor.document.map(block => block.type)).toEqual(['paragraph', 'paragraph'])
+  expect(editor.document[0]?.content).toEqual([
+    { type: 'text', text: 'Before ', styles: {} },
+  ])
+  expect(editor.document[1]?.content).toEqual([
+    { type: 'text', text: 'after', styles: {} },
+  ])
+  const table = editor.document[0]?.children.find(block => block.type === 'table')
+  expect(table?.content).toMatchObject({
+    rows: [
+      { cells: [
+        { content: [
+          { text: 'A' },
+        ] },
+        { content: [
+          { text: 'B' },
+        ] },
+      ] },
+    ],
+  })
+  expect(rejected).toEqual([])
+})
+
+it('atomically refuses a paste whose fitted nesting exceeds the document limit', () => {
+  const fields = emptyDocument()
+  const leaf: Block = {
+    id: crypto.randomUUID(),
+    type: 'bulletListItem',
+    props: { textColor: 'default', backgroundColor: 'default', textAlignment: 'left' },
+    content: [],
+    children: [],
+  }
+  let root = leaf
+  for (let depth = 1; depth < 8; depth++) {
+    root = { ...leaf, id: crypto.randomUUID(), children: [root] }
+  }
+  fields.blocks = [root]
+  const { editor, receive, rejected } = setup(validateDocument(fields))
+  editor.setTextCursorPosition(leaf.id, 'end')
+  const before = editor.document
+  const selection: unknown = editor.prosemirrorState.selection.toJSON()
+  receive({ 'text/plain': '- a\n  - b\n    - c' })
+  expect(rejected).toHaveLength(1)
+  expect(editor.document).toEqual(before)
+  expect(editor.prosemirrorState.selection.toJSON()).toEqual(selection)
+  expect(fields.tableAccessibility).toEqual({})
 })
