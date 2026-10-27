@@ -9,12 +9,16 @@ export function useInputGuards(workspace: Workspace): {
   onDropCapture: (event: React.DragEvent) => void
   onPasteCapture: (event: React.ClipboardEvent) => void
   onKeyDownCapture: (event: React.KeyboardEvent) => void
+  onKeyUpCapture: () => void
+  onBlurCapture: () => void
 } {
   const pendingDeletionRef = useRef<string | null>(null)
   const { model, draft } = workspace
-  const { editor, composingRef } = model
+  const { editor, composingRef, plainPasteRef } = model
   return {
     onKeyDownCapture: (event) => {
+      plainPasteRef.current = (event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey
+        && event.key.toLowerCase() === 'v' && !event.nativeEvent.isComposing
       if ((event.key === 'Backspace' || event.key === 'Delete')
         && event.target instanceof HTMLElement && event.target.closest('button') !== null) {
         // A control's deletion key must never reach ProseMirror's document commands.
@@ -23,6 +27,12 @@ export function useInputGuards(workspace: Workspace): {
         return
       }
       selectBeforeBlockDeletion(event, workspace, pendingDeletionRef)
+    },
+    onKeyUpCapture: () => {
+      plainPasteRef.current = false
+    },
+    onBlurCapture: () => {
+      plainPasteRef.current = false
     },
     onCompositionStartCapture: () => {
       composingRef.current = true

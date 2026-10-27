@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { codeSyntaxHighlighting } from '@/features/editor/blocks/code/code-highlighting'
 import { tableWidthLimits } from '@/features/editor/blocks/table/table-width-limits'
 import { SnapshotService } from '@/features/editor/draft/snapshot'
-import { paste } from '@/features/editor/engine/clipboard'
+import { paste, pastePlainText } from '@/features/editor/engine/clipboard'
 import { documentAccessibility } from '@/features/editor/engine/document-accessibility'
 import { nativeBlocks, nodeItem, nodes, sameNode } from '@/features/editor/engine/native'
 import { editorSchema } from '@/features/editor/engine/schema'
@@ -24,6 +24,7 @@ export type DocumentModel = {
   nodeItems: NodeItem[]
   snapshot: () => Promise<Document>
   composingRef: React.RefObject<boolean>
+  plainPasteRef: React.RefObject<boolean>
   editorLocale: Locale
   pasteNotice: string
   uploadFiles: MediaInputs['uploadFiles']
@@ -45,8 +46,10 @@ export function useDocumentModel(
   const [envelope, setEnvelope] = useState<Envelope>(() => documentFields(initial.document))
   const fieldsRef = useRef(envelope)
   const composingRef = useRef(false)
+  const plainPasteRef = useRef(false)
   const [clipboard, setClipboard] = useState({ message: '', text: '' })
   const editor = useNativeEditor(initial, editorLocale, composingRef, {
+    plainPasteRef,
     client: mediaClient,
     fields: fieldsRef,
     update: (patch) => {
@@ -77,6 +80,7 @@ export function useDocumentModel(
     nodeItems: indexedItems,
     snapshot,
     composingRef,
+    plainPasteRef,
     editorLocale,
     ...media,
     pasteNotice: clipboard.message,
@@ -84,9 +88,7 @@ export function useDocumentModel(
       clipboard.text === ''
         ? null
         : () => {
-            editor.insertInlineContent([
-              { type: 'text', text: clipboard.text, styles: {} },
-            ])
+            pastePlainText(editor, clipboard.text)
             setClipboard({ message: '', text: '' })
           },
     updateFields,
@@ -98,6 +100,7 @@ function useNativeEditor(
   editorLocale: Locale,
   composingRef: React.RefObject<boolean>,
   clipboard: {
+    plainPasteRef: React.RefObject<boolean>
     client: Client
     fields: React.RefObject<Envelope>
     update: (patch: Partial<Envelope>) => void
@@ -105,6 +108,7 @@ function useNativeEditor(
   },
 ): typeof editorSchema.BlockNoteEditor {
   const { t } = useBlogTranslation('editor')
+  const { plainPasteRef } = clipboard
   const initialContent = useMemo(() => nativeBlocks(initial.document), [initial.document])
   const editor: typeof editorSchema.BlockNoteEditor = useCreateBlockNote(
     {
@@ -127,6 +131,8 @@ function useNativeEditor(
         blockContent: { class: 'leading-[var(--ztd-leading-reading)]' },
       },
       pasteHandler: ({ event }): boolean => {
+        const plainText = plainPasteRef.current
+        plainPasteRef.current = false
         if (composingRef.current) {
           return false
         }
@@ -134,6 +140,7 @@ function useNativeEditor(
         return paste({
           event,
           editor,
+          plainText,
           fields: clipboard.fields.current,
           update: clipboard.update,
           reject: clipboard.reject,

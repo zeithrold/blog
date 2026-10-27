@@ -1,6 +1,7 @@
 import type { editorSchema } from '@/features/editor/engine/schema'
 import type { Envelope } from '@/features/editor/workspace/document-model'
 import DOMPurify from 'dompurify'
+import { DOMParser as ProseMirrorDOMParser } from 'prosemirror-model'
 import { isPlainBlockSelection } from '@/features/editor/blocks/source/source-selection'
 import { pastedDocument } from '@/features/editor/engine/clipboard-document'
 import { nativeBlocks } from '@/features/editor/engine/native'
@@ -10,6 +11,7 @@ type PasteContext = {
   event: ClipboardEvent
   editor: Editor
   fields: Envelope
+  plainText?: boolean
   update: (patch: Partial<Envelope>) => void
   reject: (message: string, text: string) => void
 }
@@ -82,71 +84,93 @@ export function paste(context: PasteContext): boolean {
     return true
   }
   const text = data.getData('text/plain')
+  const markdown = data.getData('text/markdown')
   const native = data.getData('blocknote/html')
   const html = native !== '' ? native : data.getData('text/html')
   if (data.files.length > 0) {
     context.reject('Use Upload media to attach validated files.', '')
     return true
   }
-  if (text.length > 32768 || html.length > 131072) {
+  if (text.length > 32768 || markdown.length > 32768 || html.length > 131072) {
     context.reject('Clipboard exceeds the supported size. Paste a smaller section.', '')
     return true
   }
-  if (context.editor.getTextCursorPosition().block.type === 'codeBlock' || isPlainBlockSelection(context.editor)
-    || html === '') {
-    context.editor.insertInlineContent([
-      { type: 'text', text, styles: {} },
-    ])
+  if (plainPaste(context)) {
+    pastePlainText(context.editor, text !== '' ? text : markdown)
     return true
   }
-  return pasteHTML(context, html, text)
+  return pasteFormatted(context, {
+    html,
+    markdown: native === '' ? markdown : '',
+    text,
+  })
 }
-function pasteHTML(context: PasteContext, html: string, text: string): true {
+
+function plainPaste(context: Pick<PasteContext, 'editor' | 'plainText'>): boolean {
+  return context.plainText === true
+    || context.editor.getTextCursorPosition().block.type === 'codeBlock'
+    || isPlainBlockSelection(context.editor)
+}
+
+export function pastePlainText(editor: Editor, text: string): void {
+  if (plainPaste({ editor })) {
+    editor.transact(tr => tr.insertText(text.replace(/\r\n?/g, '\n')))
+    return
+  }
+  editor.insertInlineContent([
+    { type: 'text', text, styles: {} },
+  ])
+}
+
+function pasteFormatted(
+  context: PasteContext,
+  source: { html: string, markdown: string, text: string },
+): true {
   try {
-    const safe = DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: tags,
-      ALLOWED_ATTR: attributes,
-      ALLOW_DATA_ATTR: false,
-      FORBID_CONTENTS: [
-        'script',
-        'style',
-        'iframe',
-        'object',
-        'svg',
-        'math',
-      ],
-    })
-    if (safe.trim() === '') {
-      context.editor.insertInlineContent([
-        { type: 'text', text, styles: {} },
-      ])
+    const markdown = source.markdown !== '' || source.html === ''
+    const safe = markdown ? '' : sanitizeHTML(source.html)
+    if (!markdown && safe.trim() === '') {
+      pastePlainText(context.editor, source.text)
       return true
     }
-    const parsed = context.editor.tryParseHTMLToBlocks(safe)
+    const parsed = markdown
+      ? context.editor.tryParseMarkdownToBlocks(source.markdown !== '' ? source.markdown : source.text)
+      : context.editor.tryParseHTMLToBlocks(safe)
     const { document, patch } = pastedDocument(
       context.fields,
       context.editor.document,
       parsed,
     )
-    const blocks = nativeBlocks(document)
-    const first = blocks[0]
+    const html = context.editor.blocksToFullHTML(nativeBlocks(document))
+    const container = window.document.createElement('div')
+    container.innerHTML = html
+    const slice = ProseMirrorDOMParser.fromSchema(context.editor.pmSchema).parseSlice(container)
+    // Use native selection fitting, but do not run Markdown paste rules again
+    // after validation (they would also reinterpret literal stars in HTML).
+    context.editor.transact(tr => tr.replaceSelection(slice).scrollIntoView())
     context.update(patch)
-    if (blocks.length === 1 && first?.type === 'paragraph' && Array.isArray(first.content)) {
-      context.editor.insertInlineContent(first.content)
-    }
-    else {
-      context.editor.insertBlocks(
-        blocks,
-        context.editor.getTextCursorPosition().block,
-        'after',
-      )
-    }
   }
   catch {
     context.reject(
       'This clipboard structure is unsupported. You can paste its plain text.',
-      text,
+      source.text !== '' ? source.text : source.markdown,
     )
   }
   return true
+}
+
+function sanitizeHTML(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: tags,
+    ALLOWED_ATTR: attributes,
+    ALLOW_DATA_ATTR: false,
+    FORBID_CONTENTS: [
+      'script',
+      'style',
+      'iframe',
+      'object',
+      'svg',
+      'math',
+    ],
+  })
 }
