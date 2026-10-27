@@ -20,6 +20,7 @@ import { documentListError, useDocumentListCopy } from '@/features/documents/doc
 import { DocumentFiltersForm, DocumentListSummary } from '@/features/documents/document-list-filters'
 import { documentPublication, useDocuments } from '@/features/documents/document-list-model'
 import { background } from '@/shared/admin/background'
+import { announceConfirmed } from '@/shared/admin/toast-feedback'
 import { DocumentLoading, DocumentPagination } from './document-list-footer'
 import {
   layout1Class,
@@ -27,7 +28,6 @@ import {
   layout3Class,
   layout4Class,
   layout5Class,
-  layout6Class,
   layout7Class,
   layout8Class,
   layout9Class,
@@ -98,20 +98,15 @@ function DocumentListHeader({ controller, state, copy }: ListProps): ReactNode {
 
 function DocumentListNotices({ controller, state, copy }: ListProps): ReactNode {
   const pending = state.loading !== null || state.mutation !== null
-  const { error, errorCode, restored } = state
+  const { errorCode } = state
   const errorRef = useRef<HTMLDivElement>(null)
-  const restoredRef = useRef<HTMLParagraphElement>(null)
   useEffect(() => {
-    const notice = error !== null ? errorRef.current : restoredRef.current
-    if (notice !== null && (error !== null || restored)) {
+    const notice = errorRef.current
+    if (notice !== null) {
       notice.focus({ preventScroll: true })
       notice.scrollIntoView({ block: 'center' })
     }
-  }, [
-    error,
-    errorCode,
-    restored,
-  ])
+  }, [state.error, errorCode])
   return (
     <>
       {state.error !== null && (
@@ -121,16 +116,11 @@ function DocumentListNotices({ controller, state, copy }: ListProps): ReactNode 
             variant="outline"
             type="button"
             disabled={pending}
-            onClick={() => background(controller.retry(), () => {})}
+            onClick={() => announceConfirmed(controller.retry(), copy.restored)}
           >
             {state.errorCode === 'EDIT_CONFLICT' ? copy.refresh : copy.retry}
           </Button>
         </div>
-      )}
-      {state.restored && (
-        <p ref={restoredRef} tabIndex={-1} className={layout6Class} role="status">
-          {copy.restored}
-        </p>
       )}
       {state.filters.state === 'deleted' && <p className="document-trash-hint">{copy.trashHint}</p>}
     </>
@@ -284,7 +274,7 @@ function DocumentRowAction({ entry, titleId, controller, state, copy }: ListProp
       className="document-restore"
       aria-describedby={titleId}
       disabled={state.mutation !== null || state.loading !== null}
-      onClick={() => background(controller.restore(entry), () => {})}
+      onClick={() => announceConfirmed(controller.restore(entry), copy.restored)}
     >
       <Undo2 size={15} aria-hidden="true" />
       {state.mutation === entry.documentId ? copy.restoring : copy.restore}

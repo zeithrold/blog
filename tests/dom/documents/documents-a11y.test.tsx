@@ -12,6 +12,7 @@ import {
   click,
   combobox,
   drainHostTask,
+  expectToast,
   mountDocuments,
   openCombobox,
   option,
@@ -69,7 +70,7 @@ async function restoredNotices(locale: 'en' | 'zh', width: number, mode: 'light'
     await settleDocuments(view)
     expect(view.container.querySelector('[role="alert"]')?.getAttribute('tabindex')).toBe('-1')
     expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.loadError)
-    expect(view.container.querySelector('[role="status"]')?.textContent).toContain(copy.restored)
+    await expectToast(view, copy.restored)
   }
   finally {
     held.open()

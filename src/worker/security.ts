@@ -1,4 +1,5 @@
 import { EDITOR_STYLE_HASHES } from '@/server/security/editor-csp'
+import { SONNER_STYLE_HASH } from '@/server/security/toast-csp'
 
 export type SecurityContext = {
   nonce: string
@@ -21,7 +22,7 @@ export function security(
   const directives = [
     'default-src \'self\'',
     `script-src 'self' 'nonce-${context.nonce}'`,
-    `style-src 'self' 'nonce-${context.nonce}' ${EDITOR_STYLE_HASHES} https://fonts.googleapis.com`,
+    `style-src 'self' 'nonce-${context.nonce}' ${EDITOR_STYLE_HASHES} ${SONNER_STYLE_HASH} https://fonts.googleapis.com`,
     'style-src-attr \'unsafe-inline\'',
     'font-src \'self\' https://fonts.gstatic.com',
     'img-src \'self\' data:',

@@ -83,13 +83,14 @@ export function EditorHistory({
   restore,
 }: {
   workspace: EditorHistoryWorkspace
-  restore: (revision: string) => Promise<void>
+  restore: (revision: string) => Promise<boolean>
 }): ReactNode {
   const locale = useFrontendPreferences().preferences.locale
   const text = useBlogTranslation('editor').t
   const { history, loading, loaded, error, load } = useRevisionHistory(workspace.props.initial.documentId)
   const [confirm, setConfirm] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  const restoreNotice = text('createdANewDraftRevisionThePublishedRevisionIsUnchanged')
   return (
     <SettingSection
       role="region"
@@ -125,17 +126,31 @@ export function EditorHistory({
         </Button>
       )}
       {confirm !== null && (
-        <ConfirmDialog
-          title={text('restoreThisRevisionAsANewDraftTheLiveDocumentKeepsIts')}
+        <RestoreConfirmation
+          revisionId={confirm}
           close={() => setConfirm(null)}
-          accept={() => {
-            const id = confirm
-            setConfirm(null)
-            workspace.run(restore(id))
-          }}
+          restore={id => workspace.run(restore(id), restoreNotice)}
         />
       )}
     </SettingSection>
+  )
+}
+
+function RestoreConfirmation({ revisionId, close, restore }: {
+  revisionId: string
+  close: () => void
+  restore: (revisionId: string) => void
+}): ReactNode {
+  const text = useBlogTranslation('editor').t
+  return (
+    <ConfirmDialog
+      title={text('restoreThisRevisionAsANewDraftTheLiveDocumentKeepsIts')}
+      close={close}
+      accept={() => {
+        close()
+        restore(revisionId)
+      }}
+    />
   )
 }
 

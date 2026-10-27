@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ArrowDown, Asterisk, Rss } from 'lucide-react'
-import { PostList, SiteAfterword } from '@/features/reader/post-list'
+import { PostFeed } from '@/features/reader/post-feed'
+import { SiteAfterword } from '@/features/reader/post-list'
 import { SiteCount, SiteText } from '@/i18n/site-text'
 import { repository } from '@/server/runtime/context'
 
@@ -72,7 +73,7 @@ export default async function Home({
               : <SiteText value="In reverse chronological order" />}
           </span>
         </div>
-        <PostList items={posts.items} start={offset} />
+        <PostFeed items={posts.items} start={offset} />
         {posts.nextOffset !== null && (
           <a className={moreLinkStyle4} href={`/?offset=${posts.nextOffset}#posts`}>
             <SiteText value="Older posts" />

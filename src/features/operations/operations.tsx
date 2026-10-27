@@ -9,6 +9,7 @@ import { EditorText } from '@/i18n/labels'
 import { useEditorLabels } from '@/i18n/use-labels'
 import { ConfirmDialog } from '@/shared/admin/confirm-dialog'
 import { AdminFeedback } from '@/shared/admin/feedback'
+import { announceConfirmed } from '@/shared/admin/toast-feedback'
 import {
   layout1Class,
   layout2Class,
@@ -67,7 +68,7 @@ export function OperationsPanel({ csrfToken }: { csrfToken: string }): ReactNode
           close={() => model.setConfirm(false)}
           accept={() => {
             model.setConfirm(false)
-            model.resume().catch(() => {})
+            announceConfirmed(model.resume(), text('Writes resumed.'))
           }}
         />
       )}

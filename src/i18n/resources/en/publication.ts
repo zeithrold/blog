@@ -81,4 +81,6 @@ export const publication = {
   useDeviceTimezone: 'Use device timezone',
   publicationTimezoneHelp:
     'Defaults to your device timezone. Change it only to publish using another region’s local time.',
+  publicationScheduled: 'Publication scheduled.',
+  scheduledPublicationCancelled: 'Scheduled publication cancelled.',
 } as const

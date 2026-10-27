@@ -46,7 +46,7 @@ export function ScheduleSettings({ workspace, model, open, setOpen }: {
           variant="outline"
           type="button"
           disabled={model.busy || workspace.busy || model.chosen === ''}
-          onClick={() => workspace.run(model.submit())}
+          onClick={() => workspace.run(model.submit(), text('Publication scheduled.'))}
         >
           <EditorText value="Schedule saved draft" />
         </Button>
@@ -145,6 +145,7 @@ function ScheduleJobs({
   workspace: Workspace
   model: ScheduleModel
 }): ReactNode {
+  const text = useEditorLabels()
   return (
     <ul className={layout2Class}>
       {model.items.map(item => (
@@ -177,7 +178,10 @@ function ScheduleJobs({
               variant="outline"
               type="button"
               disabled={model.busy || workspace.busy}
-              onClick={() => workspace.run(model.submit(item.id))}
+              onClick={() => workspace.run(
+                model.submit(item.id),
+                text('Scheduled publication cancelled.'),
+              )}
             >
               <EditorText value="Cancel schedule" />
             </Button>

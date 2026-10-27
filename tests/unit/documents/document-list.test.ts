@@ -90,7 +90,6 @@ checked('trash restore retries the same mutation after an unknown result and the
     equal(keys.length, 2)
     equal(keys[0], keys[1])
     equal(bodies[0], bodies[1])
-    equal(controller.snapshot().restored, true)
     equal(controller.snapshot().loaded, true)
     equal(controller.snapshot().mutation, null)
   }

@@ -16,8 +16,11 @@ import { useBlogTranslation } from '@/i18n/use-translation'
 
 const utility10Class = 'min-w-0 m-0 rounded-xl border border-border p-3.5 [&>label]:mt-2.5 [&>button]:mt-2.5'
 
+/** The library only refreshes and reads the busy flag; other hosts can reuse it. */
+export type MediaLibraryHost = Pick<Workspace, 'busy' | 'run'>
+
 export function MediaLibrary({ workspace, select, role }: {
-  workspace: Workspace
+  workspace: MediaLibraryHost
   select: (asset: MediaAsset) => void
   role?: string
 }): ReactNode {

@@ -58,7 +58,11 @@ const layout5Class = [
 const sources = [
   {
     href: '/licenses/third-party-notices.txt',
-    label: 'Complete original license and copyright notices',
+    label: 'Original dependency license and copyright notices',
+  },
+  {
+    href: '/licenses/upstream/sonner.txt',
+    label: 'Sonner 2.0.8 license and copyright notice (MIT)',
   },
   {
     href: '/licenses/sbom.json',

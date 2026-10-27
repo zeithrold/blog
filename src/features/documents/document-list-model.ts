@@ -20,7 +20,6 @@ export type DocumentsState = {
   mutation: string | null
   error: Failure
   errorCode: string
-  restored: boolean
 }
 
 export class DocumentsController {
@@ -39,7 +38,6 @@ export class DocumentsController {
     mutation: null,
     error: null,
     errorCode: '',
-    restored: false,
   }
 
   constructor(csrfToken: string) {
@@ -82,7 +80,6 @@ export class DocumentsController {
       loading: 'list',
       error: null,
       errorCode: '',
-      restored: false,
     })
     await this.fetchList(normalized, request)
   }
@@ -130,7 +127,7 @@ export class DocumentsController {
       return
     }
     const lifetime = this.lifetime
-    this.update({ mutation: kind, error: null, errorCode: '', restored: false })
+    this.update({ mutation: kind, error: null, errorCode: '' })
     try {
       const ack = await this.client.write('/api/admin/documents', 'POST', { kind })
       if (lifetime === this.lifetime) {
@@ -144,12 +141,13 @@ export class DocumentsController {
     }
   }
 
-  async restore(entry: DocumentEntry): Promise<void> {
+  /** Resolves `true` only when the server confirmed the restore. */
+  async restore(entry: DocumentEntry): Promise<boolean> {
     if (this.state.mutation !== null) {
-      return
+      return false
     }
     this.failedEntry = entry
-    this.update({ mutation: entry.documentId, error: null, errorCode: '', restored: false })
+    this.update({ mutation: entry.documentId, error: null, errorCode: '' })
     try {
       await this.client.write(`/api/admin/documents/${entry.documentId}/restore-deleted`, 'POST', {
         expectedVersion: entry.version,
@@ -159,14 +157,17 @@ export class DocumentsController {
         this.update({ entries: this.state.entries.filter(item => item.documentId !== entry.documentId) })
       }
       await this.load()
-      this.update({ restored: true, mutation: null })
+      this.update({ mutation: null })
+      return true
     }
     catch (error) {
       this.fail('restore', error, { mutation: null })
+      return false
     }
   }
 
-  async retry(): Promise<void> {
+  /** Resolves `true` only when a retried restore was confirmed. */
+  async retry(): Promise<boolean> {
     const { error } = this.state
     if (this.state.errorCode === 'EDIT_CONFLICT') {
       await this.load()
@@ -178,11 +179,12 @@ export class DocumentsController {
       await this.create(error)
     }
     else if (error === 'restore' && this.failedEntry !== null) {
-      await this.restore(this.failedEntry)
+      return await this.restore(this.failedEntry)
     }
     else {
       await this.load()
     }
+    return false
   }
 
   private fail(error: Failure, cause: unknown, patch: Partial<DocumentsState>): void {

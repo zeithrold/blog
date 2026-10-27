@@ -5,6 +5,11 @@ import { resumeSchema } from '@/contracts/operations'
 import { RepositoryCore } from '@/server/documents/repository-core'
 import { Problem } from '@/server/http/problem'
 
+// The export is the site's content plus its public projection. Derived search
+// index tables (`search_lexical`) are left out because `public_insert` and
+// `public_update` rebuild them from the projection rows a restore inserts, and
+// `backup_runs`, `backup_assets` and `txn_guards` are instance state: a restored
+// site starts its own backup history and no in-flight transaction locks.
 export const backupTables = [
   'site_state',
   'documents',
@@ -13,10 +18,25 @@ export const backupTables = [
   'revisions',
   'revision_assets',
   'revision_catalog',
+  'published_documents',
+  'published_catalog',
   'publication_events',
   'mutations',
   'schedules',
 ] as const
+type BackupTable = (typeof backupTables)[number]
+/**
+ * `site_state` is exported as the row a restore must start from, not as the row
+ * the frozen source holds. `maintenance` is the freeze that produced this backup
+ * and its `backup_runs` row stays behind, so the restored row is held for the
+ * owner with no owner (`resume` opens it) instead of pointing at a run the
+ * restored site does not have. `content_bytes` is derived by `revision_storage`
+ * from the revisions the restore inserts.
+ */
+const exportColumns: Partial<Record<BackupTable, string>> = {
+  site_state:
+    'id,public_generation,0 AS content_bytes,1 AS maintenance,NULL AS maintenance_owner,NULL AS maintenance_since',
+}
 export const freezeSchema = z.strictObject({
   backupId: UUID,
   epoch: z.number().int(),
@@ -172,16 +192,12 @@ s.id=1 AND s.maintenance=1 AND b.id=? AND b.state='frozen'`,
 
   async page(id: string, table: string, after: number): Promise<unknown> {
     await this.frozen(id)
-    if (
-      !Array.from<string>(backupTables).includes(table)
-      || !Number.isSafeInteger(after)
-      || after < 0
-    ) {
+    if (!isBackupTable(table) || !Number.isSafeInteger(after) || after < 0) {
       throw new Problem(400, 'INVALID_QUERY')
     }
     // The only SQL identifier is selected from the fixed table allowlist above.
     const result = await this.sql(
-      `SELECT rowid AS _cursor,* FROM ${table} WHERE rowid>? ORDER BY rowid LIMIT 1`,
+      `SELECT rowid AS _cursor,${exportColumns[table] ?? '*'} FROM ${table} WHERE rowid>? ORDER BY rowid LIMIT 1`,
       after,
     ).all<{
       _cursor: number
@@ -257,6 +273,10 @@ s.id=1 AND s.maintenance=1 AND b.id=? AND b.state='frozen'`,
     )
     return (await this.replayAs(mutation, releaseSchema)) ?? response
   }
+}
+
+function isBackupTable(table: string): table is BackupTable {
+  return (backupTables as readonly string[]).includes(table)
 }
 
 function capacity(bytes: number): string {

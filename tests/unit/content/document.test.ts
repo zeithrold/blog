@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { assetReferences } from '@/content/asset-refs'
 import { canonicalize } from '@/content/canonical'
 import { emptyDocument, safeURL, validateDocument } from '@/content/document'
 import { parseJSON } from '@/server/http/json'
@@ -107,6 +108,69 @@ test('reject unknown nodes, unsafe properties, duplicate block IDs and oversize 
     { type: 'text', text: '字'.repeat(180000), styles: {} },
   ]
   await assert.rejects(canonicalize(doc), { code: 'DOCUMENT_TOO_LARGE' })
+}).catch((error: unknown) => {
+  assert.fail(error instanceof Error ? error.message : 'Test failed')
+})
+
+test('cover metadata is optional, canonical and referenced as an image asset', async () => {
+  const legacy = emptyDocument()
+  legacy.meta.title = 'Legacy article'
+  legacy.meta.slug = 'legacy-article'
+  assert.doesNotThrow(() => validateDocument(legacy, true))
+  deepEqual(assetReferences(legacy), [])
+
+  const cover = {
+    assetId: crypto.randomUUID(),
+    alt: 'A quiet desk at dusk',
+  }
+  const document = emptyDocument()
+  document.meta.title = 'Covered article'
+  document.meta.slug = 'covered-article'
+  document.meta.cover = cover
+  assert.doesNotThrow(() => validateDocument(document, true))
+  deepEqual(assetReferences(document), [
+    {
+      assetId: cover.assetId,
+      role: 'image',
+    },
+  ])
+  const snapshot = await canonicalize(document)
+  const parsed: unknown = JSON.parse(snapshot.json)
+  deepEqual(validateDocument(parsed).meta.cover, cover)
+  equal((await canonicalize(parsed)).hash, snapshot.hash)
+
+  document.meta.cover = null
+  assert.doesNotThrow(() => validateDocument(document, true))
+  assert.throws(() => validateDocument({
+    ...document,
+    meta: {
+      ...document.meta,
+      cover: {
+        assetId: 'not-a-uuid',
+        alt: '',
+      },
+    },
+  }))
+  assert.throws(() => validateDocument({
+    ...document,
+    meta: {
+      ...document.meta,
+      cover: {
+        ...cover,
+        alt: 'a'.repeat(2001),
+      },
+    },
+  }))
+  assert.throws(() => validateDocument({
+    ...document,
+    meta: {
+      ...document.meta,
+      cover: {
+        ...cover,
+        decorative: true,
+      },
+    },
+  }))
 }).catch((error: unknown) => {
   assert.fail(error instanceof Error ? error.message : 'Test failed')
 })

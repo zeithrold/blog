@@ -1,3 +1,5 @@
+import type { Document } from '@/content/document'
+import { envelope } from '@/content/envelope'
 import { Repository } from '@/server/documents/repository'
 import { Problem } from '@/server/http/problem'
 
@@ -8,6 +10,17 @@ export type PublicItem = {
   publishedAt: number
   updatedAt: number
   documentId: string
+}
+
+export type PublicCover = {
+  assetId: string
+  alt: string
+}
+
+/** Home-feed entries carry published cover and tag snapshots; taxonomy rows keep the base item. */
+export type PublicFeedItem = PublicItem & {
+  cover: PublicCover | null
+  tags: Document['meta']['tags']
 }
 
 export class PublicRepository extends Repository {
@@ -94,7 +107,7 @@ c.kind=? AND c.slug=? AND d.deleted_at IS NULL
   }
 
   async posts(offset: number): Promise<{
-    items: PublicItem[]
+    items: PublicFeedItem[]
     nextOffset: number | null
   }> {
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000) {
@@ -102,15 +115,31 @@ c.kind=? AND c.slug=? AND d.deleted_at IS NULL
     }
     const rows = await this.sql(
       `SELECT p.title,p.description,p.path,p.published_at AS publishedAt,p.updated_at AS
-updatedAt,p.document_id AS documentId
+updatedAt,p.document_id AS documentId,p.cover_asset_id AS coverAssetId,p.cover_alt AS coverAlt,
+json_extract(r.canonical_json,'$.meta.tags') AS tagsJson
       FROM published_documents p JOIN documents d ON d.id=p.document_id AND
 d.live_revision_id=p.revision_id
+      JOIN revisions r ON r.document_id=p.document_id AND r.id=p.revision_id
       WHERE p.kind='article' AND d.deleted_at IS NULL ORDER BY p.published_at
 DESC,p.document_id LIMIT 51 OFFSET ?`,
       offset,
-    ).all<PublicItem>()
+    ).all<PublicItem & {
+      coverAssetId: string | null
+      coverAlt: string
+      tagsJson: string
+    }>()
     return {
-      items: rows.results.slice(0, 50),
+      items: rows.results.slice(0, 50).map(({ coverAssetId, coverAlt, tagsJson, ...item }) => ({
+        ...item,
+        tags: envelope.shape.meta.shape.tags.parse(JSON.parse(tagsJson)),
+        cover:
+          coverAssetId === null
+            ? null
+            : {
+                assetId: coverAssetId,
+                alt: coverAlt,
+              },
+      })),
       nextOffset: rows.results.length > 50 ? offset + 50 : null,
     }
   }

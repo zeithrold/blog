@@ -205,9 +205,36 @@ async function catalogFlow(context: Runtime, data: Awaited<ReturnType<typeof pub
   const article = await context.fetch('/posts/full-service')
   equal(article.status, 200)
   equal((await article.text()).includes('data-tag-color="blue"'), true)
+  await feedTagIsolation(context, current.documentId)
   equal((await context.fetch('/rss.xml')).status, 200)
   equal((await context.fetch('/sitemap.xml')).status, 200)
 }
+
+async function feedTagIsolation(context: Runtime, id: string): Promise<void> {
+  const current = await json(await context.fetch(`/api/admin/documents/${id}`), 200, openDocumentSchema)
+  current.document.meta.tags = current.document.meta.tags.map(tag => ({
+    ...tag,
+    label: 'Draft-only tag',
+    color: 'red',
+  }))
+  await json(await context.write(`/api/admin/documents/${id}/revisions`, {
+    expectedVersion: current.version,
+    baseRevisionId: current.headRevisionId,
+    reason: 'manual',
+    document: current.document,
+  }, 'PUT'))
+  const response = await context.fetch('/')
+  equal(response.status, 200)
+  const html = await response.text()
+  const cards = html.match(/<li[^>]*data-feed-item[^>]*>[\s\S]*?<\/li>/g) ?? []
+  const card = cards.find(entry => entry.includes(`data-feed-item="${id}"`)) ?? ''
+  equal(card.includes('post-feed-tags'), true)
+  equal(card.includes('data-tag-color="blue"'), true)
+  equal(card.includes('Systems'), true)
+  equal(card.includes('Draft-only tag'), false)
+  equal(card.includes('Renamed'), false)
+}
+
 async function scheduleFlow(context: Runtime, data: Awaited<ReturnType<typeof publishedFile>>) {
   const current = await json(
     await context.fetch(`/api/admin/documents/${data.created.documentId}`),

@@ -31,7 +31,7 @@ test('metadata cancellation preserves a rejected draft and rebases its corrected
   try {
     coordinator.change()
     equal(await coordinator.settle(), false)
-    await coordinator.mutateMetadata(async () => await Promise.resolve({ ...ack, version: 2 }))
+    equal(await coordinator.mutateMetadata(async () => await Promise.resolve({ ...ack, version: 2 })), true)
     equal(coordinator.dirty, true)
     equal(states.at(-1), 'error:INVALID_DOCUMENT')
     fail = false
@@ -73,7 +73,7 @@ test('metadata cancellation waits for an active save and holds newer edits until
     equal(performed, false)
     finish({ ...ack, version: 2 })
     await saving
-    await mutation
+    equal(await mutation, true)
     equal(performed, true)
     equal(sends, 1)
     equal(coordinator.dirty, true)
@@ -95,11 +95,11 @@ test('metadata cancellation does not adopt another tabs draft or release an exis
   try {
     coordinator.change()
     coordinator.conflict()
-    await coordinator.mutateMetadata(async () => await Promise.resolve({
+    equal(await coordinator.mutateMetadata(async () => await Promise.resolve({
       ...ack,
       version: 2,
       headRevisionId: crypto.randomUUID(),
-    }))
+    })), false)
     equal(coordinator.acknowledgement.headRevisionId, ack.headRevisionId)
     equal(await coordinator.settle(), false)
     equal(states.at(-1), 'conflict')

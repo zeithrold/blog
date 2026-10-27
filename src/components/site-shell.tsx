@@ -102,6 +102,7 @@ const layout8Class = [
 const publicChromeClass = [
   'max-[440px]:flex-wrap max-[440px]:gap-y-1 max-[440px]:py-2',
   'max-[440px]:[&>.ztd-actions]:w-full max-[440px]:[&>.ztd-actions]:justify-between',
+  'max-[440px]:[&>.ztd-actions]:flex-wrap max-[440px]:[&>.ztd-actions]:gap-y-1',
 ].join(' ')
 
 function RouterLink(props: LinkProps): ReactNode {

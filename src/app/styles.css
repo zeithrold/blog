@@ -10,6 +10,7 @@
 @import './styles/base.css' layer(base);
 @import './styles/public.css' layer(components);
 @import '../features/reader/reader.css' layer(components);
+@import '../features/reader/post-feed.css' layer(components);
 @import './styles/admin.css' layer(components);
 @import '../features/catalog/tag-colors.css' layer(utilities);
 @import '../features/editor/workspace/editor.css' layer(components);

@@ -3,6 +3,7 @@ import type { PublicationRejection } from '@/features/editor/draft/draft-errors'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import { CircleAlert } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/ztd-me/client'
 import { EditorNotice } from '@/features/editor/draft/notice-shell'
 import { PublicationIssueList } from '@/features/editor/publication/publication-issue-list'
 import { useEditorLabels } from '@/i18n/use-labels'
@@ -16,6 +17,18 @@ export function DraftErrorNotice({ error, conflictShown }: {
   const labels = useEditorLabels()
   if (error === '' || (error === 'EDIT_CONFLICT' && conflictShown)) {
     return null
+  }
+  if (error === 'RESTORE_RELOAD_REQUIRED') {
+    return (
+      <EditorNotice title={labels('Draft restored')} icon={<CircleAlert size={18} />} tone="error">
+        <p className="editor-notice-description m-0 text-muted-foreground wrap-anywhere" role="alert">
+          {labels('The revision was restored, but the editor could not reload it. Reload the page before editing.')}
+        </p>
+        <Button type="button" variant="outline" className="mt-3" onClick={() => window.location.reload()}>
+          {labels('Reload page')}
+        </Button>
+      </EditorNotice>
+    )
   }
   const conflict = error === 'EDIT_CONFLICT'
   const validationMessages: Record<string, string> = {

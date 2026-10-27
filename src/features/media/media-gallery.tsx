@@ -2,11 +2,11 @@
 import type { ReactNode } from 'react'
 import type { MediaAsset } from '@/features/media/media-types'
 import { ArrowUpRight, Copy } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/ztd-me/client'
 import { MediaPreview, MediaSummary } from '@/features/media/media-asset'
 import { mediaCardClass, mediaGridClass, mediaMainClass } from '@/features/media/media-card-styles'
-import { EditorText } from '@/i18n/labels'
 import { useEditorLabels } from '@/i18n/use-labels'
 
 export { MediaIcon } from '@/features/media/media-asset'
@@ -57,36 +57,28 @@ function MediaCard({ asset }: { asset: MediaAsset }): ReactNode {
 }
 function CopyMedia({ asset, filenameId }: { asset: MediaAsset, filenameId: string }): ReactNode {
   const text = useEditorLabels()
-  const [notice, setNotice] = useState('')
   const copy = async (): Promise<void> => {
     try {
       await navigator.clipboard.writeText(new URL(asset.url, window.location.origin).href)
-      setNotice('Link copied')
+      toast.success(text('Link copied'), { id: 'media-copy' })
     }
     catch {
-      setNotice('Could not copy the link.')
+      toast.error(text('Could not copy the link.'), { id: 'media-copy', duration: 5000 })
     }
   }
   return (
-    <>
-      <Button
-        variant="ghost"
-        type="button"
-        size="icon"
-        className="gallery-copy mr-1 shrink-0"
-        aria-label={text('Copy asset link')}
-        aria-describedby={filenameId}
-        title={text('Copy asset link')}
-        onClick={() => { copy().catch(() => {}) }}
-      >
-        <Copy size={16} aria-hidden="true" />
-      </Button>
-      {notice !== '' && (
-        <span className="gallery-copy-notice basis-full px-3 pb-3 text-muted-foreground text-help" role="status">
-          <EditorText value={notice} />
-        </span>
-      )}
-    </>
+    <Button
+      variant="ghost"
+      type="button"
+      size="icon"
+      className="gallery-copy mr-1 shrink-0"
+      aria-label={text('Copy asset link')}
+      aria-describedby={filenameId}
+      title={text('Copy asset link')}
+      onClick={() => { copy().catch(() => {}) }}
+    >
+      <Copy size={16} aria-hidden="true" />
+    </Button>
   )
 }
 

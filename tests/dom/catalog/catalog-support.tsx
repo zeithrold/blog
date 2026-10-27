@@ -2,6 +2,7 @@ import type { FrontendPreferences, Locale } from '@/components/ui/ztd-me'
 import type { ApiHandler, ApiService } from '~/tests/dom/shared/http'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { toast } from 'sonner'
 import { expect } from 'vitest'
 import { createPreferencePolicy } from '@/components/ui/ztd-me'
 import { CatalogManager } from '@/features/catalog/catalog'
@@ -140,12 +141,23 @@ export async function settleCatalog(view: CatalogDomView): Promise<void> {
   })
 }
 
+/** Waits for the single confirmed notification Sonner renders and checks it. */
+export async function expectToast(view: CatalogDomView, message: string): Promise<void> {
+  await act(async () => {
+    await until(() => view.container.querySelector('[data-sonner-toast]') !== null)
+  })
+  expect(one(view.container, '[data-sonner-toast]').textContent).toBe(message)
+}
+
 /** Unmounts each view and restores the prior fetch boundary. */
 export function resetCatalogDom(): void {
   try {
     for (const view of views.splice(0)) {
       view.unmount()
     }
+    act(() => {
+      toast.dismiss()
+    })
   }
   finally {
     const active = services.splice(0)

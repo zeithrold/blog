@@ -111,11 +111,13 @@ it('keeps a lost response unknown and reuses the idempotency key for the retry',
     await view.model().refresh()
   })
   expect(view.model().refreshRequired).toBe(false)
+  let confirmed = false
   await act(async () => {
-    await view.model().perform('restore')
+    confirmed = await view.model().perform('restore')
   })
   const model = view.model()
-  expect(model.notice).toBe('restored')
+  expect(confirmed).toBe(true)
+  expect(model.notice).toBeNull()
   expect(writes(stub)).toHaveLength(2)
   const [first, retry] = writes(stub)
   const body = {
@@ -187,8 +189,9 @@ it('publishes with the version, revision and live generation the page saw', asyn
     [`GET ${fixture.path}/revisions`]: () => ({ body: fixture.history }),
   })
   const view = mountHistory(page(fixture))
+  let confirmed = false
   await act(async () => {
-    await view.model().perform('publish')
+    confirmed = await view.model().perform('publish')
   })
   expect(writes(stub)[0]?.body).toEqual({
     expectedVersion: fixture.initial.version,
@@ -196,7 +199,8 @@ it('publishes with the version, revision and live generation the page saw', asyn
     expectedLiveGeneration: fixture.initial.liveGeneration,
   })
   const model = view.model()
-  expect(model.notice).toBe('published')
+  expect(confirmed).toBe(true)
+  expect(model.notice).toBeNull()
   expect(model.error).toBe('')
   expect(model.refreshRequired).toBe(false)
   expect(model.current.liveGeneration).toBe(committed.liveGeneration)
@@ -233,12 +237,15 @@ it('keeps a confirmed restore visible when the following refresh fails', async (
   await act(async () => {
     await view.model().choose(fixture.first.revisionId, 'selected')
   })
+  let confirmed = false
   await act(async () => {
-    await view.model().perform('restore')
+    confirmed = await view.model().perform('restore')
   })
   const model = view.model()
-  // The confirmed result stays visible; only the missing refresh is reported.
-  expect(model.notice).toBe('restored')
+  // The confirmed change stays applied and announced; only the missing refresh
+  // is reported in place.
+  expect(confirmed).toBe(true)
+  expect(model.notice).toBeNull()
   expect(model.error).toBe('HISTORY_REFRESH_REQUIRED')
   expect(model.refreshRequired).toBe(true)
   expect(model.current.version).toBe(committed.version)

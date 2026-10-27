@@ -10,6 +10,7 @@ import { EditorText } from '@/i18n/labels'
 import { useEditorLabels } from '@/i18n/use-labels'
 import { AdminEmpty, AdminFeedback } from '@/shared/admin/feedback'
 import { SaveStatus } from '@/shared/admin/save-status'
+import { announceConfirmed } from '@/shared/admin/toast-feedback'
 import { CatalogFormFields } from './catalog-form-fields'
 import {
   layout1Class,
@@ -198,12 +199,17 @@ function CatalogForm({
   input: React.RefObject<HTMLInputElement | null>
   cancel: () => void
 }): ReactNode {
+  const text = useEditorLabels()
+  const created = model.edit === null
   return (
     <form
       className={layout10Class}
       onSubmit={(event) => {
         event.preventDefault()
-        model.save().catch(() => {})
+        announceConfirmed(
+          model.save().then(outcome => outcome !== null),
+          text(created ? 'Catalog entry created.' : 'Catalog entry saved.'),
+        )
       }}
     >
       <h2><EditorText value={formTitle(kind, model.edit === null)} /></h2>
@@ -212,11 +218,6 @@ function CatalogForm({
       {model.error !== '' && (
         <p className={layout11Class} role="alert">
           <EditorText value={model.error} />
-        </p>
-      )}
-      {model.notice !== '' && (
-        <p className="admin-feedback text-muted-foreground text-help" role="status">
-          <EditorText value={model.notice} />
         </p>
       )}
       <div className="actions flex flex-wrap items-center gap-2">

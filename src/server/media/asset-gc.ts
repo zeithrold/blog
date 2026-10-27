@@ -2,8 +2,20 @@ import type { R2Bucket } from '@cloudflare/workers-types/index.ts'
 import type { AssetRow } from '@/server/media/assets'
 import { AssetRepository } from '@/server/media/assets'
 
+/** Collection only removes objects, so the bucket is narrowed to what it uses. */
+type ObjectBucket = Pick<R2Bucket, 'delete'>
+
 export class AssetGC extends AssetRepository {
-  async collect(bucket: R2Bucket, now = Date.now()): Promise<number> {
+  /**
+   * A failed deletion must not keep the object at the head of the batch order,
+   * or ten permanently failing objects would hide every later one. The retry
+   * moves the same `gc_after` clock the batch is ordered by, doubling from this
+   * base up to a one-day ceiling so cleanup is delayed, never abandoned.
+   */
+  static readonly retryBaseMs = 900000
+  static readonly retryMaxMs = 86400000
+
+  async collect(bucket: ObjectBucket, now = Date.now()): Promise<number> {
     const state = await this.sql('SELECT maintenance FROM site_state WHERE id=1').first<{
       maintenance: number
     }>()
@@ -37,12 +49,13 @@ export class AssetGC extends AssetRepository {
           row.id,
           error instanceof Error ? error.name : 'Unknown',
         )
+        await this.defer(row, now)
       }
     }
     return count
   }
 
-  private async remove(row: AssetRow, bucket: R2Bucket, now: number): Promise<boolean> {
+  private async remove(row: AssetRow, bucket: ObjectBucket, now: number): Promise<boolean> {
     const claimed = await this.sql(
       `UPDATE assets SET state=CASE WHEN state='deleted' THEN 'deleted' ELSE 'deleting' END
       WHERE id=? AND state=? AND (SELECT maintenance=0 FROM site_state WHERE id=1)
@@ -56,11 +69,29 @@ export class AssetGC extends AssetRepository {
     await bucket.delete(row.object_key)
     // Recheck tombstones daily: a put with an unknown outcome may complete after a cleanup pass.
     await this.sql(
-      `UPDATE assets SET state='deleted',gc_after=? WHERE id=? AND state IN ('deleting','deleted')
+      `UPDATE assets SET state='deleted',gc_attempts=0,gc_after=? WHERE id=? AND state IN ('deleting','deleted')
        AND (SELECT maintenance=0 FROM site_state WHERE id=1)`,
       now + 86400000,
       row.id,
     ).run()
     return true
   }
+
+  private async defer(row: AssetRow, now: number): Promise<void> {
+    // Only the retry clock changes, so the reference and backup-pin guards keep
+    // deciding whether this row may be deleted at all. The row's state is not
+    // matched: a failed deletion has already claimed it into `deleting`.
+    await this.sql(
+      'UPDATE assets SET gc_attempts=gc_attempts+1,gc_after=? WHERE id=?',
+      now + retryDelay(row.gc_attempts + 1),
+      row.id,
+    ).run()
+  }
+}
+
+function retryDelay(attempts: number): number {
+  return Math.min(
+    AssetGC.retryBaseMs * 2 ** Math.min(attempts, 16),
+    AssetGC.retryMaxMs,
+  )
 }

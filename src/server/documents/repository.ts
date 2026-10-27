@@ -30,6 +30,14 @@ type Publication = {
   ack: Acknowledgement
 }
 
+function projectionCover(document: Document): [string | null, string] {
+  const cover = document.meta.cover ?? null
+  return [
+    cover?.assetId ?? null,
+    cover?.alt ?? '',
+  ]
+}
+
 export class Repository extends DeletionRepository {
   private async publication(input: PublishInput, mutation: Mutation): Promise<Publication> {
     const row = await this.row(input.id)
@@ -77,11 +85,13 @@ export class Repository extends DeletionRepository {
     if (new TextEncoder().encode(text).byteLength > 524288) {
       throw new Problem(422, 'SEARCH_PROJECTION_TOO_LARGE')
     }
+    const [coverAssetId, coverAlt] = projectionCover(target)
     return [
       this.sql(
         `INSERT INTO published_documents(document_id,revision_id,path,kind,title,description,
-      document_locale,plain_text,cjk_bigrams,published_at,updated_at,searchable)
-VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+      document_locale,plain_text,cjk_bigrams,published_at,updated_at,searchable,cover_asset_id,
+      cover_alt)
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         input.id,
         input.revisionId,
         `/${row.kind === 'article' ? 'posts' : 'pages'}/${target.meta.slug}`,
@@ -94,6 +104,8 @@ VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
         row.first_published_at ?? now,
         now,
         target.meta.seo.noindex ? 0 : 1,
+        coverAssetId,
+        coverAlt,
       ),
       this.publicationCatalog(input.id, target),
     ]

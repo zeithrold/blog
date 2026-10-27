@@ -14,7 +14,7 @@ type CatalogManagerModel = CatalogState & {
   setColor: (value: CatalogEntry['color']) => void
   setRetired: (value: boolean) => void
   setQuery: (value: string) => void
-  save: () => Promise<void>
+  save: () => Promise<'created' | 'saved' | null>
   refresh: () => Promise<void>
 }
 

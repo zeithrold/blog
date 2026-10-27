@@ -8,6 +8,7 @@ import {
   button,
   click,
   editButton,
+  expectToast,
   mountCatalog,
   resetCatalogDom,
   settleCatalog,
@@ -82,7 +83,7 @@ it('a slow tag refresh cannot retarget a different entry\'s form', async () => {
       color: 'neutral',
       expectedVersion: second.version,
     })
-    expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
+    await expectToast(view, copy.saved)
   }
   finally {
     held.open()
@@ -153,7 +154,7 @@ it('a slow series refresh cannot retarget a different entry\'s form', async () =
       color: 'neutral',
       expectedVersion: second.version,
     })
-    expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
+    await expectToast(view, copy.saved)
   }
   finally {
     held.open()
@@ -253,7 +254,7 @@ it('refreshing a dirty tag form preserves local edits and adopts untouched remot
     color: 'neutral',
     expectedVersion: remote.version,
   })
-  expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
+  await expectToast(view, copy.saved)
 })
 
 it('a series form creates through the series endpoint', async () => {
@@ -282,7 +283,7 @@ it('a series form creates through the series endpoint', async () => {
   const write = view.api.calls.find(call => call.method === 'POST')
   expect(write?.path).toBe('/api/admin/catalog/series')
   expect(write?.json).toEqual({ name: created.name, slug: created.slug, color: 'neutral' })
-  expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.created)
+  await expectToast(view, copy.created)
   expect(editButton(view.container, `${copy.edit} ${created.name}`)).toBeDefined()
 })
 
@@ -309,13 +310,11 @@ it('a confirmed catalog creation stays visible when the list refresh fails', asy
     click(button(view.container, copy.save))
   })
   await settleCatalog(view)
-  expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.created)
+  await expectToast(view, copy.created)
   expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.loadError)
   expect(editButton(view.container, `${copy.edit} ${name}`)).toBeDefined()
 
   typeText(textInput(view.container, copy.name), 'Another unsaved entry')
-  expect(Array.from(view.container.querySelectorAll('[role="status"]'))
-    .some(status => status.textContent.includes(copy.created))).toBe(false)
   expect(view.api.calls.filter(call => call.method === 'POST')).toHaveLength(1)
 })
 
@@ -402,6 +401,7 @@ it('catalog retries an unknown creation with the original idempotency key', asyn
   })
   await settleCatalog(view)
   expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.connectionFailed)
+  expect(view.container.querySelector('[data-sonner-toast]')).toBeNull()
 
   act(() => {
     click(button(view.container, copy.refresh))
@@ -424,6 +424,6 @@ it('catalog retries an unknown creation with the original idempotency key', asyn
   expect(firstKey).toEqual(expect.any(String))
   expect(firstKey).not.toBe('')
   expect(writes[1]?.headers['idempotency-key']).toBe(firstKey)
-  expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.created)
+  await expectToast(view, copy.created)
   expect(view.container.querySelectorAll(`button[aria-label="${copy.edit} ${created.name}"]`)).toHaveLength(1)
 })

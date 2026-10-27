@@ -68,4 +68,6 @@ export const publication = {
   noMatchingTimezone: '没有匹配的时区。',
   useDeviceTimezone: '使用设备时区',
   publicationTimezoneHelp: '默认使用设备时区。仅在需要按其他地区的当地时间发布时更改。',
+  publicationScheduled: '已安排发布。',
+  scheduledPublicationCancelled: '已取消发布计划。',
 } as const
