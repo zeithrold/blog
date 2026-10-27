@@ -6,8 +6,9 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: cms-verify-${{ github.ref }}
-  cancel-in-progress: true
+  # Give main runs independent verification slots; stale reruns cannot evict newer pushes.
+  group: cms-verify-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   verify:
     name: Verify
@@ -26,3 +27,114 @@ jobs:
       - name: Check
         timeout-minutes: 25
         run: pnpm check
+      - name: Record build source
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: printf '%s\n' "$GITHUB_SHA" > dist/source-sha.txt
+      - name: Upload verified Worker
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: worker-${{ github.sha }}
+          path: |
+            dist/
+            !dist/**/.dev.vars*
+            !dist/**/.env*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true
+  deploy:
+    name: Deploy
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: cms-production-ztd-blog
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.21.0
+      - run: npm install --global pnpm@11.22.0 --ignore-scripts
+      - run: pnpm install --frozen-lockfile
+      - name: Download tested Worker
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: worker-${{ github.sha }}
+          path: dist
+          digest-mismatch: error
+      - name: Verify deployment boundaries
+        id: boundary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict'
+          import { appendFileSync, readFileSync } from 'node:fs'
+          assert.equal(readFileSync('dist/source-sha.txt', 'utf8').trim(), process.env.GITHUB_SHA)
+          const config = JSON.parse(readFileSync('dist/server/wrangler.json', 'utf8'))
+          assert.equal(config.name, 'ztd-blog')
+          assert.equal(config.vars.PUBLIC_ORIGIN, 'https://blog.ztd.me')
+          assert.equal(config.d1_databases.find(db => db.binding === 'DB')?.database_id,
+            'c8fbc39c-4eed-40c8-b2db-8e36bb240cef')
+          assert.equal(config.r2_buckets.find(bucket => bucket.binding === 'MEDIA')?.bucket_name, 'ztd-blog')
+          const response = await fetch(
+            `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/git/ref/heads/main`,
+            { headers: { authorization: `Bearer ${process.env.GITHUB_TOKEN}` }, signal: AbortSignal.timeout(15000) },
+          )
+          assert.equal(response.status, 200)
+          const current = await response.json()
+          const deploy = current.object.sha === process.env.GITHUB_SHA
+          if (!deploy) console.log('::notice::Skipping superseded main commit; no production changes will run.')
+          appendFileSync(process.env.GITHUB_OUTPUT, `deploy=${deploy}\n`)
+          JS
+      - name: Migrate production D1
+        if: steps.boundary.outputs.deploy == 'true'
+        timeout-minutes: 5
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          pnpm exec wrangler d1 migrations apply ztd-blog --remote --config wrangler.jsonc
+      - name: Deploy tested Worker
+        if: steps.boundary.outputs.deploy == 'true'
+        timeout-minutes: 5
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm exec wrangler deploy --config dist/server/wrangler.json
+          --var "BUILD_SHA:$GITHUB_SHA" --tag "$GITHUB_SHA"
+      - name: Verify production deployment
+        if: steps.boundary.outputs.deploy == 'true'
+        timeout-minutes: 2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict'
+          import { execFileSync } from 'node:child_process'
+          const wrangler = (...args) => JSON.parse(execFileSync(
+            'pnpm', ['exec', 'wrangler', ...args, '--config', 'dist/server/wrangler.json', '--json'],
+            { encoding: 'utf8', timeout: 45000 },
+          ))
+          const deployments = wrangler('deployments', 'list')
+          const latest = deployments.sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))[0]
+          assert.ok(latest, 'No production deployment found')
+          assert.equal(latest.versions.length, 1)
+          const active = latest.versions[0]
+          assert.equal(active.percentage, 100)
+          const version = wrangler('versions', 'view', active.version_id)
+          assert.equal(version.annotations['workers/tag'], process.env.GITHUB_SHA)
+          const build = version.resources.bindings.find(binding => binding.name === 'BUILD_SHA')
+          assert.equal(build?.text, process.env.GITHUB_SHA)
+          console.log(`Verified version ${active.version_id} serving 100% of traffic for ${process.env.GITHUB_SHA}`)
+          JS

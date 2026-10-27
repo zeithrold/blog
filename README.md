@@ -71,8 +71,38 @@ passing `pnpm check` therefore says nothing about those behaviors. Tests report 
 there are no screenshots, traces, receipts or run ledgers to retain.
 
 `pnpm check` is the full gate, and CI runs exactly it: the `Verify CMS` workflow performs a frozen install
-and then `pnpm check` in one job. Dependency versions stay pinned; the workflow actions stay pinned to
-immutable commits.
+and then `pnpm check` in its `Verify` job. Dependency versions stay pinned; the workflow actions stay
+pinned to immutable commits.
+
+### Automatic production releases
+
+A push to `main` runs **Verify → Deploy** in the same workflow. Pull requests and `codex/**` pushes
+only verify; they never receive Cloudflare credentials or run production migrations.
+The repository must provide the GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID`. Scope the token to the production account and zone, with permission to
+apply D1 migrations, deploy Workers/update routes, and read Worker deployments/versions.
+`CSRF_SIGNING_SECRET` stays in the Worker Secret store, not GitHub artifacts.
+
+After verification passes, CI retains the tested `dist` and its source SHA as `worker-<sha>` for seven
+days, including generated hidden manifests but excluding `.env`/`.dev.vars` files. Deploy checks out
+that same immutable SHA, downloads only that run's tested artifact, and verifies its source and
+production bindings. It skips superseded main revisions, including reruns of an older commit.
+Main verification runs independently; PR and other branch checks still cancel superseded runs.
+Production changes are serialized with GitHub's `queue: max` (up to 100 pending jobs), without
+canceling an active release or replacing a newer pending release with a stale rerun.
+Queued jobs recheck current main after acquiring the production slot and skip obsolete revisions.
+This does not guarantee deploying every commit; a full queue rejects additional jobs and requires a retry.
+
+The release applies pending production D1 migrations first; a failed migration stops deployment.
+It then deploys the tested Worker with `BUILD_SHA` and a version tag set to the workflow SHA.
+Post-deployment verification uses the Cloudflare control plane to confirm one matching version
+receives 100% of traffic. CI does not request public production pages or bypass Access/WAF.
+This check is not a substitute for signed-in publishing, Cron or backup/restore acceptance.
+
+Only reviewed, backward-compatible migrations should enter this automatic path. Destructive changes
+need a separate approved maintenance/backup plan before merging; CI does not classify SQL safety.
+If deployment fails after migration, the database may already be upgraded: repair/retry the release,
+do not automatically undo migrations or roll back to an incompatible decoder.
 
 ## Production readiness
 
@@ -106,7 +136,8 @@ application startup does not migrate production. Review the generated `dist/serv
 after `pnpm build` and use that generated configuration for deployment, not the source Worker
 entry point. `pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json` checks packaging
 without publishing; it does not verify credentials, remote resources, account limits or routing.
-Real deployment and remote migrations require separate authorization.
+Pushing reviewed changes to `main` authorizes the automatic release path above. Manual deployments,
+remote resource changes outside that path, and destructive migrations still require explicit authorization.
 
 Before release, run `pnpm check` and exercise these paths against the intended environment:
 
