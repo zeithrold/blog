@@ -48,12 +48,15 @@ async function waitForDom(
   condition: () => boolean,
 ): Promise<void> {
   try {
+    // Await the real lazy resource, not the DOM commit, inside act. Waiting
+    // for rendered MathML there can prevent React from committing that resource.
     await act(async () => {
-      await until(condition)
+      await import('@/features/reader/math')
     })
+    await until(condition)
   }
-  catch {
-    throw new Error(`The inline formula surface did not render ${description}`)
+  catch (cause) {
+    throw new Error(`The inline formula surface did not render ${description}`, { cause })
   }
 }
 
