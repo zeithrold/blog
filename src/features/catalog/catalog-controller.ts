@@ -64,7 +64,7 @@ export function selectedCatalogMeta(
       return found === undefined
         ? []
         : [
-            { id: found.id, slug: found.slug, label: found.name },
+            { id: found.id, slug: found.slug, label: found.name, color: found.color },
           ]
     })
     return { ...meta, tags }

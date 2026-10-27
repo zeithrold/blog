@@ -11,7 +11,7 @@ export class CatalogRepository extends RepositoryCore {
     items: z.infer<typeof catalogItemSchema>[]
   }> {
     const result = await this.sql(
-      `SELECT id,kind,slug,label AS name,version,retired FROM catalog WHERE kind=? ORDER BY
+      `SELECT id,kind,slug,label AS name,version,retired,color FROM catalog WHERE kind=? ORDER BY
 label,id LIMIT 1000`,
       kind,
     ).all<{
@@ -21,6 +21,7 @@ label,id LIMIT 1000`,
       name: string
       version: number
       retired: number
+      color: z.infer<typeof catalogItemSchema>['color']
     }>()
     return {
       items: result.results.map(item => ({
@@ -60,11 +61,12 @@ label,id LIMIT 1000`,
       [
         this.writableGuard(mutation, '(SELECT COUNT(*) FROM catalog WHERE kind=?)<1000', [kind]),
         this.sql(
-          'INSERT INTO catalog(id,kind,slug,label,created_at,updated_at) VALUES(?,?,?,?,?,?)',
+          'INSERT INTO catalog(id,kind,slug,label,color,created_at,updated_at) VALUES(?,?,?,?,?,?,?)',
           response.id,
           kind,
           input.slug,
           input.name,
+          input.color,
           now,
           now,
         ),
@@ -98,6 +100,7 @@ label,id LIMIT 1000`,
       kind,
       slug: input.slug,
       name: input.name,
+      color: input.color,
       version: input.expectedVersion + 1,
       retired: input.retired,
     }
@@ -113,9 +116,10 @@ label,id LIMIT 1000`,
           ],
         ),
         this.sql(
-          'UPDATE catalog SET slug=?,label=?,retired=?,version=version+1,updated_at=? WHERE id=?',
+          'UPDATE catalog SET slug=?,label=?,color=?,retired=?,version=version+1,updated_at=? WHERE id=?',
           input.slug,
           input.name,
+          input.color,
           input.retired ? 1 : 0,
           now,
           id,

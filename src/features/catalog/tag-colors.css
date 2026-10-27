@@ -1,0 +1,35 @@
+/* An opt-in utility: share the utilities layer so neutral chip utilities cannot override the palette.
+   Reuse the editor's light/dark ink palette; tags stay subordinate to article titles. */
+.tag-color[data-tag-color='red'] {
+  --tag-ink: var(--blog-inline-red);
+}
+
+.tag-color[data-tag-color='orange'] {
+  --tag-ink: var(--blog-inline-orange);
+}
+
+.tag-color[data-tag-color='yellow'] {
+  --tag-ink: var(--blog-inline-yellow);
+}
+
+.tag-color[data-tag-color='green'] {
+  --tag-ink: var(--blog-inline-green);
+}
+
+.tag-color[data-tag-color='blue'] {
+  --tag-ink: var(--blog-inline-blue);
+}
+
+.tag-color[data-tag-color='violet'] {
+  --tag-ink: var(--blog-inline-purple);
+}
+
+.tag-color[data-tag-color='pink'] {
+  --tag-ink: var(--blog-inline-pink);
+}
+
+.tag-color[data-tag-color]:not([data-tag-color='neutral']) {
+  color: var(--tag-ink);
+  background: color-mix(in srgb, var(--tag-ink) 10%, var(--ztd-surface));
+  border-color: color-mix(in srgb, var(--tag-ink) 30%, var(--ztd-border));
+}

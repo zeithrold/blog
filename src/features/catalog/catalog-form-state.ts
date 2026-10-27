@@ -5,6 +5,7 @@ export function rebaseCatalogFields(local: CatalogFields, base: CatalogEntry, re
     name: local.name === base.name ? remote.name : local.name,
     slug: local.slug === base.slug ? remote.slug : local.slug,
     retired: local.retired === base.retired ? remote.retired : local.retired,
+    color: local.color === base.color ? remote.color : local.color,
   }
 }
 

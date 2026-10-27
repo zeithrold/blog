@@ -6,7 +6,7 @@ import { selectedCatalogMeta } from '@/features/catalog/catalog-controller'
 import { deepEqual } from '~/tests/support/unit/assertions'
 
 function entry(kind: 'tag' | 'series', name: string, retired = false): CatalogItem {
-  return { id: crypto.randomUUID(), kind, name, slug: name.toLowerCase(), version: 1, retired }
+  return { id: crypto.randomUUID(), kind, name, slug: name.toLowerCase(), version: 1, retired, color: 'blue' }
 }
 
 test('tag selection preserves saved snapshots and rejects retired additions', () => {
@@ -25,7 +25,7 @@ test('tag selection preserves saved snapshots and rejects retired additions', ()
   deepEqual(result.tags, [
     original,
     missing,
-    { id: active.id, slug: active.slug, label: active.name },
+    { id: active.id, slug: active.slug, label: active.name, color: 'blue' },
   ])
   assert.equal(result.tags[0], original)
   assert.deepEqual(selectedCatalogMeta(meta, [retired], 'tag', []).tags, [])

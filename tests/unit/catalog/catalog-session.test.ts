@@ -5,7 +5,15 @@ import { catalogSession, CatalogSession } from '@/features/catalog/catalog-sessi
 import { deepEqual, equal } from '~/tests/support/unit/assertions'
 
 function entry(name = 'Original'): CatalogEntry {
-  return { id: crypto.randomUUID(), kind: 'tag', name, slug: name.toLowerCase(), retired: false, version: 0 }
+  return {
+    id: crypto.randomUUID(),
+    kind: 'tag',
+    name,
+    slug: name.toLowerCase(),
+    retired: false,
+    version: 0,
+    color: 'neutral',
+  }
 }
 
 function deferred<T>(): { promise: Promise<T>, resolve: (value: T) => void } {

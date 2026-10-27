@@ -83,6 +83,17 @@ license titles use 32/26px. Search results follow the same ruled rows as the ind
 excerpts. Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
 Compact UI text retains reachable controls and visible keyboard focus.
 
+Tags offer a neutral default and seven named colors in the catalog editor. Their chips reuse the
+editor's theme-aware ink palette with a lightly tinted background; color never replaces the label.
+Color is captured when a tag is added to a document, like its name and slug. Catalog edits do not
+rewrite historical or published snapshots; remove and re-add a draft tag to adopt its current color.
+Old documents without a color remain neutral and are not rewritten on read.
+Apply `0003_tag_colors.sql` before deploying the color-aware Worker. The migration adds a column
+without altering revisions; retain it on rollback. After any catalog write (including neutral tags
+and series), rollback must retain the color-aware catalog response/journal decoder so existing
+idempotency keys can replay their saved acknowledgements. After saving colored document snapshots,
+also retain a color-aware document decoder. Older strict decoders reject these new fields.
+
 Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before the
 bundled declarations. Keep Noto language coverage and the existing font CSP. A declared font family is
 not rendering evidence, and the removed browser suites no longer check rendered fonts.

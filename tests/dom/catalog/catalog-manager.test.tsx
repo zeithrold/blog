@@ -79,6 +79,7 @@ it('a slow tag refresh cannot retarget a different entry\'s form', async () => {
       name: 'Local change to B',
       slug: `local-b-${unique}`,
       retired: false,
+      color: 'neutral',
       expectedVersion: second.version,
     })
     expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
@@ -149,6 +150,7 @@ it('a slow series refresh cannot retarget a different entry\'s form', async () =
       name: 'Local change to B',
       slug: `local-b-${unique}`,
       retired: false,
+      color: 'neutral',
       expectedVersion: second.version,
     })
     expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
@@ -248,6 +250,7 @@ it('refreshing a dirty tag form preserves local edits and adopts untouched remot
     name: 'Local name survives refresh',
     slug: remote.slug,
     retired: true,
+    color: 'neutral',
     expectedVersion: remote.version,
   })
   expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.saved)
@@ -278,7 +281,7 @@ it('a series form creates through the series endpoint', async () => {
 
   const write = view.api.calls.find(call => call.method === 'POST')
   expect(write?.path).toBe('/api/admin/catalog/series')
-  expect(write?.json).toEqual({ name: created.name, slug: created.slug })
+  expect(write?.json).toEqual({ name: created.name, slug: created.slug, color: 'neutral' })
   expect(view.container.querySelector('[role="status"]')?.textContent).toBe(copy.created)
   expect(editButton(view.container, `${copy.edit} ${created.name}`)).toBeDefined()
 })
@@ -364,7 +367,7 @@ it('a slow refresh cannot turn a new catalog entry into an update of the old ent
     expect(writes).toHaveLength(1)
     expect(writes[0]?.method).toBe('POST')
     expect(writes[0]?.path).toBe('/api/admin/catalog/tag')
-    expect(writes[0]?.json).toEqual({ name: created.name, slug: created.slug })
+    expect(writes[0]?.json).toEqual({ name: created.name, slug: created.slug, color: 'neutral' })
     expect(editButton(view.container, `${copy.edit} ${first.name}`)).toBeDefined()
   }
   finally {
@@ -414,8 +417,8 @@ it('catalog retries an unknown creation with the original idempotency key', asyn
   expect(writes).toHaveLength(2)
   expect(writes.map(call => call.path)).toEqual(['/api/admin/catalog/tag', '/api/admin/catalog/tag'])
   expect(writes.map(call => call.json)).toEqual([
-    { name: created.name, slug: created.slug },
-    { name: created.name, slug: created.slug },
+    { name: created.name, slug: created.slug, color: 'neutral' },
+    { name: created.name, slug: created.slug, color: 'neutral' },
   ])
   const firstKey = writes[0]?.headers['idempotency-key']
   expect(firstKey).toEqual(expect.any(String))

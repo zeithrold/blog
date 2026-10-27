@@ -144,7 +144,11 @@ function CatalogRow({
 }): ReactNode {
   return (
     <li>
-      <span className={layout7Class} aria-hidden="true">
+      <span
+        className={`${layout7Class} tag-color`}
+        data-tag-color={item.kind === 'tag' ? item.color : 'neutral'}
+        aria-hidden="true"
+      >
         {item.kind === 'tag' ? <Tags size={19} /> : <FolderOpen size={19} />}
       </span>
       <div className={layout8Class}>
@@ -204,7 +208,7 @@ function CatalogForm({
     >
       <h2><EditorText value={formTitle(kind, model.edit === null)} /></h2>
       {model.dirty && <SaveStatus status="dirty" className="catalog-dirty mt-[-8px] mx-0 mb-0" />}
-      <CatalogFormFields model={model} input={input} />
+      <CatalogFormFields model={model} input={input} kind={kind} />
       {model.error !== '' && (
         <p className={layout11Class} role="alert">
           <EditorText value={model.error} />

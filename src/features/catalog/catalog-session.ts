@@ -22,6 +22,7 @@ function emptyState(): CatalogState {
     edit: null,
     name: '',
     slug: '',
+    color: 'neutral',
     retired: false,
     busy: false,
     dirty: false,
@@ -36,8 +37,9 @@ function emptyState(): CatalogState {
 }
 
 function isDirty(state: CatalogState): boolean {
-  const base = state.edit ?? { name: '', slug: '', retired: false }
-  return state.name !== base.name || state.slug !== base.slug || state.retired !== base.retired
+  const base = state.edit ?? { name: '', slug: '', retired: false, color: 'neutral' }
+  return state.name !== base.name || state.slug !== base.slug
+    || state.retired !== base.retired || state.color !== base.color
 }
 
 export class CatalogSession {
@@ -74,8 +76,8 @@ export class CatalogSession {
     }
     this.selection++
     this.client = new Client(this.client.csrfToken, this.owner)
-    const { name = '', slug = '', retired = false } = edit ?? {}
-    this.update({ edit, name, slug, retired, error: '', notice: '' })
+    const { name = '', slug = '', retired = false, color = 'neutral' } = edit ?? {}
+    this.update({ edit, name, slug, retired, color, error: '', notice: '' })
   }
 
   change = <K extends keyof CatalogFields>(field: K, value: CatalogFields[K]): void => {
@@ -113,7 +115,7 @@ export class CatalogSession {
     if (this.state.busy || !this.state.dirty || this.disposed) {
       return
     }
-    const { edit, name, slug, retired } = this.state
+    const { edit, name, slug, retired, color } = this.state
     const path = `/api/admin/catalog/${this.kind}`
     this.selection++
     this.request++
@@ -122,7 +124,7 @@ export class CatalogSession {
       const saved = await this.client.mutate({
         path: edit === null ? path : `${path}/${edit.id}`,
         method: edit === null ? 'POST' : 'PUT',
-        body: edit === null ? { name, slug } : { name, slug, retired, expectedVersion: edit.version },
+        body: edit === null ? { name, slug, color } : { name, slug, color, retired, expectedVersion: edit.version },
         schema: catalogItemSchema,
         signal: this.lifetime.signal,
       })
@@ -141,6 +143,7 @@ export class CatalogSession {
       edit: null,
       name: '',
       slug: '',
+      color: 'neutral',
       retired: false,
       busy: false,
       notice: created ? 'Catalog entry created.' : 'Catalog entry saved.',

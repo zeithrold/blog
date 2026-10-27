@@ -33,6 +33,29 @@ async function rows(context: Runtime, kind: Kind): Promise<number> {
   return row.n
 }
 
+test('tag colors persist, replay, clear and reject values outside the palette', async () => {
+  const context = await runtime()
+  try {
+    const body = { name: 'Colored', slug: 'colored', color: 'violet' }
+    const key = crypto.randomUUID()
+    const tag = await json(await context.write(`${path}/tag`, body, 'POST', key), 201, catalogItemSchema)
+    equal(tag.color, 'violet')
+    deepEqual(await json(await context.write(`${path}/tag`, body, 'POST', key), 201, catalogItemSchema), tag)
+    deepEqual(await list(context, 'tag'), { items: [tag] })
+    const invalid = { ...body, color: 'url(https://evil.test)' }
+    equal(await refusal(await context.write(`${path}/tag`, invalid), 400), 'INVALID_REQUEST')
+    const update = { name: tag.name, slug: tag.slug, retired: false, expectedVersion: tag.version, color: 'neutral' }
+    const saved = await json(await context.write(`${path}/tag/${tag.id}`, update, 'PUT'), 200, catalogItemSchema)
+    equal(saved.color, 'neutral')
+    equal(saved.version, 1)
+    deepEqual(await list(context, 'tag'), { items: [saved] })
+    equal(await refusal(await context.write(`${path}/tag/${tag.id}`, update, 'PUT'), 409), 'EDIT_CONFLICT')
+  }
+  finally {
+    await context.dispose()
+  }
+}).catch((error: unknown) => { throw error })
+
 // Tags and series share one table, one schema and one repository, so the only thing that keeps
 // them apart is the kind predicate: a list or an update that ignores it silently merges two
 // catalogs that the admin surface renders as unrelated pages.

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { boundedString, safeURL, SLUG, UUID } from '@/content/base'
 import { block } from '@/content/blocks'
+import { tagColorSchema } from '@/content/tag-color'
 
 export const envelope = z.strictObject({
   format: z.literal('blocknote'),
@@ -23,6 +24,7 @@ export const envelope = z.strictObject({
           id: UUID,
           slug: SLUG,
           label: boundedString(200).min(1),
+          color: tagColorSchema.optional(),
         }),
       )
       .max(50),

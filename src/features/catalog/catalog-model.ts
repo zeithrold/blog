@@ -11,6 +11,7 @@ type CatalogManagerModel = CatalogState & {
   begin: (entry: CatalogEntry | null) => void
   setName: (value: string) => void
   setSlug: (value: string) => void
+  setColor: (value: CatalogEntry['color']) => void
   setRetired: (value: boolean) => void
   setQuery: (value: string) => void
   save: () => Promise<void>
@@ -39,6 +40,7 @@ export function useCatalogManager(kind: 'tag' | 'series', csrfToken: string, own
     begin: session.begin,
     setName: (value: string) => session.change('name', value),
     setSlug: (value: string) => session.change('slug', value),
+    setColor: (value: CatalogEntry['color']) => session.change('color', value),
     setRetired: (value: boolean) => session.change('retired', value),
     setQuery: session.setQuery,
     save: session.save,

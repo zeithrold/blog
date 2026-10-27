@@ -4,15 +4,18 @@ import { useId } from 'react'
 import { Checkbox, Input, Label } from '@/components/ui/ztd-me/client'
 import { EditorText } from '@/i18n/labels'
 import { utility2Class, utility3Class } from './catalog-utilities'
+import { TagColorField } from './tag-color-field'
 
 type Model = ReturnType<typeof useCatalogManager>
 
 export function CatalogFormFields({
   model,
   input,
+  kind,
 }: {
   model: Model
   input: React.RefObject<HTMLInputElement | null>
+  kind: 'tag' | 'series'
 }): ReactNode {
   const slugHelpId = useId()
   return (
@@ -46,6 +49,7 @@ export function CatalogFormFields({
       <p id={slugHelpId} className={utility2Class}>
         <EditorText value="Use lowercase letters, numbers and hyphens." />
       </p>
+      {kind === 'tag' && <TagColorField value={model.color} disabled={model.busy} onChange={model.setColor} />}
       {model.edit !== null && (
         <Label className="checkbox-field flex items-center gap-2.5 font-normal">
           <Checkbox

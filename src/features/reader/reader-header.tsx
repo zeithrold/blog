@@ -128,7 +128,12 @@ export function ReaderHeader({
             </a>
           ))}
           {meta.tags.map(tag => (
-            <a key={tag.id} href={`/tags/${tag.slug}`} className={layout6Class}>
+            <a
+              key={tag.id}
+              href={`/tags/${tag.slug}`}
+              className={`${layout6Class} tag-color`}
+              data-tag-color={tag.color ?? 'neutral'}
+            >
               <Hash size={13} aria-hidden="true" />
               {tag.label}
             </a>

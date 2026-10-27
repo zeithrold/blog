@@ -154,7 +154,7 @@ test('catalog snapshots, schedules and due publication use atomic live projectio
 }).catch((error: unknown) => { throw error })
 async function catalogFlow(context: Runtime, data: Awaited<ReturnType<typeof publishedFile>>) {
   const tag = await json(
-    await context.write('/api/admin/catalog/tag', { slug: 'systems', name: 'Systems' }),
+    await context.write('/api/admin/catalog/tag', { slug: 'systems', name: 'Systems', color: 'blue' }),
     201,
     catalogItemSchema,
   )
@@ -164,7 +164,7 @@ async function catalogFlow(context: Runtime, data: Awaited<ReturnType<typeof pub
     openDocumentSchema,
   )
   current.document.meta.tags = [
-    { id: tag.id, slug: tag.slug, label: tag.name },
+    { id: tag.id, slug: tag.slug, label: tag.name, color: tag.color },
   ]
   const saved = await json(
     await context.write(
@@ -188,7 +188,7 @@ async function catalogFlow(context: Runtime, data: Awaited<ReturnType<typeof pub
   await json(
     await context.write(
       `/api/admin/catalog/tag/${tag.id}`,
-      { expectedVersion: tag.version, slug: 'renamed', name: 'Renamed', retired: true },
+      { expectedVersion: tag.version, slug: 'renamed', name: 'Renamed', retired: true, color: 'red' },
       'PUT',
     ),
     200,
@@ -196,6 +196,15 @@ async function catalogFlow(context: Runtime, data: Awaited<ReturnType<typeof pub
   )
   equal((await context.fetch('/tags/systems')).status, 200)
   equal((await context.fetch('/tags/renamed')).status, 404)
+  const reopened = await json(
+    await context.fetch(`/api/admin/documents/${current.documentId}`),
+    200,
+    openDocumentSchema,
+  )
+  equal(reopened.document.meta.tags[0]?.color, 'blue')
+  const article = await context.fetch('/posts/full-service')
+  equal(article.status, 200)
+  equal((await article.text()).includes('data-tag-color="blue"'), true)
   equal((await context.fetch('/rss.xml')).status, 200)
   equal((await context.fetch('/sitemap.xml')).status, 200)
 }

@@ -1,4 +1,13 @@
 export const catalog = {
+  'Tag color': 'tagColor',
+  'Default color': 'defaultColor',
+  'Red': 'red',
+  'Orange': 'orange',
+  'Yellow': 'yellow',
+  'Green': 'green',
+  'Blue': 'blue',
+  'Violet': 'violet',
+  'Pink': 'pink',
   'Leave the catalog editor?': 'leaveTheCatalogEditor',
   'Unsaved form changes will be discarded. Saved catalog entries will remain.': 'unsavedCatalogNavigation',
   'New catalog entry': 'newCatalogEntry',

@@ -1,4 +1,13 @@
 export const catalog = {
+  tagColor: '标签颜色',
+  defaultColor: '默认',
+  red: '红色',
+  orange: '橙色',
+  yellow: '黄色',
+  green: '绿色',
+  blue: '蓝色',
+  violet: '紫色',
+  pink: '粉色',
   leaveTheCatalogEditor: '离开目录编辑器？',
   unsavedCatalogNavigation: '未保存的表单修改将被放弃，已保存的目录条目会保留。',
   newCatalogEntry: '新建分类项',
