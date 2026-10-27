@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { RevealPublicationProblem } from '@/features/editor/publication/publication-issue-list'
 import type { ScheduleModel, useScheduleList } from '@/features/editor/publication/schedule-controller'
 import type { Envelope } from '@/features/editor/workspace/document-model'
-import type { ContentSettingsWorkspace, Workspace } from '@/features/editor/workspace/editor-types'
+import type { Workspace } from '@/features/editor/workspace/editor-types'
 import { FileText, Send } from 'lucide-react'
 import { useRef, useState } from 'react'
 import {
@@ -19,6 +19,7 @@ import { PublicationSummary } from '@/features/editor/publication/publication-su
 import { useSchedule } from '@/features/editor/publication/schedule-controller'
 import { ScheduleSettings } from '@/features/editor/publication/schedule-settings'
 import { ReferenceSettings } from '@/features/editor/references/reference-settings'
+import { CoverField } from '@/features/editor/workspace/cover-field'
 import { EditorHistory } from '@/features/editor/workspace/editor-history'
 import { MetaFields } from '@/features/editor/workspace/meta-fields'
 import { SettingsDrawer } from '@/features/editor/workspace/settings-drawer'
@@ -38,7 +39,7 @@ const sectionHeadingClass = [
 type SettingsProps = {
   workspace: Workspace
   update: (patch: Partial<Envelope>) => void
-  restore: (revision: string) => Promise<void>
+  restore: (revision: string) => Promise<boolean>
   livePath: string | null
   schedules: ReturnType<typeof useScheduleList>
 }
@@ -159,7 +160,7 @@ function SettingsTabs(props: SettingsTabsProps): ReactNode {
 }
 
 export function ContentSettings({ workspace, update, livePath, referenceOpen, setReferenceOpen }: {
-  workspace: ContentSettingsWorkspace
+  workspace: Workspace
   update: (patch: Partial<Envelope>) => void
   livePath: string | null
   referenceOpen: boolean
@@ -173,6 +174,19 @@ export function ContentSettings({ workspace, update, livePath, referenceOpen, se
           {text('Metadata')}
         </h3>
         <MetaFields workspace={workspace} update={update} livePath={livePath} />
+        {workspace.props.initial.kind === 'article' && (
+          <CoverField
+            value={workspace.model.envelope.meta.cover}
+            busy={workspace.busy}
+            run={workspace.run}
+            update={cover => update({
+              meta: {
+                ...workspace.model.envelope.meta,
+                cover,
+              },
+            })}
+          />
+        )}
       </section>
       <section className={editorSectionClass}>
         <h3 className={sectionHeadingClass}>

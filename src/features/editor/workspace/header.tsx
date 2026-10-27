@@ -88,8 +88,8 @@ const layout4Class = [
 
 type HeaderProps = {
   workspace: Workspace
-  publish: (unpublish?: boolean) => Promise<void>
-  remove: () => Promise<void>
+  publish: (unpublish?: boolean) => Promise<boolean>
+  remove: () => Promise<boolean>
   livePath: string | null
   schedules: ScheduleModel['items']
 }
@@ -150,7 +150,10 @@ function HeaderActions({ workspace, publish, remove, livePath }: HeaderProps): R
         className="editor-publish-action max-[701px]:[&_>_svg]:hidden"
         aria-label={text(draft.ack.liveRevisionId === null ? 'Publish' : 'Update publication')}
         disabled={busy || workspace.model.uploading || draft.status === 'conflict'}
-        onClick={() => run(publish())}
+        onClick={() => run(
+          publish(),
+          text(draft.ack.liveRevisionId === null ? 'Published' : 'Publication updated.'),
+        )}
       >
         <Send size={16} aria-hidden="true" />
         <span className="editor-publish-full max-[701px]:hidden" aria-hidden="true">

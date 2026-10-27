@@ -74,14 +74,119 @@ there are no screenshots, traces, receipts or run ledgers to retain.
 and then `pnpm check` in one job. Dependency versions stay pinned; the workflow actions stay pinned to
 immutable commits.
 
+## Production readiness
+
+The checked-in `wrangler.jsonc` is a local configuration, not a production deployment target.
+Before building a release, configure the intended Worker name, a Custom Domain or route, the actual
+D1 database name and ID, and a private R2 bucket. Keep the binding names `DB`, `MEDIA` and `ASSETS`.
+Set `PUBLIC_ORIGIN` to the exact HTTPS origin, with no path or trailing slash. Requests to a different
+origin are rejected. Keep the minute Cron trigger: it drives scheduled publication and media cleanup.
+Do not expose the R2 bucket through a public bucket URL.
+
+Configure a Cloudflare Access application for both `/admin` and `/admin/*`, and both `/api/admin`
+and `/api/admin/*`. Public reading, search, RSS and sitemaps must remain public. Set
+`ACCESS_TEAM_DOMAIN` to the team hostname without `https://`, `ACCESS_AUD` to the application's
+audience, and `OWNER_SUBS` to a JSON array of allowed Access user `sub` values, not email addresses.
+Store a randomly generated `CSRF_SIGNING_SECRET` of at least 32 characters as a Worker Secret;
+never commit its value. `.dev.vars.example` documents the variable names, not production credentials.
+Leave `ALLOWED_PREVIEW_HOSTS` unset unless a separate owner-protected preview host is required.
+Set `BUILD_SHA` to the release commit so `/api/health` identifies the deployed version.
+
+Apply all D1 migrations explicitly to the intended production database before serving traffic;
+application startup does not migrate production. Review the generated `dist/server/wrangler.json`
+after `pnpm build` and use that generated configuration for deployment, not the source Worker
+entry point. `pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json` checks packaging
+without publishing; it does not verify credentials, remote resources, account limits or routing.
+Real deployment and remote migrations require separate authorization.
+
+Before release, run `pnpm check` and exercise these paths against the intended environment:
+
+- Anonymous public reading works; anonymous admin access and non-owner mutations are denied.
+- An owner can sign in, save Chinese text, upload media, refresh, preview, publish and unpublish.
+- Draft edits do not change the public article or its homepage presentation.
+- A scheduled article publishes and becomes searchable; inspect Cron failures and schedule lag.
+- Desktop and narrow-screen reading, keyboard navigation and browser back/forward remain usable.
+- Restore a paired database/media backup into an isolated environment and verify it before resuming
+  writes. A successful export alone is not recovery evidence.
+
+The health endpoint is a process/version probe, not a D1, R2 or Cron readiness check. Monitor real
+public reads, Worker errors, Cron failures, failed schedules, schedule lag and backup age as well.
+The operations page exposes storage and schedule status but does not perform an automatic backup.
+
+### Backup and restore contract
+
+Back up database rows and media together. The owner-only backup API uses the normal Access,
+same-origin, CSRF and idempotency protections for writes:
+
+1. Call `POST /api/admin/backups/freeze` and retain its `backupId`. The source remains publicly
+   readable but writes, scheduled publication and cleanup pause.
+2. For each table below, page through
+   `GET /api/admin/backups/{backupId}/rows?table={table}&after={cursor}`, starting at `0` and following
+   `nextCursor` until it is `null`. Preserve every returned column except the transport `_cursor`.
+3. Page through `GET /api/admin/backups/{backupId}/manifest?after={cursor}`, starting with an empty
+   cursor. Copy each object to durable backup storage under its original `key`, retaining metadata,
+   and verify its byte length and SHA-256 against the manifest. Do not finish the source backup
+   until both rows and media are safely retained.
+4. Finish on the **source** with `POST /api/admin/backups/finish`, passing `backupId` and the SHA-256
+   of the retained manifest. Pass `manifestSha256: null` to mark a failed backup and release its
+   maintenance lock. A source backup abandoned after freezing stays paused until explicitly finished.
+
+Restore only into an empty database with all migrations applied, paired with an isolated private
+bucket. The insertion order is:
+
+```text
+site_state, catalog, assets, documents, revisions, revision_assets, revision_catalog,
+published_documents, published_catalog, publication_events, schedules, mutations
+```
+
+Import the rows in **one D1 transaction/batch**, beginning with `PRAGMA defer_foreign_keys=ON` to
+resolve the documents/revisions reference cycle. Replace the migration-created singleton
+`site_state` row; insert other rows normally. Do not split the import into independently committed
+statements. Exported `site_state` intentionally starts in ownerless maintenance with `content_bytes=0`;
+inserting revisions rebuilds the storage counter, and inserting public projections rebuilds FTS.
+Do not import FTS shadow tables, transaction guards, backup runs or backup pins from another instance.
+
+Restore and checksum the media before routing traffic to the new instance. Inspect operations,
+article/homepage reads, search, taxonomy, RSS, sitemap, private previews and media. Confirm
+`maintenance=1`, `maintenanceOwner=null`, matching content counts and the rebuilt storage counter.
+Only after accepting the restored state, call `POST /api/admin/operations/resume` with
+`expectedGeneration` from the operations response, or use the operations page's resume action.
+Do not call backup `finish` on the restored instance: it does not own the source backup run.
+
+The integration suite exercises this contract with real local D1/R2 bindings and the built Worker.
+It is not a production backup scheduler or a general-purpose restore CLI; remote import tooling,
+transaction preservation, backup retention and off-account storage still need an operator-owned
+rehearsal before release.
+
 ## Public reading design
 
-The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI, ruled
-article rows and real publication metadata. Display type caps at 50px on wide layouts and 36px on
-narrow layouts. Secondary public titles share the Serif section scale at 40/32px; recovery and
-license titles use 32/26px. Search results follow the same ruled rows as the index, with body-sized
-excerpts. Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
+The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI and
+real publication metadata. Articles form a two-column staggered card feed above 701px and a single
+column on narrow screens. Optional covers reserve a 3:2 image area; text-only cards are a first-class
+variant, not a missing-image placeholder. Cards retain chronological DOM, keyboard and reading order.
+A small ResizeObserver-driven grid row span calculation enables the staggered layout; without
+JavaScript the server-rendered cards remain readable in an ordinary grid. Pagination remains explicit.
+Taxonomy and search retain their compact ruled lists.
+
+On entry, feed cards fade in and rise 8px over 340ms, with a 35ms stagger capped at 175ms.
+The animation is CSS-only and runs on the inner card, never on the grid item measured for masonry.
+It does not hide content behind a scroll observer, replay on every resize, or require JavaScript.
+Reduced-motion preferences disable it, and keyboard-focused cards appear immediately.
+
+Display type caps at 50px on wide layouts and 36px on narrow layouts. Secondary public titles share
+the Serif section scale at 40/32px; recovery and license titles use 32/26px. Feed titles use 23/21px.
+Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
 Compact UI text retains reachable controls and visible keyboard focus.
+
+Article covers are chosen or cleared in the editor's metadata settings using the existing image
+library. An optional description supplies alt text; an empty description treats the image as
+decorative beside its titled link. The canonical `meta.cover` field is optional for older documents.
+Covers are normal image references retained by revisions, and homepage covers change only when the
+corresponding revision is published. Migration `0004_published_cover.sql` must precede this release.
+The new reader accepts old documents, but older strict readers reject revisions containing
+`meta.cover` (including `null`). Do not roll back only the Worker to a pre-cover release after new
+revisions have been saved: retain a cover-compatible reader or restore a paired pre-release snapshot.
+The added columns alone do not make older canonical decoders forward-compatible.
 
 Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before the
 bundled declarations. Keep Noto language coverage and the existing font CSP. A declared font family is
@@ -114,6 +219,18 @@ Global CSS stays under `src/app/styles`. Translation resources and phrase mappin
 semantic groups, including editor blocks, tables, references, draft state, and preview. Existing
 `site`, `editor`, and `documents` namespaces, translation keys, and phrase lookup behavior are
 retained.
+
+## Admin feedback
+
+Transient results of explicit user actions use Sonner toasts, emitted only after the operation is
+confirmed. Initial rendering, background refresh and draft autosave must not produce success toasts.
+Do not turn a persisted property into a toast effect: a loaded article being published is not a new
+publication event.
+
+Keep durable publication/save/maintenance badges, validation details, conflicts, recovery choices,
+upload progress and other actionable problems in place. A toast does not replace information the
+author needs to inspect or resolve. When a transient success message moves to a toast, remove its
+inline duplicate rather than shifting the surrounding layout.
 
 ## Build and repository conventions
 

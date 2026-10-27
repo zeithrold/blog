@@ -28,8 +28,8 @@ export type DocumentActionsWorkspace = {
 
 type Props = {
   workspace: DocumentActionsWorkspace
-  publish: (unpublish?: boolean) => Promise<void>
-  remove: () => Promise<void>
+  publish: (unpublish?: boolean) => Promise<boolean>
+  remove: () => Promise<boolean>
   livePath: string | null
 }
 
@@ -146,7 +146,10 @@ function DocumentConfirmation({
       close={close}
       accept={() => {
         close()
-        workspace.run(confirmation === 'unpublish' ? publish(true) : remove())
+        workspace.run(
+          confirmation === 'unpublish' ? publish(true) : remove(),
+          confirmation === 'unpublish' ? text('Unpublished.') : undefined,
+        )
       }}
     />
   )

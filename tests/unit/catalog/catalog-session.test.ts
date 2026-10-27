@@ -98,16 +98,14 @@ test('a confirmed catalog save survives a failed read and ignores an older read'
     const reading = session.refresh()
     session.change('name', saved.name)
     session.change('slug', saved.slug)
-    await session.save()
+    const outcome = await session.save()
     stale.resolve(Response.json({ items: [] }))
     await reading
     deepEqual(session.snapshot().data?.items, [saved])
     equal(session.snapshot().dirty, false)
     equal(session.snapshot().busy, false)
-    equal(session.snapshot().notice, 'Catalog entry created.')
+    equal(outcome, 'created')
     assert.match(session.snapshot().loadError, /Unable to load/)
-    session.change('name', 'Next entry')
-    equal(session.snapshot().notice, '')
   }
   finally {
     fetch.mock.restore()
@@ -140,10 +138,9 @@ test('an in-flight catalog save keeps its target and finishes after its view uns
     equal(session.snapshot().slug, base.slug)
     unsubscribe()
     response.resolve(Response.json({ ...base, name: 'Saved', version: 1 }))
-    await saving
+    equal(await saving, 'saved')
     equal(writes, 1)
     equal(session.snapshot().dirty, false)
-    equal(session.snapshot().notice, 'Catalog entry saved.')
   }
   finally {
     fetch.mock.restore()

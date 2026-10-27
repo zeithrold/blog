@@ -13,7 +13,8 @@ type Model = {
   updatedAt: number | null
   setConfirm: (value: boolean) => void
   refresh: () => Promise<void>
-  resume: () => Promise<void>
+  /** Resolves `true` only when the server confirmed writes resumed. */
+  resume: () => Promise<boolean>
 }
 
 export function useOperations(csrfToken: string): Model {
@@ -27,7 +28,7 @@ export function useOperations(csrfToken: string): Model {
     setError('')
     await resource.refresh()
   }
-  const resume = async (): Promise<void> => {
+  const resume = async (): Promise<boolean> => {
     const data = resource.data
     if (
       data === null
@@ -35,7 +36,7 @@ export function useOperations(csrfToken: string): Model {
       || data.maintenance !== 1
       || data.maintenanceOwner !== null
     ) {
-      return
+      return false
     }
     flightRef.current = true
     setBusy(true)
@@ -47,9 +48,11 @@ export function useOperations(csrfToken: string): Model {
         schema: resumeSchema,
       })
       await refresh()
+      return true
     }
     catch {
       setError('Could not resume writes. Refresh and review the current maintenance state.')
+      return false
     }
     finally {
       flightRef.current = false

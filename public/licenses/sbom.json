@@ -5740,6 +5740,21 @@
       ]
     },
     {
+      "name": "sonner",
+      "version": "2.0.8",
+      "license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/emilkowalski/sonner.git"
+      },
+      "licenseFiles": [
+        {
+          "name": "LICENSE.md",
+          "sha256": "da9201378c36ffd81f51ad0b305f3f0981e90bc558789210ad65d1161eec3b7d"
+        }
+      ]
+    },
+    {
       "name": "source-map-js",
       "version": "1.2.2",
       "license": "BSD-3-Clause",

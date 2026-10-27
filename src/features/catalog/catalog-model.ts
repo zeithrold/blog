@@ -13,7 +13,7 @@ type CatalogManagerModel = CatalogState & {
   setSlug: (value: string) => void
   setRetired: (value: boolean) => void
   setQuery: (value: string) => void
-  save: () => Promise<void>
+  save: () => Promise<'created' | 'saved' | null>
   refresh: () => Promise<void>
 }
 

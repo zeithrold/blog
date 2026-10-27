@@ -42,4 +42,5 @@ export const operations = {
   'No completed backup recorded': 'noCompletedBackupRecorded',
   'Review storage, publication jobs and recovery before making operational changes.':
     'reviewStoragePublicationJobsAndRecoveryBeforeMaking',
+  'Writes resumed.': 'writesResumed',
 } as const

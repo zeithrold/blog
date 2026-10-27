@@ -16,6 +16,12 @@ export function assetReferences(document: Document): AssetReference[] {
       role,
     })
   }
+  // A cover is an ordinary image asset: it must stay ready, be retained by GC,
+  // and be reachable through the public asset route while its revision is live.
+  const cover = document.meta.cover
+  if (cover !== undefined && cover !== null) {
+    add(cover.assetId, 'image')
+  }
   for (const { block } of allBlocks(document.blocks)) {
     if (!MEDIA_TYPES.has(block.type)) {
       continue

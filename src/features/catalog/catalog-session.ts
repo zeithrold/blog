@@ -9,7 +9,6 @@ export type CatalogState = CatalogFields & {
   busy: boolean
   dirty: boolean
   error: string
-  notice: string
   query: string
   data: { items: CatalogEntry[] } | null
   loading: boolean
@@ -26,7 +25,6 @@ function emptyState(): CatalogState {
     busy: false,
     dirty: false,
     error: '',
-    notice: '',
     query: '',
     data: null,
     loading: true,
@@ -75,12 +73,12 @@ export class CatalogSession {
     this.selection++
     this.client = new Client(this.client.csrfToken, this.owner)
     const { name = '', slug = '', retired = false } = edit ?? {}
-    this.update({ edit, name, slug, retired, error: '', notice: '' })
+    this.update({ edit, name, slug, retired, error: '' })
   }
 
   change = <K extends keyof CatalogFields>(field: K, value: CatalogFields[K]): void => {
     if (!this.state.busy) {
-      this.update({ [field]: value, notice: '' })
+      this.update({ [field]: value })
     }
   }
 
@@ -109,15 +107,16 @@ export class CatalogSession {
     }
   }
 
-  save = async (): Promise<void> => {
+  /** Resolves with the confirmed save, or `null` when skipped or refused. */
+  save = async (): Promise<'created' | 'saved' | null> => {
     if (this.state.busy || !this.state.dirty || this.disposed) {
-      return
+      return null
     }
     const { edit, name, slug, retired } = this.state
     const path = `/api/admin/catalog/${this.kind}`
     this.selection++
     this.request++
-    this.update({ busy: true, error: '', notice: '', loading: false })
+    this.update({ busy: true, error: '', loading: false })
     try {
       const saved = await this.client.mutate({
         path: edit === null ? path : `${path}/${edit.id}`,
@@ -126,16 +125,18 @@ export class CatalogSession {
         schema: catalogItemSchema,
         signal: this.lifetime.signal,
       })
-      this.accept(saved, edit === null)
+      this.accept(saved)
       await this.refresh()
+      return edit === null ? 'created' : 'saved'
     }
     catch (failure) {
       const error = adminError(failure, 'Unable to save the catalog entry. Your changes are kept in the form.')
       this.update({ busy: false, error })
+      return null
     }
   }
 
-  private accept(saved: CatalogEntry, created: boolean): void {
+  private accept(saved: CatalogEntry): void {
     this.selection++
     this.update({
       edit: null,
@@ -143,7 +144,6 @@ export class CatalogSession {
       slug: '',
       retired: false,
       busy: false,
-      notice: created ? 'Catalog entry created.' : 'Catalog entry saved.',
       data: { items: acceptCatalogEntry(this.state.data?.items ?? [], saved) },
     })
   }

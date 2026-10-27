@@ -48,19 +48,23 @@ const backTopStyle9 = [
   'back-top inline-flex items-center gap-2 min-h-11 text-help no-underline hover:text-foreground',
 ].join(' ')
 
+export function PostListEmpty(): ReactNode {
+  return (
+    <div className={emptyStateStyle1}>
+      <span className={emptyIconStyle2} aria-hidden="true"><PenLine size={23} strokeWidth={1.5} /></span>
+      <div>
+        <p className="empty-title m-0 mb-1 text-body font-medium"><SiteText value="No published posts yet." /></p>
+        <p className="m-0 text-muted-foreground text-help leading-[1.8]">
+          <SiteText value="New writing will appear here once it is published." />
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function PostList({ items, start = 0 }: { items: PublicItem[], start?: number }): ReactNode {
   if (items.length === 0) {
-    return (
-      <div className={emptyStateStyle1}>
-        <span className={emptyIconStyle2} aria-hidden="true"><PenLine size={23} strokeWidth={1.5} /></span>
-        <div>
-          <p className="empty-title m-0 mb-1 text-body font-medium"><SiteText value="No published posts yet." /></p>
-          <p className="m-0 text-muted-foreground text-help leading-[1.8]">
-            <SiteText value="New writing will appear here once it is published." />
-          </p>
-        </div>
-      </div>
-    )
+    return <PostListEmpty />
   }
   return (
     <ol className="post-list grid m-0 p-0 list-none border-b border-border">

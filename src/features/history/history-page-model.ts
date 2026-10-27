@@ -34,14 +34,16 @@ export type HistoryModel = {
   selected: SavedRevision
   busy: boolean
   loading: boolean
-  notice: 'restored' | 'published' | 'conflict' | null
+  /** Only a refusal that needs review in place; successes are announced by the page. */
+  notice: 'conflict' | null
   error: string
   errorIssues: PublicationIssue[]
   refreshRequired: boolean
   choose: (id: string, side: 'baseline' | 'selected') => Promise<void>
   more: () => Promise<void>
   refresh: () => Promise<void>
-  perform: (action: HistoryAction) => Promise<void>
+  /** Resolves `true` only when the server confirmed the action. */
+  perform: (action: HistoryAction) => Promise<boolean>
 }
 
 export function useHistoryPage(props: HistoryPageProps): HistoryModel {
@@ -69,12 +71,18 @@ export function useHistoryPage(props: HistoryPageProps): HistoryModel {
   return {
     ...state,
     choose: async (id, side) => await chooseRevision(path, state, id, side),
-    more: async () => await execute(more),
-    refresh: async () => await execute(refresh),
+    more: async () => {
+      await execute(more)
+    },
+    refresh: async () => {
+      await execute(refresh)
+    },
     perform: async (action) => {
-      if (!state.refreshRequired && !state.loading) {
-        await execute(async () => await performHistoryAction(path, state, mutations.client, action))
+      if (state.refreshRequired || state.loading) {
+        return false
       }
+      const confirmed = await execute(async () => await performHistoryAction(path, state, mutations.client, action))
+      return confirmed === true
     },
   }
 }
@@ -138,23 +146,24 @@ function useHistoryState(props: HistoryPageProps): {
   }
 }
 type HistoryState = ReturnType<typeof useHistoryState>
-function useHistoryFlight(state: HistoryState): (task: () => Promise<void>) => Promise<void> {
+function useHistoryFlight(state: HistoryState): <R>(task: () => Promise<R>) => Promise<R | null> {
   const flightRef = useRef(false)
-  return async (task) => {
+  return async <R>(task: () => Promise<R>): Promise<R | null> => {
     if (flightRef.current) {
-      return
+      return null
     }
     flightRef.current = true
     state.setBusy(true)
     state.setError('')
     state.setErrorIssues([])
     try {
-      await task()
+      return await task()
     }
     catch (failure) {
       const code = failure instanceof APIError ? failure.code : 'CONNECTION_FAILED'
       state.setError(state.refreshRequired ? 'HISTORY_REFRESH_REQUIRED' : code)
       state.setErrorIssues(failure instanceof APIError ? failure.issues : [])
+      return null
     }
     finally {
       flightRef.current = false
@@ -217,7 +226,7 @@ async function performHistoryAction(
   state: HistoryState,
   client: Client,
   action: HistoryAction,
-): Promise<void> {
+): Promise<boolean> {
   state.setNotice(null)
   let ack: Acknowledgement
   try {
@@ -232,7 +241,7 @@ async function performHistoryAction(
       state.setRefreshRequired(true)
       state.setNotice('conflict')
       await refreshAfterAction(path, state)
-      return
+      return false
     }
     if (failure instanceof APIError && failure.code === 'MAINTENANCE') {
       throw failure
@@ -240,12 +249,13 @@ async function performHistoryAction(
     if (outcomeUnknown(failure)) {
       state.setRefreshRequired(true)
       state.setError('HISTORY_OUTCOME_UNKNOWN')
-      return
+      return false
     }
     throw failure
   }
   acceptHistoryAction(state, ack, action)
   await refreshAfterAction(path, state)
+  return true
 }
 
 function outcomeUnknown(failure: unknown): boolean {
@@ -266,7 +276,6 @@ function acceptHistoryAction(state: HistoryState, ack: Acknowledgement, action: 
     state.setBaseline({ revisionId: ack.headRevisionId, document })
   }
   state.setRefreshRequired(true)
-  state.setNotice(action === 'restore' ? 'restored' : 'published')
 }
 
 async function refreshAfterAction(path: string, state: HistoryState): Promise<void> {

@@ -228,18 +228,20 @@ export class DraftCoordinator {
   }
 
   // Cancellation changes metadata only. Wait for an in-flight save without
-  // requiring a failing or incomplete draft to become saveable first.
-  async mutateMetadata(operation: () => Promise<Acknowledgement>): Promise<void> {
+  // requiring a failing or incomplete draft to become saveable first. Resolves
+  // `true` only when the acknowledgement was adopted, so a conflict cannot be
+  // reported as a completed change.
+  async mutateMetadata(operation: () => Promise<Acknowledgement>): Promise<boolean> {
     this.metadataBusy = true
     try {
       await this.running
       const ack = await operation()
       if (this.disposed) {
-        return
+        return false
       }
       if (ack.headRevisionId !== this.acknowledgement.headRevisionId) {
         this.conflict()
-        return
+        return false
       }
       this.generation++
       this.packet = null
@@ -253,6 +255,7 @@ export class DraftCoordinator {
       else {
         this.status(this.dirty ? 'dirty' : 'saved', ack)
       }
+      return true
     }
     finally {
       this.metadataBusy = false

@@ -36,4 +36,5 @@ export const operations = {
   encryptedBackupsAreExportedWithTheOwnerBackupCommandACompletedExport: '加密备份通过所有者备份命令导出，完成后会在此记录时间。',
   noCompletedBackupRecorded: '尚无已完成的备份',
   reviewStoragePublicationJobsAndRecoveryBeforeMaking: '查看存储、发布任务和恢复状态。',
+  writesResumed: '已恢复写入。',
 } as const

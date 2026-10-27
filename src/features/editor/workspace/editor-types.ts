@@ -29,6 +29,8 @@ export type Workspace = {
   model: DocumentModel
   draft: Draft
   busy: boolean
-  run: (task: Promise<unknown>) => void
-  perform: (task: () => Promise<void>, options?: { saveDraft: boolean }) => Promise<void>
+  /** Runs a task; `success` announces only a result the server confirmed. */
+  run: (task: Promise<unknown>, success?: string) => void
+  /** Resolves `true` only when the task ran and completed. */
+  perform: (task: () => Promise<void>, options?: { saveDraft: boolean }) => Promise<boolean>
 }

@@ -19,8 +19,10 @@ export async function documentMetadata(
   if (document === null) {
     return {}
   }
-  const canonical = `${trustedOrigin(env).origin}/${kind}/${slug}`
-  const preview = (await headers()).get('x-blog-request-origin') !== trustedOrigin(env).origin
+  const origin = trustedOrigin(env).origin
+  const canonical = `${origin}/${kind}/${slug}`
+  const preview = (await headers()).get('x-blog-request-origin') !== origin
+  const cover = document.meta.cover ?? null
   return {
     title: document.meta.title,
     description: document.meta.description,
@@ -37,6 +39,17 @@ export async function documentMetadata(
       description: document.meta.description,
       url: canonical,
       locale: document.meta.documentLocale === 'zh-CN' ? 'zh_CN' : 'en_US',
+      // The cover is already a live, publicly reachable asset; no new SEO surface.
+      ...(cover === null
+        ? {}
+        : {
+            images: [
+              {
+                url: `${origin}/assets/${cover.assetId}`,
+                alt: cover.alt,
+              },
+            ],
+          }),
     },
   }
 }

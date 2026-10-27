@@ -70,4 +70,6 @@ export const publication = {
   'Previous month': 'previousMonth',
   'Choose month': 'chooseMonth',
   'Choose year': 'chooseYear',
+  'Publication scheduled.': 'publicationScheduled',
+  'Scheduled publication cancelled.': 'scheduledPublicationCancelled',
 } as const

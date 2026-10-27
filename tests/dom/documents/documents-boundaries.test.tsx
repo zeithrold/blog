@@ -15,6 +15,7 @@ import {
   click,
   combobox,
   drainHostTask,
+  expectToast,
   mountDocuments,
   one,
   openCombobox,
@@ -157,7 +158,7 @@ it('a confirmed restore survives a failed refresh and preserves the list state',
     await settleDocuments(view)
 
     expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.loadError)
-    expect(view.container.querySelector('[role="status"]')?.textContent).toContain(copy.restored)
+    await expectToast(view, copy.restored)
     expect(button(siblingRow, copy.restore).disabled).toBe(false)
     expect(Array.from(list.querySelectorAll('li')).some(row => row.textContent.includes(target.title)))
       .toBe(false)
@@ -222,7 +223,7 @@ it('Chinese restore notices render in the compact viewport', async () => {
     held.open()
     await settleDocuments(view)
     expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.loadError)
-    expect(view.container.querySelector('[role="status"]')?.textContent).toContain(copy.restored)
+    await expectToast(view, copy.restored)
   }
   finally {
     held.open()
@@ -262,12 +263,13 @@ it('a lost restore response retries with the same idempotency key', async () => 
   })
   await settleDocuments(view)
   expect(view.container.querySelector('[role="alert"]')?.textContent).toContain(copy.restoreUnknown)
+  expect(view.container.querySelector('[data-sonner-toast]')).toBeNull()
 
   act(() => {
     click(button(view.container, copy.retry))
   })
   await settleDocuments(view)
-  expect(view.container.querySelector('[role="status"]')?.textContent).toContain(copy.restored)
+  await expectToast(view, copy.restored)
   expect(Array.from(list.querySelectorAll('li')).some(item => item.textContent.includes(target.title)))
     .toBe(false)
   const writes = view.api.calls.filter(call => call.method === 'POST')

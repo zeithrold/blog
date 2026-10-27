@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react'
 import type { HistoryAction, HistoryModel, HistoryPageProps } from '@/features/history/history-page-model'
 import type { BlogMessageKey, BlogTranslator } from '@/i18n/instance'
-import { AlertCircle, ArrowLeft, CircleCheck, LoaderCircle, RefreshCw } from 'lucide-react'
+import { AlertCircle, ArrowLeft, LoaderCircle, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/ztd-me/client'
@@ -17,6 +17,7 @@ import { RevisionDiffView } from '@/features/history/revision-diff-view'
 import { useBlogTranslation } from '@/i18n/use-translation'
 import { background } from '@/shared/admin/background'
 import { issueLabels } from '@/shared/admin/publication-issue-labels'
+import { announceConfirmed } from '@/shared/admin/toast-feedback'
 import {
   utility1Class,
   utility2Class,
@@ -153,7 +154,14 @@ export function HistoryPage(props: HistoryPageProps): ReactNode {
           accept={() => {
             const action = confirm
             setConfirm(null)
-            background(model.perform(action), () => {})
+            const task = model.perform(action)
+            background(task, () => {})
+            announceConfirmed(
+              task,
+              text(action === 'restore'
+                ? 'createdANewDraftRevisionThePublishedRevisionIsUnchanged'
+                : 'publishedTheSelectedRevisionTheDraftRevisionIsUnchanged'),
+            )
           }}
         />
       )}
@@ -204,17 +212,12 @@ function HistoryHeader({ model, text }: { model: HistoryModel, text: BlogTransla
   )
 }
 function HistoryNotice({ model, text }: { model: HistoryModel, text: BlogTranslator<'editor'> }): ReactNode {
-  const messages = {
-    restored: text('createdANewDraftRevisionThePublishedRevisionIsUnchanged'),
-    published: text('publishedTheSelectedRevisionTheDraftRevisionIsUnchanged'),
-    conflict: text('anotherTabChangedThisDocumentReviewTheLatest'),
-  }
   return model.notice === null
     ? null
     : (
         <p role="status" className={layout9Class}>
-          <CircleCheck size={18} aria-hidden="true" />
-          {messages[model.notice]}
+          <AlertCircle size={18} aria-hidden="true" />
+          {text('anotherTabChangedThisDocumentReviewTheLatest')}
         </p>
       )
 }

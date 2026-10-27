@@ -42,5 +42,6 @@ export const common = {
   'Simplified Chinese': 'simplifiedChinese',
   'Saving...': 'saving',
   'Close': 'close',
+  'Notifications': 'notifications',
   'Done': 'done',
 } as const

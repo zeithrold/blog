@@ -26,6 +26,7 @@ export type AssetRow = {
   width: number | null
   height: number | null
   gc_after: number | null
+  gc_attempts: number
 }
 
 export function descriptor(row: AssetRow): z.infer<typeof assetDescriptorSchema> {

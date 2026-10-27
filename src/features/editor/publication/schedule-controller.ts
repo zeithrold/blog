@@ -21,7 +21,8 @@ export type ScheduleModel = {
   update: (field: 'localTime' | 'timezone', value: string) => void
   times: () => Promise<void>
   load: () => Promise<void>
-  submit: (id?: string) => Promise<void>
+  /** Resolves `true` only when the schedule was created or cancelled. */
+  submit: (id?: string) => Promise<boolean>
 }
 
 export function useScheduleList(workspace: Workspace):
@@ -38,21 +39,26 @@ export function useSchedule(workspace: Workspace, list: ReturnType<typeof useSch
   const load = async (): Promise<void> => {
     await list.refresh()
   }
-  const submit = async (id?: string): Promise<void> => {
+  const submit = async (id?: string): Promise<boolean> => {
     if (flightRef.current) {
-      return
+      return false
     }
     flightRef.current = true
     setBusy(true)
+    let confirmed = false
     try {
-      await workspace.perform(async () => {
+      const ran = await workspace.perform(async () => {
         if (id === undefined) {
           await submitSchedule({ workspace, base, ...time })
         }
-        else {
-          await workspace.draft.coordinator.mutateMetadata(async () => await cancelSchedule(workspace, base, id))
+        else if (!(await workspace.draft.coordinator.mutateMetadata(
+          async () => await cancelSchedule(workspace, base, id),
+        ))) {
+          return
         }
+        confirmed = true
       }, { saveDraft: id === undefined })
+      return ran && confirmed
     }
     finally {
       flightRef.current = false

@@ -29,11 +29,6 @@ export const layout5Class = [
   'bg-[color-mix(in_srgb,_var(--ztd-destructive)_7%,_var(--ztd-surface))]',
 ].join(' ')
 
-export const layout6Class = [
-  'notice [&_button]:mt-2 [&_button]:mr-2 [&_button]:mb-0 [&_button]:ml-0 my-4 mx-0 py-3 px-4',
-  'border border-border rounded-[12px] bg-card text-help leading-[1.6]',
-].join(' ')
-
 export const layout7Class = [
   'empty-state document-empty flex items-start gap-4 p-6 [border:1px_dashed_var(--ztd-border)]',
   'rounded-[12px] [&_p]:m-0 [&_p]:text-muted-foreground [&_p]:text-help [&_p]:leading-[1.7]',

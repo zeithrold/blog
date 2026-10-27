@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { FrontendPreferences, PreferencePolicy } from '@/components/ui/ztd-me'
 import { useCallback, useState } from 'react'
 import { I18nextProvider } from 'react-i18next'
+import { BlogToaster } from '@/components/toaster'
 import { FrontendProvider } from '@/components/ui/ztd-me/client'
 import { createBlogI18n, reportTranslationError } from '@/i18n/instance'
 
@@ -25,7 +26,10 @@ export function BlogFrontend({ children, initialPreferences, policy, styleNonce 
       styleNonce={styleNonce}
       onPreferencesChange={updateLocale}
     >
-      <I18nextProvider i18n={instance}>{children}</I18nextProvider>
+      <I18nextProvider i18n={instance}>
+        {children}
+        <BlogToaster />
+      </I18nextProvider>
     </FrontendProvider>
   )
 }

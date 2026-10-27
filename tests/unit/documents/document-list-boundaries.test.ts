@@ -61,8 +61,7 @@ test('confirmed restoration removes its trash row and holds other writes until r
     await controller.create('article')
     equal(writes, 1)
     finish(Response.json({ code: 'UNAVAILABLE' }, { status: 503 }))
-    await restored
-    equal(controller.snapshot().restored, true)
+    equal(await restored, true)
     equal(controller.snapshot().error, 'load')
     equal(controller.snapshot().mutation, null)
     deepEqual(controller.snapshot().entries, [other])

@@ -14,6 +14,7 @@ import {
   button,
   click,
   combobox,
+  expectToast,
   mountDocuments,
   one,
   openCombobox,
@@ -236,7 +237,7 @@ it('trash rows restore to drafts and leave the trash list', async () => {
     click(restore)
   })
   await settleDocuments(view)
-  expect(view.container.querySelector('[role="status"]')?.textContent).toContain(copy.restored)
+  await expectToast(view, copy.restored)
   expect(Array.from(list.querySelectorAll('li')).some(item => item.textContent.includes(target.title)))
     .toBe(false)
   const restoreCall = view.api.calls.find(call => call.method === 'POST')

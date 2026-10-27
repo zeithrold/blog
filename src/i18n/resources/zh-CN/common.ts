@@ -38,4 +38,5 @@ export const common = {
   english: '英语',
   simplifiedChinese: '简体中文',
   close: '关闭',
+  notifications: '通知',
 } as const

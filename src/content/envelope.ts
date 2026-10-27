@@ -14,6 +14,16 @@ export const envelope = z.strictObject({
     ]),
     documentLocale: z.enum(['en', 'zh-CN']),
     description: boundedString(500),
+    // Absent on documents created before covers existed; null means "no cover".
+    // Forward-only: a strict decoder from before this field rejects a document
+    // that carries it, so rolling back the Worker needs restored cover-less data.
+    cover: z
+      .strictObject({
+        assetId: UUID,
+        alt: boundedString(2000),
+      })
+      .nullable()
+      .optional(),
     seo: z.strictObject({
       noindex: z.boolean(),
     }),
