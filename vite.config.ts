@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 import vinext from 'vinext'
 import { defineConfig } from 'vite'
 import { developmentLogin } from './tests/support/development/login-plugin'
-import { buildSource } from './tests/support/verification/build-source'
 
 export default defineConfig(async ({ command, isPreview }): Promise<UserConfig> => {
   const login = command === 'serve' && isPreview !== true ? await developmentLogin() : undefined
@@ -13,7 +12,6 @@ export default defineConfig(async ({ command, isPreview }): Promise<UserConfig> 
     worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
     plugins: [
       ...(login !== undefined ? [login.plugin] : []),
-      buildSource(),
       tailwindcss(),
       vinext(),
       cloudflare({

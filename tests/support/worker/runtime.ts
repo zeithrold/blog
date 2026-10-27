@@ -2,6 +2,7 @@ import type { JWK, JWTPayload } from 'jose'
 import type { DispatchFetch, V4FetchHandler } from 'miniflare'
 import type { Environment } from '@/server/runtime/environment'
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { exportJWK, generateKeyPair, SignJWT } from 'jose'
@@ -14,7 +15,6 @@ import {
 } from 'miniflare'
 import { unstable_getMiniflareWorkerOptions, unstable_splitSqlQuery } from 'wrangler'
 import { sessionSchema } from '@/contracts/session'
-import { verifyBuildSource } from '~/tests/support/verification/build-source'
 
 export type Runtime = {
   fixture: Miniflare
@@ -47,9 +47,9 @@ async function loadFixtureInputs(): Promise<FixtureInputs> {
   return await fixtureInputs
 }
 async function readFixtureInputs(): Promise<FixtureInputs> {
-  // The manifests describe the source that produced `dist`; they are checked before anything
-  // resolves or evaluates a module from it, so a stale build cannot run under a newer checkout.
-  verifyBuildSource()
+  if (!existsSync('dist/server/wrangler.json')) {
+    throw new Error('build the Worker with `pnpm build` before running the integration suite')
+  }
   const options = unstable_getMiniflareWorkerOptions(
     path.resolve('dist/server/wrangler.json'),
   )

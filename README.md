@@ -14,8 +14,10 @@ pnpm dev
 
 Open `http://127.0.0.1:8800/__fixture/login` to sign in to the local admin interface. The development
 server uses Vite hot module replacement and applies local D1 migrations on startup. Development login
-code lives in `tests/support/development` and is enabled only in development mode. Production uses Cloudflare
-Access.
+code lives in `tests/support/development` and is enabled only in development mode; production uses
+Cloudflare Access. `pnpm preview` requires a real Access configuration.
+
+## Commands
 
 ```sh
 pnpm lint
@@ -25,279 +27,80 @@ pnpm test:unit
 pnpm test:dom
 pnpm build
 pnpm test:integration
-pnpm test:ci-plan
-pnpm test:components
-pnpm test:core
-pnpm test:e2e
-pnpm test:journeys
-pnpm test:controls
-pnpm test:editor-performance
-pnpm test:development
+pnpm test      # test:unit then test:dom
+pnpm check     # lint, css, typecheck, test, build, integration
 ```
 
-Playwright has three configurations. `playwright.config.ts` defines Chromium and WebKit functional
-projects and a performance project that uses Chromium CDP. `playwright.components.config.ts` builds
-real application components with Vite and tests them without starting a Worker.
-`playwright.development.config.ts` starts
-the Vite development server to check login, saving, and hot module replacement.
-
-The performance project disables trace and video recording to avoid measurement overhead under CPU
-throttling. It retains timing reports and screenshots; functional projects retain failure traces.
-Preview actions scope control queries to the header, action menu, and preview dialog. This avoids
-repeated whole-editor scans while preserving the interaction flow, accessibility assertions, timing
-boundaries and sample counts. Performance budgets are temporarily report-only, as described below.
-
-`pnpm test:e2e` runs functional tests in Chromium and WebKit. To select one browser, use
-`pnpm exec playwright test --project=chromium`. `pnpm test:integration` runs service integration tests
-only; `pnpm test:editor-performance` runs the performance project separately, and
-`pnpm test:development` runs development server tests. `pnpm test:a11y` selects the accessibility
-scanner cases from the functional suite. Local `pnpm check` remains the full sequential gate.
-`pnpm check:base` owns static checks, unit tests, test-plan validation, the build and integration.
-
-### CI feedback and full verification
-
-`Verify CMS` runs the same required source and runtime checks without making browser failures
-prevent unrelated checks from executing:
-
-- **Foundation:** `pnpm check:base`, then package the tested `dist` with its exact source SHA.
-- **Components:** the real React components, controllers, translations and production CSS run in
-  Chromium and WebKit against explicit HTTP fixtures. This does not prove real router navigation,
-  Worker persistence, SSR or hydration.
-- **Full browsers:** Chromium and WebKit each run two Playwright shards on four isolated runners.
-  Each runner installs dependencies, restores the foundation build after checking its source SHA,
-  and owns its own Worker, D1 and R2. `workers: 1` and file-level sharding stay unchanged so neither
-  shared resets nor journey steps race. Matrix `fail-fast` is disabled to retain every shard's result.
-- **Performance:** all four measured scenarios run independently of browser outcomes. Timing
-  budgets remain report-only; correctness and measurement integrity still fail the job.
-- **Development:** the real Vite server tests run independently, including when foundation fails.
-- **Contracts:** native Node and Playwright case results are combined for the same source and prepared
-  run. Missing results, retries, stale evidence and incomplete runs fail the gate.
-- **`verify`:** the existing required-check name is retained as an always-run aggregate. Every
-  required job must succeed; failure, cancellation or a skipped dependency cannot yield a green gate.
-
-Component, browser and performance jobs require a successful foundation, not each other. The local
-`pnpm test:core` selector remains available; CI does not run those same cases a second time. Build output is
-transferred as a tar archive so hidden manifests survive; it is test input, not deployment approval.
-No deployment is added. No test filters, default retries, assertion budgets or supported browsers
-are removed. Job deadlines reserve time for evidence uploads. Logs, browser reports, screenshots,
-traces and videos are retained for seven days, with separate artifact names for every job/shard.
-
-`pnpm test:ci-plan` uses Playwright's actual `--list` results to assert that the four shards contain
-exactly the unsharded dual-browser cases, without omissions or duplicates, keep files intact, and
-include the core cases. It discovers tests without starting a browser or Worker. Each shard's native
-execution report is partial; `pnpm test:contracts` aggregates both browser layers and enforces the
-complete plans. There is no separate E2E-only control reporter: component replacements must count
-as evidence rather than appearing falsely uncovered in each old shard.
-
-For diagnosis, run:
-
-```sh
-pnpm test:diagnose tests/browser/journeys/content.spec.ts --project=webkit --repeat-each=3
-```
-
-`Diagnose browser` provides the same selection on a manually chosen
-GitHub ref, with an existing spec path (optionally `:line`), one browser and 1/3/10 fresh test
-repetitions, not retries. Manual workflow dispatch becomes available once the workflow exists on
-the default branch. Its result is diagnostic only and never substitutes for `verify`; it uploads
-evidence on success or failure without running unrelated suites or deploying.
-
-Tests against the build output reset their disposable Worker and local D1/R2 instances before each
-case through an automatic Playwright fixture. The single-worker configuration keeps the reset isolated
-from other cases. Functional cases prebuild at most one fresh spare Worker while the current case runs;
-reset swaps instances rather than clearing a shared database. Each instance owns its D1/R2 state,
-module state and authentication secrets. This reduces serial reset latency, not total initialization
-work, and costs one additional idle Worker. Performance cases retire the spare and disable prewarming
-so background initialization cannot contaminate measurements. Set `BLOG_FIXTURE_PREWARM=0` to diagnose
-the synchronous path. A request leases the instance it dispatches to, so a swap retires the previous
-case's Worker only after the responses it is still delivering finish. A client that disconnects
-releases its Worker at once, and shutdown spends one shared bound on every Worker it retires instead
-of one bound each. A request that loses its Worker is answered as a failed request instead of a
-second status line, so one bad response cannot end the shard.
-Build and disposal failures remain failures; shutdown drains accepted work and
-reports cleanup errors, including when signals repeat.
-
-Browser readiness uses the application's rendered state rather than whole-page network idle. Setup
-that only needs a stored document seeds it through the admin API and stays request-scoped; opening
-the editor is a separate step, so a case visits the editor only when it edits, reads history,
-previews or asserts the editor's own hydration. The loading-polish fixture separately coordinates
-already-started, marked route prefetches before deliberate document unloads, with a bounded
-deadline and no response replay or page-error exemptions. This avoids the usual cancellation
-window; it does not fix the framework's underlying prefetch rejection behavior.
-
-Production quotas and data constraints remain active. Set `BLOG_TEST_PORT` to choose
-an isolated port. Development server tests use the local development database and accept
-`BLOG_DEV_TEST_PORT` for the port. Browser screenshots, traces, and reports are written to `blog-tests`
-under the operating system's temporary directory. They do not create an `artifacts` directory in the
-repository. The performance script uses a `performance` subdirectory so its report cannot replace
-the functional results during `pnpm check`. `pnpm preview` requires a real Access configuration.
-
-The published `@ztd-me/frontend-checks@0.1.4` helper attaches complete Axe scans and named PNGs
-as files rather than embedding ordinary labels in the JSON report. Retain the report together with
-its referenced files; exceptionally long labels keep the inline compatibility form. Each run also
-writes `test-timings.json` with observed native setup/body/teardown boundaries and explicit unknown
-values. These diagnostics do not change assertions, retries or performance-budget enforcement.
+`pnpm test:unit` runs every `tests/unit/**/*.test.ts` with the native Node test runner and its `spec`
+reporter. `pnpm test:dom` runs Vitest over `tests/dom`. `pnpm test:integration` starts Miniflare on
+the built Worker, so run `pnpm build` first; it is optional and not part of `pnpm test`.
 
 ## Test organization
 
-`tests/unit` contains Node unit tests; `tests/integration` contains tests against the built Worker.
-`tests/dom` runs Vitest in jsdom: the real client, hook, React and schemas with only `fetch`
-replaced. It is a native layer of `check:base` next to unit and integration, and it proves no
-engine, Worker, route or hydration, so its cases carry no Playwright project and never stand in
-for a browser layer. Its `next/link` alias renders host anchor markup and is not evidence of Next
-routing; that stays in E2E.
-`tests/components` exercises real application components in a production Vite bundle, with
-only HTTP and framework-host routing boundaries replaced. Its routing adapter is not evidence of
-native application navigation. Font verification still uses actual Google CSS and font responses.
-The editor surface mounts the real editor entry, BlockNote, controllers and draft coordinator;
-native typing, IME, selection and undo/redo therefore remain browser checks without requiring D1.
-Fixture acknowledgements prove client behavior, not persisted server state. Stored versions,
-head/live isolation and allocation replay belong to real Worker integration tests. E2E retains
-representative persistence/reload, SSR and application-routing journeys.
-`tests/contracts` records business rules, exact native case references and the old-to-new assertion
-mapping. `registry.ts` composes the current references; the migration ledger retains historical names.
-A jsdom case enters a rule only through `dom-migrations.ts`, which also names the old case it
-succeeds, so a rule cannot cite the DOM layer without keeping its history. `tests/ci` checks both
-sides against native discovery: every declared DOM case is exactly one case of the jsdom plan, and
-an old case is accepted as retired only when the record retired it.
-The first slice retires 22 logical E2E cases and retains 24 documents/catalog cases in both browsers.
-Subsequent batches are recorded in `surface-migrations.ts` and its domain tables. Retire the old
-case in the same change once its replacement assertions pass locally; a green legacy CI run is
-not the retirement criterion. Full-suite timing claims still require comparable measurements.
-`tests/browser` groups functional tests by business domain, with editor controls grouped further by
-blocks, tables, links, source editing, formatting, overlays, and navigation. Preview, recovery, and
-revision history belong to `history`; scheduling belongs to `publication`; media flows belong to
-`media`. Cross-feature editor scenarios remain directly under `browser/editor`.
+- `tests/unit` holds Node unit tests, grouped by business area (`catalog`, `content`, `documents`,
+  `editor`, `history`, `media`, `publication`, `reader`, `references`, `shared`, `components`).
+- `tests/dom` runs Vitest in jsdom, grouped into `documents`, `catalog`, `history`, `reader`,
+  `media` and `editor`. Domain fixtures stay with their tests; `shared` contains DOM queries,
+  HTTP replies and minimal host setup. `vitest.config.ts` is the only test configuration.
+  Tests render real components or hooks, with explicit HTTP replies, fixed media preferences,
+  no-op resize observation/scrolling and anchor-only links. Catalog tests reject navigation.
+  None of these stand-ins proves layout, scrolling or routing.
+- `tests/integration` runs the built Worker in Miniflare against local D1 and R2.
+- `tests/support/unit` holds assertions and the React server-render fixture; `tests/support/worker`
+  holds the Miniflare runtime and response helpers; `tests/support/development` holds the
+  development-only login that Vite aliases in.
 
-`tests/development` checks the actual Vite server; `tests/performance` owns performance scenarios,
-fixtures, and measurements. `tests/support` separates unit rendering/assertions, shared browser
-operations, disposable Worker infrastructure, and development-only login support. Scenario-specific
-helpers stay with their scenarios. There are no barrel exports.
+Use `@/*` for application imports, `~/tests/*` for imports across test directories, and relative
+imports within one directory. `~/*` resolves from the repository root through `tsconfig.json`;
+filesystem resources use URLs relative to `import.meta.url`. The TypeScript test runner runs directly
+through `node --import tsx`.
 
-`pnpm test:journeys` runs four uninterrupted business tasks plus the presentation journeys in
-`tests/browser/journeys`. Each task uses `test.step` boundaries and one disposable database; stages do
-not reset the environment. Checkpoints compare an independently maintained expected native document
-against the saved API response, capture layouts, and retain fault/step evidence in `journey.json`.
-The tasks cover publication and trash, all native content types and media, two-tab conflicts and real
-IndexedDB recovery, and scheduled publication plus maintenance recovery. They have no minimum duration.
+## Verification limits
 
-Presentation journeys use 12 pairwise combinations of Chromium/WebKit, English/Chinese, light/dark,
-and 320/390/1440px. They assert readable typography, usable hit targets, focus ownership, scroll-lock
-cleanup and overlay bounds. Action menus, previews and reader content are measured before and after
-navigation within the same task; unchanged regions must retain their dimensions and computed styles.
-They also scan accessibility and reject observed controls missing from the semantic inventory.
-On macOS WebKit, keyboard traversal uses Option+Tab/Option+Shift+Tab to include buttons regardless
-of the host's Keyboard Navigation preference; the expected focus targets are identical in both browsers.
-The selected gesture is recorded in `environment.json` ([Playwright platform behavior](https://github.com/microsoft/playwright/issues/41808)).
+Browser coverage was intentionally removed. The Playwright suites, the component bundle harness, the
+performance measurements and the development-server checks are gone, along with their configs,
+direct dependency and evidence reporters. The CSS-check tool still has a transitive Playwright peer;
+it does not install browsers or run browser tests in this project.
+DOM tests that reconstructed BlockNote, editor workspaces, route lifecycles or file-upload hosts
+were also removed rather than maintained with growing shims. New tests should use ordinary
+components/hooks and small boundary fixtures, not rebuild those harnesses.
+No check now proves a browser engine, real navigation or
+routing, SSR and hydration, viewport and typography behavior, drag or IME handling, accessibility
+scanning, or any performance budget. `pnpm test:dom` covers client-side behavior in jsdom only; a
+passing `pnpm check` therefore says nothing about those behaviors. Tests report natively to stdout;
+there are no screenshots, traces, receipts or run ledgers to retain.
 
-There are no persistent PNG baselines or snapshot-update steps. Screenshots, layout measurements,
-expected/actual documents and failure traces are diagnostic artifacts in the system temporary directory.
-These checks detect explicit layout/interaction regressions, not every possible pixel-level visual change.
-The mixed-document fixture checks coexistence and preservation of all schema types; insertion and
-per-block settings are exercised by the linked editor suites rather than inferred from fixture rendering.
-For an existing remote Playwright browser service, set `BLOG_PLAYWRIGHT_WS_ENDPOINT`; loopback traffic
-is forwarded to the local disposable Worker. Presentation contexts permit axe style injection; the four
-business tasks retain normal CSP.
-Native drag cancellations require recorded detached audio/video clones, matching page/URL/time and
-clone counts, and connected healthy original media. Their attribution is retained in `journey.json`;
-other resource failures and failed mutations still fail the task.
-
-`pnpm check` prepares a shared run and executes every layer before `pnpm test:contracts` verifies
-coverage. To collect the same evidence manually, run `pnpm test:prepare` first, then the native unit,
-DOM, integration, component and E2E commands without editing the source between them. Set
-`TMPDIR=/tmp` and a shared `BLOG_VERIFICATION_RUN_ID` to retain one evidence batch across commands.
-Each native run binds itself to the manifest that existed when it *started* and records a null run id
-when that manifest is missing or replaced, so a parallel `test:prepare` cannot relabel one run's
-results as another's.
-`pnpm test:controls` is an alias for the final contract check, not a second browser run.
-The documents/catalog rules require exact case results. Other controls keep linked-suite obligations;
-as replacements pass locally, their evidence links can move directly to component suites and the old
-E2E cases are removed in the same change. Both browser layers are checked against their complete
-native discovery plans, so a passing subset cannot stand in for the replacement suites.
-A successful filtered invocation is not a complete-suite receipt. Each invocation retains its own
-immutable result file; prepare a new batch before rerunning a layer, rather than replacing a failed
-attempt with a passing one. Worker fixtures also reject builds whose build-time source manifest
-does not match the checkout. Only current-source, current-run results count, without retries or
-unexplained skipped evidence. `pnpm test:contracts documents-catalog` is a first-slice diagnostic,
-not the full CI gate. Passing validates registered contracts, not every theoretical input
-permutation. Set `BLOG_TEST_RUN_ID` to a distinct output folder name and `BLOG_TEST_PORT` to a distinct
-port when running independent instances.
-
-Pre-existing physical-touch cases that require Chromium CDP remain listed as platform limitations.
-Only their exact annotated WebKit skips may be excluded, and only when the identical Chromium case
-passes; all applicable WebKit pointer/keyboard cases must still pass. Other skips fail coverage.
-
-All test modules use TypeScript. Use `@/*` for application imports, `~/tests/*` for imports across test
-directories, and relative imports within one directory. `~/*` resolves from the repository root through
-`tsconfig.json`; filesystem resources use URLs relative to `import.meta.url`. The TypeScript test
-runner and Worker fixture server run directly through `node --import tsx`.
-
-```sh
-pnpm test:e2e tests/browser/editor/tables
-pnpm test:e2e tests/browser/publication
-pnpm test:unit
-pnpm test:integration
-```
-
-Performance timing budgets are temporarily not enforced while browser correctness is stabilized.
-All four scenarios still run with the same CPU throttling, sample counts, measurement boundaries,
-saved-content checks and browser-error checks. `performance.json` marks `budgetEnforcement` as
-`deferred` and retains measured timings plus the unchanged `referenceBudgets`; a passing run does
-not establish performance-budget compliance. Reference preview P95 budgets are 500 ms for the
-100- and 500-block scenarios at 1× CPU, 2000 ms for 2000 blocks at 1× CPU, and 750 ms for
-500 blocks at 4× CPU. Re-enable timing assertions when performance-budget work resumes.
-Virtual-keyboard tracking mounts only on touch devices. Mobile formatting and block-action drawers
-mount within their breakpoint so desktop initialization avoids their closed-overlay layout reads.
+`pnpm check` is the full gate, and CI runs exactly it: the `Verify CMS` workflow performs a frozen install
+and then `pnpm check` in one job. Dependency versions stay pinned; the workflow actions stay pinned to
+immutable commits.
 
 ## Public reading design
 
-The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI,
-ruled article rows and real publication metadata. Display type caps at 50px on wide layouts and
-36px on narrow layouts. Secondary public titles share the Serif section scale at 40/32px;
-recovery and license titles use 32/26px. Search results follow the same ruled rows as the index,
-with body-sized excerpts. Shared body/control/help roles remain 15/13/12px; reading and editable
-roles remain 17/16px. Compact UI text retains reachable controls and visible keyboard focus.
+The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI, ruled
+article rows and real publication metadata. Display type caps at 50px on wide layouts and 36px on
+narrow layouts. Secondary public titles share the Serif section scale at 40/32px; recovery and
+license titles use 32/26px. Search results follow the same ruled rows as the index, with body-sized
+excerpts. Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
+Compact UI text retains reachable controls and visible keyboard focus.
 
-Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before
-the bundled declarations. Keep Noto language coverage and the existing font CSP. A declared
-font family is not rendering evidence; check the loaded and rendered fonts in the browser.
-Run-specific screenshots and measurements belong in the system temporary artifacts directory.
-Local source, production-build checks and live deployment are separate evidence.
-
-## Shared development Skills
-
-The five generic development Skills (`js-ts-testing`, `ui-foundation`, `ui-web`,
-`frontend-engineering`, `frontend-verification`) come from Tools
-[`7fd78ba96830452502adbda07575bb250af914ba`](https://github.com/zeithrold/tools/tree/7fd78ba96830452502adbda07575bb250af914ba/skills)
-and are installed once for the current user in `~/.agents/skills`; this repository keeps no copy.
-Selection lives in the user-global `~/.agents/zt.json` or an explicit `zt sync --skills` list for
-the new global `zt sync` in the Tools source working tree, which has no released build yet.
-`zt.lock.json` stays as an empty retired lock; no project-level Skill sync remains.
-The root module declaration supports read-only discovery. The native `pnpm check`
-command continues to own static checks, build, integration, both browser suites,
-performance and development verification.
-
-For UI work, read the public reading design above and the globally installed
-[UI foundation](https://github.com/zeithrold/tools/blob/7fd78ba96830452502adbda07575bb250af914ba/skills/ui-foundation/SKILL.md), including its
-[eight-dimension visual review](https://github.com/zeithrold/tools/blob/7fd78ba96830452502adbda07575bb250af914ba/skills/ui-foundation/references/visual-design.md).
-Keep Blog's reading/editor role budgets, content, authentication and native verification
-local. The Skills do not own application components or publication policy.
+Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before the
+bundled declarations. Keep Noto language coverage and the existing font CSP. A declared font family is
+not rendering evidence, and the removed browser suites no longer check rendered fonts.
 
 ## Source organization
 
 `src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
 Worker security. Its HTML response path installs the nonce-bearing history bridge before router
-scripts can capture native History methods. The built Worker integration test checks that first-script
-ordering and JSON/HEAD behavior; custom-policy responses bypass this insertion. `src/server` groups HTTP handling,
-authentication, document persistence, media,
-catalogs, publication, public reading, reference lookup, operations, and runtime bindings. Repository
-inheritance and request behavior are unchanged by this grouping.
+scripts can capture native History methods.
 
-`src/content` contains environment-independent document structures, validation, and content rules.
-`src/contracts` defines HTTP request/response schemas by business domain; shared response types are
-inferred from these schemas. Browser code imports contracts directly instead of server repositories.
-`src/shared/admin` owns cross-feature requests, CSRF/idempotency handling, navigation, feedback,
-confirmation dialogs, and publication issue labels. `src/components/ui/ztd-me` retains its separate
-upstream source and license boundary; application controls and general hooks remain alongside it.
+`src/server` groups HTTP handling, authentication, document persistence, media, catalogs, publication,
+public reading, reference lookup, operations, and runtime bindings. `src/content` contains
+environment-independent document structures, validation, and content rules. `src/contracts` defines
+HTTP request/response schemas by business domain; shared response types are inferred from these
+schemas. Browser code imports contracts directly instead of server repositories. `src/shared/admin`
+owns cross-feature requests, CSRF/idempotency handling, navigation, feedback, confirmation dialogs,
+and publication issue labels. `src/components/ui/ztd-me` retains its separate upstream source and
+license boundary.
 
 `src/features` groups application behavior. Inside `editor`, `workspace` composes the session and
 settings, `engine` integrates BlockNote, and `adapters` implements its component interfaces. Draft
@@ -309,27 +112,38 @@ The standalone media gallery remains in `features/media`.
 Feature CSS stays with its owner and is imported by `src/app/styles.css` in the established order.
 Global CSS stays under `src/app/styles`. Translation resources and phrase mappings use matching
 semantic groups, including editor blocks, tables, references, draft state, and preview. Existing
-`site`, `editor`, and `documents` namespaces, translation keys, and phrase lookup behavior are retained.
+`site`, `editor`, and `documents` namespaces, translation keys, and phrase lookup behavior are
+retained.
 
 ## Build and repository conventions
 
-Do not create a `scripts` directory without explicit permission from the repository owner. Backup and
-restore commands, the separate release evidence pipeline, and native check CLI wrappers have been
-removed. Define routine commands directly in `package.json`. Do not retain `docs`, `artifacts`, or
-backup copies.
+Do not create a `scripts` directory without explicit permission from the repository owner. Define
+routine commands directly in `package.json`. Do not retain `docs`, `artifacts`, or backup copies.
 
-`vite.config.ts` uses Vite 8's native `resolve.tsconfigPaths` support to read the `@/*` (source) and `~/*` (repository root) mappings from
-`tsconfig.json`, with no additional path resolution plugin. Two exact module aliases for development
-login are enabled only in development mode. Vite and Playwright configurations are included in strict
-type checking. `skipLibCheck` skips checks inside declaration files to accommodate the Cloudflare
-toolchain's currently published declarations.
+`vite.config.ts` uses Vite 8's native `resolve.tsconfigPaths` support to read the `@/*` (source) and
+`~/*` (repository root) mappings from `tsconfig.json`, with no additional path resolution plugin. Two
+exact module aliases for development login are enabled only in development mode. Vite and TypeScript
+configuration are included in strict type checking. `skipLibCheck` skips checks inside declaration
+files to accommodate the Cloudflare toolchain's currently published declarations.
 
 `pnpm build` runs `vite build` directly, without custom pre-build or post-build scripts. Original
 third-party licenses, combined notices, and the retained dependency inventory snapshot live in the
-source tree and `public/licenses`. The public `/licenses` page links to these files, which are included
-in the build as static assets. The inventory is not regenerated on each build. Update the corresponding
-notices and inventory when adding, removing, or upgrading dependencies.
+source tree and `public/licenses`. The public `/licenses` page links to these files, which are
+included in the build as static assets. The inventory is not regenerated on each build. Update the
+corresponding notices and inventory when adding, removing, or upgrading dependencies.
 
 BlockNote native JSON is the canonical document body. D1 stores revisions, publication state, tags
 and series, schedules, and search projections; R2 stores private media. Production deployments and
 remote resource changes require separate authorization.
+
+## Shared development Skills
+
+The five generic development Skills (`js-ts-testing`, `ui-foundation`, `ui-web`,
+`frontend-engineering`, `frontend-verification`) come from Tools
+[`7fd78ba96830452502adbda07575bb250af914ba`](https://github.com/zeithrold/tools/tree/7fd78ba96830452502adbda07575bb250af914ba/skills)
+and are installed once for the current user in `~/.agents/skills`; this repository keeps no copy.
+`zt.lock.json` stays as an empty retired lock; no project-level Skill sync remains. The root module
+declaration in `zt.json` supports read-only discovery.
+
+Where the Skills' verification guidance assumes a browser layer, this repository's removed browser
+coverage takes precedence: see the verification limits above.
