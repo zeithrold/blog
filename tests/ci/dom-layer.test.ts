@@ -458,6 +458,71 @@ nodeTest('a completely retired case keeps its identity and loses only its execut
   assert.deepEqual(issues, [])
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
 
+/*
+ * The same two-generation rule for the link domain: a still-running native case keeps
+ * its component identity, `proves` and plan registration, while a complete retirement
+ * keeps the component identity in the ledger but leaves the plan. Every literal key
+ * here must be present in the first-generation record and owned by the second-generation
+ * one, or the chain was erased rather than migrated. The adjacent edit/unlink key is
+ * pinned as still running because the review found its native click chain erased by a
+ * complete retirement; the background-change key is the domain's complete retirement.
+ */
+const linkEntryFile = 'tests/components/specs/editor-link-remaining-entry.spec.ts'
+const linkEditFile = 'tests/components/specs/editor-link-remaining-targets.spec.ts'
+const linkEntryIdentity = `${linkEntryFile} :: the mobile formatting drawer hands a touch selection`
+  + ' to the link dialog in dark zh'
+const linkEditIdentity = `${linkEditFile} :: existing link edits and unlink target the chosen adjacent`
+  + ' link at 1440px'
+const linkRetiredIdentity = `${linkEditFile} :: background document changes keep link input but`
+  + ' invalidate the captured target'
+const linkIdentities = [
+  linkEntryIdentity,
+  linkEditIdentity,
+  linkRetiredIdentity,
+] as const
+
+function firstGenerationCase(caseKey: string): boolean {
+  return surfaceMigrations.some(migration =>
+    migration.component.some(entry => entry.case === caseKey))
+}
+
+nodeTest('a link identity survives both generations whether it still runs or not', () => {
+  const issues: string[] = []
+  const components = browserCases('components')
+  const domPlan = discoverDomCases()
+  const registered = (key: string): boolean => {
+    const { file, title } = parts(key)
+    return components.some(entry => entry.file === file && entry.title === title)
+  }
+  const owner = (key: string): (typeof domMigrations)[number] | undefined =>
+    domMigrations.find(migration => migration.legacy.includes(key))
+  const retainedKeys = (key: string): readonly string[] =>
+    owner(key)?.retained.flatMap(group => group.cases) ?? []
+  for (const key of linkIdentities) {
+    pushUnless(issues, firstGenerationCase(key), `${key}: the first-generation component node is missing`)
+    pushUnless(issues, owner(key) !== undefined, `${key}: no second-generation record owns it`)
+    pushUnless(issues, (owner(key)?.dom.length ?? 0) > 0, `${key}: the record names no jsdom successor`)
+    for (const successor of owner(key)?.dom ?? []) {
+      pushUnless(
+        issues,
+        domPlan.some(entry => `${entry.file} :: ${entry.title}` === successor.case),
+        `${successor.case}: successor is not a real jsdom case`,
+      )
+    }
+  }
+  for (const key of [linkEntryIdentity, linkEditIdentity]) {
+    pushUnless(issues, retainedKeys(key).includes(key), `${key}: not retained as a native residual`)
+    pushUnless(issues, registered(key), `${key}: the retained native link case is no longer registered`)
+  }
+  pushUnless(
+    issues,
+    !retainedKeys(linkRetiredIdentity).includes(linkRetiredIdentity),
+    'a completely retired link case must not be retained',
+  )
+  pushUnless(issues, !registered(linkRetiredIdentity), 'the completely retired link case is still registered natively')
+  assert.deepEqual(issues, [])
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test plan failed'))
+
 nodeTest('the retained publication E2E identity passes only with both projects', () => {
   const file = 'tests/browser/publication/publication-errors.spec.ts'
   const title = 'correcting a rejected draft clears its reasons and publishes the saved content'

@@ -18,6 +18,11 @@ import type { AdminMigrationRecord } from './admin-migrations'
  * The shortcut matrix collapses the retired `Control`/`Meta` pairs into one case per width and
  * locale that presses both modifiers, and the four adjacent-selection cases collapse into one
  * desktop case that keeps each selection shape as its own round.
+ *
+ * Two matrix rounds keep the whole round: a typed destination submitted with `Enter` closes the
+ * editor, returns native focus to the body and links exactly the captured range. Only a real
+ * browser performs the implicit form submission, so that positive cannot move to the DOM layer.
+ * The other rounds keep the narrowed cancel and Escape residual and say so.
  */
 const F = {
   keyboard: 'tests/browser/editor/links/link-keyboard-command.spec.ts',
@@ -34,19 +39,30 @@ function c(file: string, title: string): string {
   return `${file} :: ${title}`
 }
 
-// Both product modifiers per retired pair become one round that presses each of them.
+/** A fully retired node keeps its identity here; the assertions run in the DOM layer. */
+const historicalLink = 'historical component identity; its assertions now run in the DOM layer'
+
+// Both product modifiers per retired pair become one round that presses each of them. The desktop
+// width and the narrowest compact width keep the full round because they reach the editor through
+// different controllers, the floating toolbar and the compact drawer; the other widths repeat the
+// same controller branch.
+const enterRounds = new Set(['1440:en', '320:zh'])
 const shortcutRounds = [
   320,
   390,
   1440,
 ].flatMap(width => ['en', 'zh'].map(locale => ({
   case: c(F.shortcut, `Control+K and Meta+K open, cancel, save and Undo at ${width}px in ${locale}`),
-  proves: [
-    'each modifier opens exactly one Create link editor with its destination focused and inside the viewport',
-    'cancel and Escape close it, restore the captured range to the body and write nothing',
-    `Enter saves the destination into the revision packet and the selection's anchor carries the href (${locale})`,
-    'Undo removes the link from both the body and the next packet',
-  ],
+  proves: enterRounds.has(`${width}:${locale}`)
+    ? [
+        'each modifier opens exactly one Create link editor with its destination focused and inside the viewport',
+        'cancel and Escape close it and restore the captured range to the body',
+        'a typed destination submitted with Enter closes the editor, returns native focus to the body, links exactly the captured range and Undo removes it',
+      ]
+    : [
+        'a native selection drives the editor, each modifier opens exactly one Create link editor with its destination focused and inside the viewport, and cancel and Escape close it without a write and restore the captured range to the body',
+        'a typed destination saved by clicking Save and its Undo are proved by the DOM successor, not by this residual',
+      ],
 })))
 
 const shortcutPairs = [320, 390].flatMap(width => ['en', 'zh'].flatMap(locale => [
@@ -54,17 +70,29 @@ const shortcutPairs = [320, 390].flatMap(width => ['en', 'zh'].flatMap(locale =>
   'Meta',
 ].map(modifier => c(F.keyboard, `closed options allow ${modifier}+K at ${width}px in ${locale} with cancel, save and Undo`))))
 
+// A synthetic key event never performs the platform default edit, so a browser residual has to prove
+// the editor cancels that default. The desktop and the narrowest compact width keep that proof
+// through different controllers; the third width is the same compact controller branch.
 const suppressedSelections = [
   { width: 1440, locale: 'en' },
   { width: 390, locale: 'en' },
   { width: 320, locale: 'zh' },
-].map(({ width, locale }) => ({
-  case: c(F.shortcut, `empty and composing selections suppress the shortcut at ${width}px in ${locale}`),
-  proves: [
-    'a collapsed caret rejects both modifiers without opening an editor',
-    'a composing selection rejects both modifiers and keeps the paragraph text',
-    'no revision packet leaves the client for either guard',
+] as const
+
+const suppressedProves: Readonly<Record<string, readonly string[]>> = {
+  '1440:en': [
+    'a collapsed caret after a real ArrowRight keeps real Control+K and Meta+K inert: the editor cancels the chord so the platform text-editing default never runs, and there is no editor, no destination field and no write, with the paragraph text and the caret unchanged',
+    'a confirmed non-empty DOM and model selection remains unchanged through fixture composition lifecycle and real Control+K and Meta+K; this proves the application composition guard on both engines, not operating-system IME injection',
   ],
+  '320:zh': [
+    'a collapsed caret after a real ArrowRight keeps real Control+K and Meta+K inert in the compact layout: the editor cancels the chord, and there is no editor, no destination field and no write, with the paragraph text and the caret unchanged',
+    'a confirmed non-empty DOM and model selection remains unchanged through fixture composition lifecycle and real Control+K and Meta+K on the compact controller; this is not operating-system IME evidence',
+  ],
+}
+
+const suppressedCases = suppressedSelections.map(({ width, locale }) => ({
+  case: c(F.shortcut, `empty and composing selections suppress the shortcut at ${width}px in ${locale}`),
+  proves: suppressedProves[`${width}:${locale}`] ?? [historicalLink],
 }))
 
 export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
@@ -85,7 +113,7 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
       c(F.keyboard, 'empty selection and composition reject Mod-K at 320px in zh'),
       c(F.keyboard, 'empty selection and composition reject Mod-K at 390px in en'),
     ],
-    component: suppressedSelections,
+    component: suppressedCases,
     retained: [],
   },
   {
@@ -96,11 +124,7 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
     component: [
       {
         case: c(F.shortcut, 'a corrected bare domain saves after refusals at 390px in zh'),
-        proves: [
-          'empty and spaced destinations keep the dialog open, focused and marked invalid in Chinese',
-          'each refusal leaves no link in the body and sends no revision packet',
-          'the corrected bare domain saves as https://example.com against the selected range',
-        ],
+        proves: [historicalLink],
       },
     ],
     retained: [],
@@ -113,11 +137,7 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
     component: [
       {
         case: c(F.entry, 'a held publication makes the compact editor read-only and rejects link shortcuts'),
-        proves: [
-          'a held publication makes the compact body read-only',
-          'both modifiers are rejected while it is pending and no dialog appears',
-          'releasing the reply restores editing and the paragraph text is unchanged',
-        ],
+        proves: [historicalLink],
       },
     ],
     retained: [],
@@ -132,9 +152,8 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
         case: c(F.entry, 'the mobile formatting drawer hands a touch selection to the link dialog in dark zh'),
         describe: ['touch link entry'],
         proves: [
-          'a touch tap on More formatting options opens the Chinese drawer in dark mode',
-          'the drawer hands the selection to the link dialog, closes itself and focuses the destination',
-          'the dialog passes Axe and the saved destination reaches the revision packet',
+          'the touch selection survives the drawer-to-dialog handoff and Save: the destination field takes focus and real typing, the dialog closes, native focus returns to the body, only the selected phrase is linked in rendered content and in the saved packet',
+          'the dialog passes Axe once over real computed styles and the accessibility tree',
         ],
       },
     ],
@@ -153,16 +172,14 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
       {
         case: c(F.targetsComponent, 'linking partial, following and crossing selections preserves all other characters and styles at 1440px'),
         proves: [
-          'each of the four desktop selection shapes links only its own graphemes in the revision packet',
-          'every other character keeps its href and bold/italic style through the save',
-          'Undo returns the adjacent links and plain text to their original characters',
+          'four real native ranges (lp inside the first link, Plain after it, B inside the second link, haBe across adjacent links) each drive Meta+K and Save',
+          'only the selected graphemes gain the destination in the rendered link map and in the saved packet, the neighbouring characters and both adjacent links keep theirs, styles are unchanged, and Undo restores the original',
         ],
       },
       {
         case: c(F.targetsComponent, 'linking a mobile partial link preserves all other characters and styles at 320px'),
         proves: [
-          'the compact partial-link selection links only its own graphemes in the revision packet',
-          'the surrounding link characters keep their href and the plain text keeps its style',
+          'the compact lp range drives the drawer entry and Save, only that range gains the destination in rendered content and in the packet, its neighbours keep theirs, and Undo restores the original',
         ],
       },
     ],
@@ -179,26 +196,18 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
       {
         case: c(F.targetsComponent, 'existing link edits and unlink target the chosen adjacent link at 1440px'),
         proves: [
-          'the clicked adjacent link opens its own edit dialog with its title and URL',
-          'an empty title keeps the dialog open, focused and alerting without a revision packet',
-          'the edit reaches the packet, the neighbouring link keeps its href, and Remove link unlinks only the edited link',
-          'Undo restores the edited link href',
+          'a real click on the second adjacent link captures that link for the toolbar; an empty title is refused with native focus on the title field, its alert and no write; saving changes only that link text and href in the paragraph and in the packet; removing the link leaves the first link and the plain text untouched; Undo restores it',
         ],
       },
       {
         case: c(F.targetsComponent, 'existing link edits and unlink target the chosen adjacent link at 320px'),
         proves: [
-          'the clicked adjacent link opens its own edit dialog on the compact layout',
-          'an empty title keeps the dialog open, focused and alerting without a revision packet',
-          'the edit and the unlink reach the packet for the chosen link only',
+          'the same click, edit and unlink chain keeps its target in the compact layout, where the drawer opens the editor and the plain text between and after the links is unchanged',
         ],
       },
       {
         case: c(F.targetsComponent, 'unlinked URL-shaped text loads and saves as plain text'),
-        proves: [
-          'a stored document that keeps URL-shaped text as a text run loads without an anchor',
-          'the next revision packet still carries that text as plain text',
-        ],
+        proves: [historicalLink],
       },
     ],
     retained: [
@@ -218,11 +227,7 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
     component: [
       {
         case: c(F.targetsComponent, 'background document changes keep link input but invalidate the captured target'),
-        proves: [
-          'a document change behind the dialog keeps the typed destination and its focus',
-          'the dialog reports that the document changed and disables Save, and Enter cannot close it',
-          'cancel writes the changed document and returns focus to the body',
-        ],
+        proves: [historicalLink],
       },
     ],
     retained: [],
@@ -238,17 +243,14 @@ export const linkRemainingMigrations: readonly AdminMigrationRecord[] = [
       {
         case: c(F.focus, 'an old link dialog close cannot take focus from the reopened editor'),
         proves: [
-          'a close that is still waiting keeps its count while the editor is reopened',
-          'releasing it leaves the reopened destination focused with its typed value',
-          'cancelling the reopened dialog returns focus to the body and writes nothing',
+          'releasing the held close proves native focus delivery only; the DOM successor owns the reopened destination input and its typed value',
+          'cancelling the reopened dialog returns native focus to the body',
         ],
       },
       {
         case: c(F.focus, 'a delayed formatting drawer close leaves the reopened link dialog alone at 390px'),
         proves: [
-          'the compact drawer hands its selection to the link entry and closes itself while its close waits',
-          'the pending close keeps every dialog closed instead of opening a second surface',
-          'releasing it opens that one focused editor and the save reaches the revision packet',
+          'releasing the held drawer close opens exactly one link editor focused on its destination, and the typed destination saved from it links exactly the captured range with its neighbours unchanged',
         ],
       },
     ],

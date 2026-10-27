@@ -4,7 +4,7 @@ import type { ComponentLocale } from '../src/contract'
 import type { ApiService } from './http-fixtures'
 import { expect } from '@playwright/test'
 import { horizontalBounds } from '~/tests/support/browser/layout'
-import { expectPacketContent, formattingCopy, linkUrl } from './editor-formatting-fixtures'
+import { expectPacketContent, formattingCopy, linkUrl, openLinkEntry } from './editor-formatting-fixtures'
 import {
   adjacentText,
   charactersOf,
@@ -14,7 +14,6 @@ import {
   expectPacketUnlinked,
   linkedContent,
   linkSelected,
-  linkSelection,
   nextLink,
   oldLink,
   replacementLink,
@@ -61,12 +60,6 @@ export async function selectInlineRange(
   }
 }
 
-export async function collapseLinkSelection(page: Page, body: Locator): Promise<void> {
-  await selectInlineRange(page, body, linkSelection, linkSelected)
-  await page.keyboard.press('ArrowRight')
-  await expect.poll(async () => await page.evaluate(() => window.getSelection()?.isCollapsed)).toBe(true)
-}
-
 export async function expectSelectionRestored(page: Page, body: Locator): Promise<void> {
   await expect(body).toBeFocused()
   await expect.poll(async () => await page.evaluate(() => window.getSelection()?.toString())).toBe(linkSelected)
@@ -88,15 +81,6 @@ export async function openShortcutLink(
         animation.playState === 'finished' || animation.playState === 'idle'))).toBe(true)
   }
   return url
-}
-
-/** Both modifiers keep the dialog closed: no editor and no destination field appear. */
-export async function expectNoLinkCommand(page: Page, locale: ComponentLocale): Promise<void> {
-  for (const modifier of ['Control', 'Meta'] as const) {
-    await page.keyboard.press(`${modifier}+k`)
-    await expect(page.getByRole('dialog', { name: formattingCopy[locale].dialog, exact: true })).toHaveCount(0)
-    await expect(page.getByRole('textbox', { name: formattingCopy[locale].url, exact: true })).toHaveCount(0)
-  }
 }
 
 /**
@@ -141,6 +125,29 @@ export async function shortcutRound(
 }
 
 /**
+ * The rendered links as the character map sees them. A selection that crosses the boundary
+ * between two links leaves one anchor per original text run, both carrying the new destination,
+ * so adjacent anchors with the same href are one link here; a different href or a shifted
+ * character still fails.
+ */
+async function shapeAnchors(body: Locator): Promise<{ href: string, text: string }[]> {
+  const anchors = await body.locator('a').evaluateAll(elements => elements.map(anchor => ({
+    href: anchor.getAttribute('href') ?? '',
+    text: anchor.textContent,
+  })))
+  const shaped: { href: string, text: string }[] = []
+  for (const anchor of anchors) {
+    const previous = shaped.at(-1)
+    if (previous !== undefined && previous.href === anchor.href) {
+      previous.text += anchor.text
+      continue
+    }
+    shaped.push({ href: anchor.href, text: anchor.text })
+  }
+  return shaped
+}
+
+/**
  * Links one selection of the adjacent-link paragraph and undoes it, so the packet proves the
  * exact characters and styles outside the range are untouched.
  */
@@ -151,6 +158,7 @@ export async function linkSelectionRound(
   options: {
     readonly original: ReturnType<typeof charactersOf>
     readonly selection: { readonly from: number, readonly to: number }
+    readonly width: number
   },
 ): Promise<void> {
   const { original, selection } = options
@@ -161,16 +169,40 @@ export async function linkSelectionRound(
     { start: selection.from, end: selection.to },
     adjacentText.slice(selection.from, selection.to),
   )
-  const url = await openShortcutLink(page, 'en', 'Meta')
+  const url = options.width <= 700
+    ? await openLinkEntry(page, 'toolbar', options.width, 'en')
+    : await openShortcutLink(page, 'en', 'Meta')
   await url.fill(replacementLink)
   await page.getByRole('dialog', { name: copy.dialog, exact: true })
     .getByRole('button', { name: copy.save, exact: true })
     .click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(body).toHaveText(adjacentText)
-  await expectPacketCharacters(api, charactersWithLink(original, selection, replacementLink))
+  const linked = charactersWithLink(original, selection, replacementLink)
+  const expectedLinks: { href: string, text: string }[] = []
+  let current: { href: string, text: string, end: number } | undefined
+  for (const [index, character] of linked.entries()) {
+    if (character.href === '') {
+      current = undefined
+      continue
+    }
+    if (current !== undefined && current.href === character.href && current.end === index - 1) {
+      current.text += character.character
+      current.end = index
+      continue
+    }
+    current = { href: character.href, text: character.character, end: index }
+    expectedLinks.push(current)
+  }
+  expect(await shapeAnchors(body)).toEqual(expectedLinks.map(({ href, text }) => ({ href, text })))
+  await expectPacketCharacters(api, linked)
   await page.getByRole('button', { name: copy.undo, exact: true }).click()
+  await expect(body).toHaveText(adjacentText)
   await expect(body.locator('a')).toHaveCount(2)
+  await expect(body.locator('a').nth(0)).toHaveAttribute('href', oldLink)
+  await expect(body.locator('a').nth(0)).toHaveText('Alpha')
+  await expect(body.locator('a').nth(1)).toHaveAttribute('href', nextLink)
+  await expect(body.locator('a').nth(1)).toHaveText('Beta')
   await expectPacketCharacters(api, original)
 }
 
@@ -208,7 +240,10 @@ export async function editAndUnlinkRound(page: Page, api: ApiService, body: Loca
   await expect(body.locator('a')).toHaveAttribute('href', oldLink)
   await expectPacketCharacters(api, charactersOf(unlinkedEditedContent()))
   await page.getByRole('button', { name: formattingCopy.en.undo, exact: true }).click()
+  await expect(body).toHaveText('AlphaUpdatedPlain')
+  await expect(body.locator('a')).toHaveCount(2)
   await expect(body.locator('a').filter({ hasText: 'Updated' })).toHaveAttribute('href', '#anchor')
+  await expectPacketCharacters(api, charactersOf(editedLinkContent()))
 }
 
 /**
