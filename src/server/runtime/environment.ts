@@ -9,7 +9,6 @@ export type Environment = {
   PUBLIC_ORIGIN: string
   ACCESS_TEAM_DOMAIN?: string
   ACCESS_AUD?: string
-  OWNER_SUBS?: string
   CSRF_SIGNING_SECRET?: string
   ALLOWED_PREVIEW_HOSTS?: string
   BUILD_SHA?: string

@@ -122,6 +122,8 @@ it('feed cards display snapshot colors and keep one article link without an empt
   expect(tagged).toContain('data-tag-color="blue"')
   expect(tagged).toContain('系统设计')
   expect(tagged).toContain('data-tag-color="neutral"')
+  expect(tagged.match(/lucide-hash/g)).toHaveLength(2)
+  expect(tagged.match(/aria-hidden="true"/g)?.length).toBeGreaterThanOrEqual(2)
   expect(tagged.match(/<a /g)).toHaveLength(1)
   expect(tagged).not.toContain('href="/tags/')
   expect(card(html, 'Untagged card')).not.toContain('post-feed-tags')

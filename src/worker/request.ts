@@ -1,6 +1,6 @@
 import type { Environment } from '@/server/runtime/environment'
 import type { SecurityContext } from '@/worker/security'
-import { requireOwner, trustedOrigin } from '@/server/auth/auth'
+import { requireAdmin, trustedOrigin } from '@/server/auth/auth'
 import { Problem } from '@/server/http/problem'
 import { privatePath } from '@/worker/security'
 
@@ -24,7 +24,7 @@ export async function requestContext(
   validatePath(url.pathname)
   const protectedRequest = preview || privatePath(url.pathname)
   if (protectedRequest) {
-    await requireOwner(request.headers, env)
+    await requireAdmin(request.headers, env)
   }
   const headers = new Headers(request.headers)
   headers.set('x-blog-nonce', nonce)

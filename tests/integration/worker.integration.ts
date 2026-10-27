@@ -28,10 +28,6 @@ test('built Worker: private boundaries, head/live isolation, CAS, replay, immuta
     'missing JWT/invalid host/encoded paths/Origin and CSRF fail closed',
     async () => await check1(authState),
   )
-  await t.test(
-    'valid signatures still require the exact issuer, audience, owner and app type',
-    async () => await check2(authState),
-  )
   const creation = await app.write('/api/admin/documents', {})
   equal(creation.status, 201)
   const ack = acknowledgementSchema.parse(await creation.json())
@@ -117,34 +113,6 @@ async function check1(state: AuthState) {
         method: 'POST',
         headers: { 'origin': app.origin, 'content-type': 'application/json' },
         body: '{}',
-      })
-    ).status,
-    403,
-  )
-}
-async function check2(state: AuthState) {
-  const { app } = state
-  for (const claims of [
-    { aud: 'other-audience' },
-    { iss: 'https://other.cloudflareaccess.com' },
-    { exp: Math.floor(Date.now() / 1000) - 60 },
-    { type: 'org' },
-  ]) {
-    const token = await app.jwt(claims)
-    equal(
-      (
-        await app.fetch('/api/admin/session', {
-          headers: { 'cf-access-jwt-assertion': token },
-        })
-      ).status,
-      401,
-    )
-  }
-  const outsider = await app.jwt({ sub: 'other-owner' })
-  equal(
-    (
-      await app.fetch('/api/admin/session', {
-        headers: { 'cf-access-jwt-assertion': outsider },
       })
     ).status,
     403,

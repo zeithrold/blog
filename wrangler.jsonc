@@ -1,25 +1,30 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "blog-cms-local",
+  "name": "ztd-blog",
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
+  "routes": [{ "pattern": "blog.ztd.me", "custom_domain": true }],
   "triggers": { "crons": ["* * * * *"] },
   "assets": {
     "binding": "ASSETS",
     "directory": "dist/client",
     "run_worker_first": true
   },
-  "vars": { "PUBLIC_ORIGIN": "http://127.0.0.1:8800" },
+  "vars": {
+    "PUBLIC_ORIGIN": "https://blog.ztd.me",
+    "ACCESS_TEAM_DOMAIN": "zeithrold.cloudflareaccess.com",
+    "ACCESS_AUD": "297760cca6c55b71bc6881c8fa5b1f8e748491a02cae36a2a9a40074f188508a"
+  },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "blog-cms-local",
-      "database_id": "00000000-0000-0000-0000-000000000001",
+      "database_name": "ztd-blog",
+      "database_id": "c8fbc39c-4eed-40c8-b2db-8e36bb240cef",
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "blog-cms-local" }]
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "ztd-blog" }]
 }

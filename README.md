@@ -76,20 +76,29 @@ immutable commits.
 
 ## Production readiness
 
-The checked-in `wrangler.jsonc` is a local configuration, not a production deployment target.
-Before building a release, configure the intended Worker name, a Custom Domain or route, the actual
-D1 database name and ID, and a private R2 bucket. Keep the binding names `DB`, `MEDIA` and `ASSETS`.
+The checked-in `wrangler.jsonc` targets Worker `ztd-blog` at `https://blog.ztd.me`, with D1 and
+private R2 resources named `ztd-blog`. Confirm the selected Cloudflare account owns these resources
+and the `ztd.me` zone before deployment. Keep the binding names `DB`, `MEDIA` and `ASSETS`.
+`pnpm dev` still uses local D1/R2; its development-only plugin overrides origin and Access identity.
+Configuring a production resource ID does not authorize a remote migration or deployment.
 Set `PUBLIC_ORIGIN` to the exact HTTPS origin, with no path or trailing slash. Requests to a different
 origin are rejected. Keep the minute Cron trigger: it drives scheduled publication and media cleanup.
 Do not expose the R2 bucket through a public bucket URL.
 
 Configure a Cloudflare Access application for both `/admin` and `/admin/*`, and both `/api/admin`
 and `/api/admin/*`. Public reading, search, RSS and sitemaps must remain public. Set
-`ACCESS_TEAM_DOMAIN` to the team hostname without `https://`, `ACCESS_AUD` to the application's
-audience, and `OWNER_SUBS` to a JSON array of allowed Access user `sub` values, not email addresses.
+`ACCESS_TEAM_DOMAIN` to the team hostname without `https://` and `ACCESS_AUD` to the application's
+audience. Admission is controlled by that Access application's policy: every authenticated user
+admitted to this application has full CMS admin access. There is no `OWNER_SUBS` allowlist.
+The Worker still validates the JWT signature, issuer, audience, expiration, application token type
+and nonempty user subject. Merely supplying an Access-looking header does not grant access.
+Use identity-based Allow policies, not a Bypass rule or service tokens. Restrict the policy to the
+people who should administer the whole blog; the CMS does not provide per-user roles.
+The subject remains in audit records and binds CSRF tokens and browser sessions to the signed-in
+identity. The existing session response field `ownerSub` carries that identity, not an owner whitelist.
 Store a randomly generated `CSRF_SIGNING_SECRET` of at least 32 characters as a Worker Secret;
 never commit its value. `.dev.vars.example` documents the variable names, not production credentials.
-Leave `ALLOWED_PREVIEW_HOSTS` unset unless a separate owner-protected preview host is required.
+Leave `ALLOWED_PREVIEW_HOSTS` unset unless a separate Access-protected preview host is required.
 Set `BUILD_SHA` to the release commit so `/api/health` identifies the deployed version.
 
 Apply all D1 migrations explicitly to the intended production database before serving traffic;
@@ -101,8 +110,9 @@ Real deployment and remote migrations require separate authorization.
 
 Before release, run `pnpm check` and exercise these paths against the intended environment:
 
-- Anonymous public reading works; anonymous admin access and non-owner mutations are denied.
-- An owner can sign in, save Chinese text, upload media, refresh, preview, publish and unpublish.
+- Anonymous public reading works; missing, forged and wrong-application JWTs cannot access admin routes.
+- A policy-admitted user can sign in, save Chinese text, upload media, refresh, preview, publish and unpublish.
+- A second policy-admitted user also has admin access, but cannot reuse the first user's CSRF token.
 - Draft edits do not change the public article or its homepage presentation.
 - A scheduled article publishes and becomes searchable; inspect Cron failures and schedule lag.
 - Desktop and narrow-screen reading, keyboard navigation and browser back/forward remain usable.
@@ -115,7 +125,7 @@ The operations page exposes storage and schedule status but does not perform an 
 
 ### Backup and restore contract
 
-Back up database rows and media together. The owner-only backup API uses the normal Access,
+Back up database rows and media together. The admin-only backup API uses the normal Access,
 same-origin, CSRF and idempotency protections for writes:
 
 1. Call `POST /api/admin/backups/freeze` and retain its `backupId`. The source remains publicly

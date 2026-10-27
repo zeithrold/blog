@@ -235,7 +235,6 @@ function historyErrorMessage(code: string, text: BlogTranslator<'editor'>): stri
     INVALID_DOCUMENT: 'thisRevisionDoesNotMeetPublicationRequirementsRestoreItAsADraft',
     PUBLICATION_INVALID: 'thisRevisionDoesNotMeetPublicationRequirementsRestoreItAsADraft',
     MAINTENANCE: 'writesArePausedForMaintenanceRetryAfterMaintenanceEnds',
-    OWNER_REQUIRED: 'yourSessionCannotManageThisDocumentSignInAsTheOwner',
   }
   const fallback = text('couldNotCompleteTheOperationCheckYourConnectionOrSignInAnd')
   return messages[code] === undefined ? fallback : text(messages[code])

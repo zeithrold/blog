@@ -1,7 +1,7 @@
 import type { Environment } from '@/server/runtime/environment'
 import { sha256, stableJSON } from '@/content/canonical'
 import { UUID } from '@/content/document'
-import { requireMutation, requireOwner, sessionToken } from '@/server/auth/auth'
+import { requireAdmin, requireMutation, sessionToken } from '@/server/auth/auth'
 import { parse, respond } from '@/server/http/api-contracts'
 import { readDocuments, writeDocuments } from '@/server/http/api-documents'
 import { readServices, writeServices } from '@/server/http/api-services'
@@ -13,7 +13,7 @@ import { ScheduleRepository } from '@/server/publication/schedules'
 async function admin(request: Request, env: Environment): Promise<Response> {
   const url = new URL(request.url)
   const path = url.pathname
-  const owner = await requireOwner(request.headers, env)
+  const owner = await requireAdmin(request.headers, env)
   const repository = new ScheduleRepository(env.DB)
   if (path === '/api/admin/session' && request.method === 'GET') {
     return respond({

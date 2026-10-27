@@ -3,7 +3,7 @@ import { createLocalJWKSet } from 'jose'
 import { z } from 'zod'
 
 // Vite aliases this module only during serve; production uses remote Access certificates.
-export function ownerKeyset(issuer: string): ReturnType<typeof createLocalJWKSet> {
+export function accessKeyset(issuer: string): ReturnType<typeof createLocalJWKSet> {
   if (issuer !== 'https://blog-dev.cloudflareaccess.com') {
     throw new Error('Unexpected development Access issuer')
   }

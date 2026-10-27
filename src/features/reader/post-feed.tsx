@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { PublicFeedItem } from '@/server/reader/public-repository'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Hash } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { FEED_ROW_HEIGHT, masonrySpan } from '@/features/reader/post-feed-masonry'
@@ -46,7 +46,7 @@ const arrowClass = [
 ].join(' ')
 
 const titleClass = [
-  'post-feed-title mt-3.5 mb-0 font-serif text-[length:23px] font-medium leading-[1.4]',
+  'post-feed-title mt-3.5 mb-0 font-serif text-[length:23px] font-bold leading-[1.4]',
   'tracking-[-.025em] wrap-anywhere [html:lang(zh-CN)_&]:tracking-normal [html:lang(zh-CN)_&]:leading-[1.5]',
   'max-[701px]:text-[length:21px]',
 ].join(' ')
@@ -123,12 +123,13 @@ function FeedTags({ tags }: { tags: PublicFeedItem['tags'] }): ReactNode {
         <span
           key={tag.id}
           className={[
-            'tag-color inline-flex rounded-full border border-border px-2.5 py-1',
+            'tag-color inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1',
             'text-help text-muted-foreground wrap-anywhere max-w-full',
           ].join(' ')}
           data-tag-color={tag.color ?? 'neutral'}
         >
-          {tag.label}
+          <Hash size={13} className="shrink-0" aria-hidden="true" />
+          <span className="min-w-0">{tag.label}</span>
         </span>
       ))}
     </div>

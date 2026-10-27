@@ -166,7 +166,6 @@ async function makeFixture(
             PUBLIC_ORIGIN: origin,
             ACCESS_TEAM_DOMAIN: team,
             ACCESS_AUD: 'fixture-audience',
-            OWNER_SUBS: '["fixture-owner"]',
             CSRF_SIGNING_SECRET: csrfSecret,
           },
           outboundService: async (request) => {

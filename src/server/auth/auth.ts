@@ -1,11 +1,9 @@
 import type { Environment } from '@/server/runtime/environment'
 import { jwtVerify, SignJWT } from 'jose'
-import { z } from 'zod'
-import { ownerKeyset } from '@/server/auth/access-keyset'
+import { accessKeyset } from '@/server/auth/access-keyset'
 import { Problem } from '@/server/http/problem'
 
-const keysets = new Map<string, ReturnType<typeof ownerKeyset>>()
-const ownerSchema = z.array(z.string().min(1).max(200)).min(1).max(10)
+const keysets = new Map<string, ReturnType<typeof accessKeyset>>()
 export function trustedOrigin(env: Environment): URL {
   try {
     const origin = new URL(env.PUBLIC_ORIGIN)
@@ -29,8 +27,8 @@ export function trustedOrigin(env: Environment): URL {
     throw new Problem(503, 'AUTH_NOT_CONFIGURED')
   }
 }
-export async function requireOwner(headers: Headers, env: Environment): Promise<string> {
-  const { owners, issuer, audience } = ownerConfiguration(env)
+export async function requireAdmin(headers: Headers, env: Environment): Promise<string> {
+  const { issuer, audience } = accessConfiguration(env)
   const token = headers.get('cf-access-jwt-assertion')
   if (token === null || token === '') {
     throw new Problem(401, 'AUTH_REQUIRED')
@@ -38,24 +36,14 @@ export async function requireOwner(headers: Headers, env: Environment): Promise<
   if (token.length > 16384) {
     throw new Problem(401, 'AUTH_INVALID')
   }
-  const sub = await verifyOwnerToken(token, issuer, audience)
-  if (!owners.includes(sub)) {
-    throw new Problem(403, 'OWNER_REQUIRED')
-  }
-  return sub
+  // The configured Access application's policy owns admission. Keep the subject
+  // for audit records and identity-bound CSRF/session state, not a second allowlist.
+  return await verifyAccessToken(token, issuer, audience)
 }
-function ownerConfiguration(env: Environment): {
-  owners: string[]
+function accessConfiguration(env: Environment): {
   issuer: string
   audience: string
 } {
-  let owners: string[]
-  try {
-    owners = ownerSchema.parse(JSON.parse(env.OWNER_SUBS ?? 'null'))
-  }
-  catch {
-    throw new Problem(503, 'AUTH_NOT_CONFIGURED')
-  }
   const team = env.ACCESS_TEAM_DOMAIN
   if (
     !(team !== undefined && team !== '')
@@ -64,9 +52,9 @@ function ownerConfiguration(env: Environment): {
   ) {
     throw new Problem(503, 'AUTH_NOT_CONFIGURED')
   }
-  return { owners, issuer: `https://${team}`, audience: env.ACCESS_AUD }
+  return { issuer: `https://${team}`, audience: env.ACCESS_AUD }
 }
-async function verifyOwnerToken(
+async function verifyAccessToken(
   token: string,
   issuer: string,
   audience: string,
@@ -76,7 +64,7 @@ async function verifyOwnerToken(
     if (keysets.size >= 4) {
       keysets.clear()
     }
-    keys = ownerKeyset(issuer)
+    keys = accessKeyset(issuer)
     keysets.set(issuer, keys)
   }
   let sub: string

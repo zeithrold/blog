@@ -73,7 +73,7 @@ export function documentListError(state: DocumentsState, copy: DocumentListCopy)
   if (message !== undefined) {
     return message
   }
-  if (state.errorCode.includes('AUTH') || state.errorCode.includes('ACCESS') || state.errorCode === 'OWNER_REQUIRED') {
+  if (state.errorCode.includes('AUTH') || state.errorCode.includes('ACCESS')) {
     return copy.authError
   }
   if (state.error === 'article' || state.error === 'page') {

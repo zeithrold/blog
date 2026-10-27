@@ -27,7 +27,6 @@ export async function developmentLogin(): Promise<DevelopmentLogin> {
   const vars = {
     ACCESS_TEAM_DOMAIN: 'blog-dev.cloudflareaccess.com',
     ACCESS_AUD: audience,
-    OWNER_SUBS: JSON.stringify([subject]),
     CSRF_SIGNING_SECRET: randomBytes(32).toString('hex'),
     BLOG_DEV_ACCESS_JWK: JSON.stringify(jwk),
   }

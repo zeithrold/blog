@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers'
 import { headers } from 'next/headers'
-import { requireOwner, sessionToken, trustedOrigin } from '@/server/auth/auth'
+import { requireAdmin, sessionToken, trustedOrigin } from '@/server/auth/auth'
 import { Problem } from '@/server/http/problem'
 import { PublicRepository } from '@/server/reader/public-repository'
 
@@ -8,7 +8,7 @@ export function repository(): PublicRepository {
   return new PublicRepository(env.DB)
 }
 export async function serverOwner(): Promise<string> {
-  return await requireOwner(new Headers(await headers()), env)
+  return await requireAdmin(new Headers(await headers()), env)
 }
 export async function serverSessionToken(owner: string): Promise<string> {
   const requestOrigin = (await headers()).get('x-blog-request-origin')
