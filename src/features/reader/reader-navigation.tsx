@@ -3,7 +3,7 @@ import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
 
 const utility1Class = [
-  'reader w-[min(var(--blog-reading-width),_calc(100%_-_48px))] min-w-0 my-0 mx-auto pt-14 px-0',
+  'reader-column w-[min(var(--blog-reading-width),_calc(100%_-_48px))] min-w-0 my-0 mx-auto pt-14 px-0',
   'pb-22',
 ].join(' ')
 
@@ -185,9 +185,11 @@ function scrollTable(event: KeyboardEvent<HTMLElement>): void {
 export function ReaderNavigation({
   children,
   language,
+  cover,
 }: {
   children: ReactNode
   language: string
+  cover?: ReactNode
 }): ReactNode {
   const articleRef = useRef<HTMLElement>(null)
 
@@ -227,12 +229,13 @@ export function ReaderNavigation({
   return (
     <article
       ref={articleRef}
-      className={layout1Class}
+      className="reader min-w-0"
       lang={language}
       onClick={navigate}
       onKeyDown={scrollTable}
     >
-      {children}
+      {cover}
+      <div className={layout1Class}>{children}</div>
     </article>
   )
 }

@@ -104,7 +104,7 @@ export function readerNavigationFixture(): ReaderDocument {
 }
 
 /** Mounts the real reader with the application's frontend and preference providers. */
-export function mountReader(document: ReaderDocument): ReaderView {
+export function mountReader(document: ReaderDocument, privatePreview = false): ReaderView {
   installBrowserShims()
   setMediaState({ width: 1440, reducedMotion: false, dark: false })
   const container = window.document.createElement('div')
@@ -113,7 +113,7 @@ export function mountReader(document: ReaderDocument): ReaderView {
   act(() => {
     root.render(
       <BlogFrontend initialPreferences={preferences} policy={preferencePolicy}>
-        <DocumentReader document={document} />
+        <DocumentReader document={document} privatePreview={privatePreview} />
       </BlogFrontend>,
     )
   })

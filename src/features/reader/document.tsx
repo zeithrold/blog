@@ -2,10 +2,15 @@ import type { ReactNode } from 'react'
 import type { Document } from '@/content/document'
 import type { Publication } from '@/features/reader/reader-header'
 import { Blocks } from '@/features/reader/blocks'
-import { readerContext } from '@/features/reader/context'
+import { mediaURL, readerContext } from '@/features/reader/context'
 import { ReaderHeader } from '@/features/reader/reader-header'
 import { ReaderNavigation } from '@/features/reader/reader-navigation'
 import { Bibliography, Notes } from '@/features/reader/references'
+
+const coverClass = [
+  'reader-cover w-[min(var(--blog-content-width),_calc(100%_-_48px))] mx-auto pt-14',
+  'max-[701px]:w-[calc(100%_-_24px)] max-[701px]:pt-10',
+].join(' ')
 
 const utility1Class = ['reader-body font-serif text-reading [&_>_:first-child]:mt-0 [&_p]:mt-0 [&_p]:mx-0'].join(' ')
 
@@ -140,8 +145,25 @@ export function DocumentReader({
   publication?: Publication
 }): ReactNode {
   const context = readerContext(document, privatePreview)
+  const cover = document.meta.cover ?? null
   return (
-    <ReaderNavigation language={document.meta.documentLocale}>
+    <ReaderNavigation
+      language={document.meta.documentLocale}
+      cover={cover !== null && (
+        <div className={coverClass}>
+          <img
+            className="block w-full h-auto aspect-[5/2] object-cover rounded-[12px] bg-muted max-[701px]:aspect-video"
+            src={mediaURL(context, cover.assetId)}
+            alt={cover.alt}
+            width={1500}
+            height={600}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </div>
+      )}
+    >
       {document.meta.seo.noindex && <meta name="robots" content="noindex, nofollow" />}
       <ReaderHeader meta={document.meta} publication={publication} />
       <div className={layout1Class}>
