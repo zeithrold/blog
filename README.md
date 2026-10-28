@@ -274,9 +274,10 @@ The new reader accepts old documents, but older strict readers reject revisions 
 revisions have been saved: retain a cover-compatible reader or restore a paired pre-release snapshot.
 The added columns alone do not make older canonical decoders forward-compatible.
 
-Google font stylesheet imports precede local CSS expansion so both Sans and Serif load before the
-bundled declarations. Keep Noto language coverage and the existing font CSP. A declared font family is
-not rendering evidence, and the removed browser suites no longer check rendered fonts.
+The root layout loads the Google Sans and Serif font stylesheets once through stylesheet links.
+The installed UI font CSS is adapted to keep declarations only, avoiding nested remote imports
+after Tailwind expansion. Keep Noto language coverage, upstream license notices and the existing
+font CSP. A declared font family is not rendering evidence; browser smoke does not check rendered fonts.
 
 ## Source organization
 

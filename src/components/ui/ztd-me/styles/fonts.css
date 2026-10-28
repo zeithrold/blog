@@ -1,5 +1,4 @@
-@import "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400..700&family=Noto+Sans+SC:wght@400..700&family=Noto+Sans+JP:wght@400..700&family=Noto+Sans+KR:wght@400..700&family=Noto+Color+Emoji&display=swap";
-
+/* Blog adaptation: remote font stylesheets are loaded once by src/app/layout.tsx. */
 @layer base {
 :root {
   --ztd-font-serif: "Noto Serif", "Noto Serif SC", "Noto Serif JP", "Noto Serif KR", "Noto Color Emoji", serif;
