@@ -1,9 +1,9 @@
+'use client'
 import type { ReactNode } from 'react'
 import type { DepartureState } from '@/features/editor/workspace/editor-departure'
-import type { DepartureQueue, DepartureWorkspace } from '@/features/editor/workspace/editor-departure-source'
+import type { EditorDepartureBoundary } from '@/features/editor/workspace/editor-departure-context'
 import { LoaderCircle } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   Button,
   Dialog,
@@ -14,30 +14,32 @@ import {
   DialogTitle,
 } from '@/components/ui/ztd-me/client'
 import { EditorDeparture } from '@/features/editor/workspace/editor-departure'
-import {
-  EditorDepartureSource,
-} from '@/features/editor/workspace/editor-departure-source'
+import { EditorDepartureContext } from '@/features/editor/workspace/editor-departure-context'
+import { EditorDepartureSource } from '@/features/editor/workspace/editor-departure-source'
 import { useEditorLabels } from '@/i18n/use-labels'
 import { useBlogTranslation } from '@/i18n/use-translation'
-import { useHistoryNavigationGuard, useInternalNavigationGuard } from '@/shared/admin/navigation-guard-context'
+import { useInternalNavigationGuard } from '@/shared/admin/navigation-guard-context'
 
-export function EditorNavigation({ workspace, queue }: {
-  workspace: DepartureWorkspace
-  queue: DepartureQueue
-}): ReactNode {
-  const router = useRouter()
-  const [source] = useState(() => new EditorDepartureSource(workspace, queue, href => router.push(href)))
-  const [controller] = useState(() => new EditorDeparture(source))
-  useLayoutEffect(() => {
-    source.update(workspace, queue)
-  }, [
-    source,
-    workspace,
-    queue,
-  ])
-  useEffect(() => controller.dispose, [controller])
-  const state = useSyncExternalStore(controller.subscribe, controller.snapshot, controller.snapshot)
-  const resolve = useCallback(() => source.blocked() ? controller.request : null, [source, controller])
+/**
+ * Marks the editor route as a full-document navigation boundary.
+ *
+ * The boundary belongs to the route, not to the loaded workspace, so it guards
+ * departures while the entry is still loading or has failed to load: leaving the
+ * editor is a document navigation from the first render, never a client-side
+ * route change. Once the workspace attaches, the same guard waits for uploads and
+ * the final save, and reports a failure in this dialog instead of leaving.
+ *
+ * Browser Back/Forward, refresh and close are not intercepted here: the editor's
+ * own unload guards decide those, and the one departure this dialog approved is
+ * exempted from their second, native confirmation.
+ */
+export function EditorBoundary({ children }: { children: ReactNode }): ReactNode {
+  const [departure] = useState<EditorDepartureBoundary>(() => {
+    const source = new EditorDepartureSource(href => window.location.assign(href))
+    const permit = { approved: false, event: null }
+    return { source, controller: new EditorDeparture(source, permit), permit }
+  })
+  const { source, controller } = departure
   const request = useCallback((href: string) => {
     if (source.blocked()) {
       controller.request(href)
@@ -47,25 +49,26 @@ export function EditorNavigation({ workspace, queue }: {
     }
   }, [source, controller])
   useInternalNavigationGuard(true, request)
-  const cancelHistory = useHistoryNavigationGuard(resolve, controller.cancel)
-  const cancel = useCallback(() => {
-    cancelHistory()
-    controller.cancel()
-  }, [cancelHistory, controller])
-  return state.phase === 'idle' ? null : <NavigationDialog controller={controller} state={state} cancel={cancel} />
+  useEffect(() => controller.dispose, [controller])
+  const state = useSyncExternalStore(controller.subscribe, controller.snapshot, controller.snapshot)
+  return (
+    <EditorDepartureContext value={departure}>
+      {children}
+      {state.phase === 'idle' ? null : <DepartureDialog controller={controller} state={state} />}
+    </EditorDepartureContext>
+  )
 }
 
-function NavigationDialog({ controller, state, cancel }: {
+function DepartureDialog({ controller, state }: {
   controller: EditorDeparture
   state: DepartureState
-  cancel: () => void
 }): ReactNode {
   const text = useEditorLabels()
   const priorRef = useRef<Element | null>(typeof document === 'undefined' ? null : document.activeElement)
   return (
-    <Dialog open onOpenChange={open => !open && cancel()}>
+    <Dialog open onOpenChange={open => !open && controller.cancel()}>
       <DialogContent
-        className="editor-navigation-dialog w-[min(480px,calc(100vw-32px))]"
+        className="w-[min(480px,calc(100vw-32px))]"
         aria-busy={state.phase === 'saving'}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
@@ -82,7 +85,7 @@ function NavigationDialog({ controller, state, cancel }: {
         </DialogHeader>
         <DepartureStatus state={state} />
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={cancel}>{text('Stay here')}</Button>
+          <Button type="button" variant="outline" onClick={controller.cancel}>{text('Stay here')}</Button>
           {state.phase === 'error' && (
             <>
               <Button type="button" variant="ghost" className="text-destructive" onClick={controller.leave}>

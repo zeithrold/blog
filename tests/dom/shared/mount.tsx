@@ -3,26 +3,25 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 
 /**
- * A bare jsdom mount for the navigation-guard hooks and state machines.
+ * A bare jsdom mount for rendered components and the navigation-guard contexts.
  *
- * These subjects import no host routing module, so this helper needs no adapter:
- * the real hooks, contexts and `HistoryNavigation` run, and the browser history
- * API is the case's own driver object where it is needed.
+ * The subjects import no host routing module, so this helper needs no adapter:
+ * real components, hooks and contexts run against jsdom's own DOM.
  */
 
-export type GuardView = {
+export type MountedView = {
   readonly container: HTMLElement
   readonly render: (element: ReactElement) => void
   readonly unmount: () => void
 }
 
-const mounted: GuardView[] = []
+const mounted: MountedView[] = []
 
-export function mount(element: ReactElement): GuardView {
+export function mount(element: ReactElement): MountedView {
   const container = document.createElement('div')
   document.body.append(container)
   const root = createRoot(container)
-  const view: GuardView = {
+  const view: MountedView = {
     container,
     render: (next) => {
       act(() => {
@@ -50,8 +49,8 @@ export async function settle(): Promise<void> {
   })
 }
 
-/** Unmounts every guard surface this file mounted. */
-export function resetGuardDom(): void {
+/** Unmounts every surface this file mounted. */
+export function resetMounted(): void {
   for (const view of mounted.splice(0)) {
     view.unmount()
   }

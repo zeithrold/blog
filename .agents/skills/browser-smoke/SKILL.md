@@ -11,6 +11,15 @@ and `tests/browser/smoke.spec.ts` before changing this layer.
 - Keep this a deliberately incomplete smoke layer: three independent cases,
   Chromium only, one configuration and `pnpm test:browser`. Adding another
   case or browser needs an explicit scope decision, not an automatic matrix.
+- The navigation case owns the editor's full-document boundary: entry, Back and
+  Forward must cross a document boundary (including native BFCache restoration;
+  assert a unique per-document marker or
+  `request.isNavigationRequest()`, never URL equality alone), and unsaved Back
+  must raise the browser's own dialog, dismissed to stay. A clean Back does not
+  prove dirty protection. The same case clicks the real desktop View site link:
+  save failure stays in the editor, a successful save leaves by document
+  navigation, and explicit discard does not raise a second native confirmation.
+  Unit/DOM tests own the remaining departure-state combinations.
 - Use real routes, BlockNote and local services. Unit/DOM own state combinations;
   Worker integration owns HTTP, persistence and permission semantics.
 - Run only in a dedicated checkout with local D1/R2 and no production secrets.

@@ -3,7 +3,6 @@ import type { Workspace } from '@/features/editor/workspace/editor-types'
 import type { RevisionHistory } from '@/features/history/revision-history-model'
 import type { BlogTranslator } from '@/i18n/instance'
 import { AlertCircle, ArrowUpRight, Eye, LoaderCircle, RefreshCw, RotateCcw } from 'lucide-react'
-import Link from 'next/link'
 import { useState } from 'react'
 import { Button, useFrontendPreferences } from '@/components/ui/ztd-me/client'
 import { SettingSection } from '@/components/ui/ztd-me/ui/setting-section'
@@ -12,6 +11,7 @@ import { RevisionSummary } from '@/features/history/revision-presentation'
 import { EditorText } from '@/i18n/labels'
 import { useBlogTranslation } from '@/i18n/use-translation'
 import { ConfirmDialog } from '@/shared/admin/confirm-dialog'
+import { GuardedLink } from '@/shared/admin/navigation-guard'
 import {
   utility1Class,
   utility2Class,
@@ -167,13 +167,13 @@ function HistoryToolbar({ workspace, loading, load }: {
         {text('refreshHistory')}
       </Button>
       <Button asChild variant="ghost" size="icon" className="revision-open-history">
-        <Link
+        <GuardedLink
           href={`/admin/documents/${workspace.props.initial.documentId}/history`}
           aria-label={text('viewAndCompareRevisions')}
           title={text('viewAndCompareRevisions')}
         >
           <ArrowUpRight size={17} aria-hidden="true" />
-        </Link>
+        </GuardedLink>
       </Button>
     </div>
   )

@@ -16,6 +16,7 @@ import { useScheduleList } from '@/features/editor/publication/schedule-controll
 import { useActions } from '@/features/editor/workspace/actions'
 import { EditorBody } from '@/features/editor/workspace/body'
 import { useDocumentModel } from '@/features/editor/workspace/document-model'
+import { useEditorDeparturePermit } from '@/features/editor/workspace/editor-departure-context'
 import { EditorHeader } from '@/features/editor/workspace/header'
 import { EditorSettings } from '@/features/editor/workspace/settings'
 import { useEditorLabels } from '@/i18n/use-labels'
@@ -86,6 +87,7 @@ export default function Editor(props: EditorProps): ReactNode {
 function EditorSession(props: SessionProps): ReactNode {
   const { preferences } = useFrontendPreferences()
   const [resolving, setResolving] = useState(false)
+  const permit = useEditorDeparturePermit()
   const model = useDocumentModel(props.initial, preferences.locale, props.csrfToken, props.owner)
   const draft = useDraft({
     initial: props.initial,
@@ -93,12 +95,9 @@ function EditorSession(props: SessionProps): ReactNode {
     csrfToken: props.csrfToken,
     model,
     recovered: props.recovered === true,
+    permit,
   })
-  const actions = useActions({
-    props,
-    model,
-    draft,
-  })
+  const actions = useActions({ props, model, draft })
   const workspace = {
     props,
     model,
@@ -128,7 +127,7 @@ function EditorSession(props: SessionProps): ReactNode {
             <DraftNotices workspace={workspace} setResolving={setResolving} />
             <TitleField workspace={workspace} update={update} />
             <RichMetadataContext value={rich}>
-              <EditorBody workspace={workspace} />
+              <EditorBody workspace={workspace} permit={permit} />
             </RichMetadataContext>
             <LocalCopyStatus value={draft.localNotice} />
           </div>

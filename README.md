@@ -89,10 +89,16 @@ pnpm test:browser
 ```
 
 Port 8800 must be free; Playwright refuses to reuse another server and owns its server's lifecycle.
-The three cases cover Chinese text input/save/server read-back/reload, list-to-editor navigation
-with native Back/Forward, and a 390px settings drawer's keyboard activation/Escape/focus return.
+The three cases cover Chinese text input/save/server read-back/reload, the editor document boundary
+(full-document entry and Back/Forward, then the browser's own confirmation on unsaved Back, dismissed
+to stay), and a 390px settings drawer's keyboard activation/Escape/focus return.
 Each prepares its own document. The tests wait for the client list to load before interacting;
-they do not cover clicks before hydration. Chinese text input is not an OS IME test.
+they do not cover clicks before hydration. Chinese text input is not an OS IME test. Document
+navigations are asserted with a per-document marker, not URL equality, and the unsaved case proves
+the native dialog only by dismissing it; a clean Back is not evidence of that protection, and the
+same journey checks the desktop View site link's failed-save/stay and successful save-then-leave
+wiring, then explicit discard without a second native confirmation. Other departure-state
+combinations are covered by unit and DOM tests.
 
 Only Chromium runs, with one worker, no retries, no video and no explicit screenshots.
 Failures retain native traces under ignored `test-results/` until the next run. Open a failed
@@ -282,8 +288,8 @@ font CSP. A declared font family is not rendering evidence; browser smoke does n
 ## Source organization
 
 `src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
-Worker security. Its HTML response path installs the nonce-bearing history bridge before router
-scripts can capture native History methods.
+Worker security. It serves the router's HTML unchanged: the nonce-bearing CSP still governs
+every script, and the Worker injects no pre-hydration code.
 
 `src/server` groups HTTP handling, authentication, document persistence, media, catalogs, publication,
 public reading, reference lookup, operations, and runtime bindings. `src/content` contains
@@ -300,6 +306,15 @@ persistence and recovery live in `draft`; blocks, controls, media insertion, ref
 and preview keep their views and state together. Editor-specific history integration belongs to the
 workspace; `features/history` provides revision loading, comparison, and the standalone history page.
 The standalone media gallery remains in `features/media`.
+
+The editor document is a full-document navigation boundary. Its route renders `EditorBoundary`, which
+registers the in-app link guard before the editor workspace loads, so entering and leaving the editor
+are ordinary document navigations rather than client-side route changes. In-app departures (site
+links, the header's document link, the history link) wait for uploads and the final save and report a
+failure in the existing dialog before performing that navigation; Back/Forward, refresh and close are
+left to the browser, which asks through the editor's own `beforeunload` guards while the draft is
+dirty or uploads are pending. The one departure the dialog approved is exempted from that second,
+native confirmation. No history state, pop listener or restore machine is involved.
 
 Feature CSS stays with its owner and is imported by `src/app/styles.css` in the established order.
 Global CSS stays under `src/app/styles`. Translation resources and phrase mappings use matching

@@ -1,9 +1,11 @@
+import type { DeparturePermit } from '@/features/editor/workspace/editor-departure'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import type { MediaAsset, MediaRole, UploadRole } from '@/features/media/media-types'
 import type { MediaUploadModel } from '@/features/media/upload-queue'
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { MediaDestinations } from '@/features/editor/media/media-destinations'
 import { attachMedia } from '@/features/editor/media/media-placement'
+import { approvedUnload } from '@/features/editor/workspace/editor-departure'
 import { hasPendingUploads, MediaUploadQueue } from '@/features/media/upload-queue'
 
 export type EditorUploadModel = MediaUploadModel & {
@@ -18,7 +20,12 @@ export type EditorUploadModel = MediaUploadModel & {
   isOpen: () => boolean
 }
 
-export function useEditorMediaUpload(workspace: Workspace): EditorUploadModel {
+/**
+ * Owns the editor's upload queue and, with draft persistence, the browser's
+ * unsaved-work warning for pending uploads. The one departure the editor
+ * boundary already approved skips that warning.
+ */
+export function useEditorMediaUpload(workspace: Workspace, permit: DeparturePermit | null): EditorUploadModel {
   const [target, setTarget] = useState<string>()
   const [session] = useState(() => new EditorUploadSession(workspace, setTarget))
   useLayoutEffect(() => {
@@ -32,13 +39,14 @@ export function useEditorMediaUpload(workspace: Workspace): EditorUploadModel {
   const uploads = useSyncExternalStore(queue.subscribe, queue.snapshot, queue.snapshot)
   useLayoutEffect(() => {
     const unload = (event: BeforeUnloadEvent): void => {
-      if (session.pending()) {
+      const approved = approvedUnload(permit, event)
+      if (session.pending() && !approved) {
         event.preventDefault()
       }
     }
     window.addEventListener('beforeunload', unload)
     return () => window.removeEventListener('beforeunload', unload)
-  }, [session])
+  }, [session, permit])
   return {
     role,
     setRole,

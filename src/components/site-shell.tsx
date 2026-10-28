@@ -164,10 +164,10 @@ function AdminSidebar({ pathname }: { pathname: string }): ReactNode {
           </Link>
         ))}
       </nav>
-      <a className="admin-sidebar-site" href="/">
+      <Link className="admin-sidebar-site" href="/">
         {text('View site')}
         <ArrowUpRight size={14} aria-hidden="true" />
-      </a>
+      </Link>
     </aside>
   )
 }

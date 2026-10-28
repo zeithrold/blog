@@ -28,28 +28,43 @@ export function unfinishedUploads(queue: DepartureQueue): boolean {
   return queue.snapshot().items.some(item => item.state === 'queued' || item.state === 'failed')
 }
 
+/**
+ * The departure policy of one editor document.
+ *
+ * The route boundary owns this source before any workspace exists: while the
+ * entry is loading, or after it failed, there is nothing to wait for and nothing
+ * to save, so leaving is a plain document navigation. `attach` supplies the
+ * loaded workspace and its upload queue.
+ */
 export class EditorDepartureSource implements DepartureSource {
-  constructor(
-    private workspace: DepartureWorkspace,
-    private queue: DepartureQueue,
-    readonly navigate: (href: string) => void,
-  ) {}
+  private workspace: DepartureWorkspace | null = null
+  private queue: DepartureQueue | null = null
 
-  update(workspace: DepartureWorkspace, queue: DepartureQueue): void {
+  constructor(readonly navigate: (href: string) => void) {}
+
+  attach(workspace: DepartureWorkspace, queue: DepartureQueue): void {
     this.workspace = workspace
     this.queue = queue
   }
 
-  blocked = (): boolean => this.workspace.draft.coordinator.dirty
-    || departureWaiting(this.workspace, this.queue) || unfinishedUploads(this.queue)
+  detach(): void {
+    this.workspace = null
+    this.queue = null
+  }
+
+  blocked = (): boolean => this.workspace !== null && this.queue !== null
+    && (this.workspace.draft.coordinator.dirty
+      || departureWaiting(this.workspace, this.queue)
+      || unfinishedUploads(this.queue))
 
   wait = async (current: () => boolean): Promise<void> => {
-    while (current() && departureWaiting(this.workspace, this.queue)) {
+    while (current() && this.workspace !== null && this.queue !== null
+      && departureWaiting(this.workspace, this.queue)) {
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 40)
       })
     }
-    if (current()) {
+    if (current() && this.workspace !== null && this.queue !== null) {
       await this.workspace.model.waitUploads()
       if (unfinishedUploads(this.queue)) {
         throw new Error('Finish or remove the queued uploads before leaving.')
@@ -57,7 +72,13 @@ export class EditorDepartureSource implements DepartureSource {
     }
   }
 
-  save = async (): Promise<boolean> => await this.workspace.draft.coordinator.settle()
-  recover = async (): Promise<boolean> => await this.workspace.draft.persistLocal()
-  failure = (): string | null => this.workspace.draft.coordinator.failureCode
+  save = async (): Promise<boolean> => this.workspace === null
+    ? true
+    : await this.workspace.draft.coordinator.settle()
+
+  recover = async (): Promise<boolean> => this.workspace === null
+    ? false
+    : await this.workspace.draft.persistLocal()
+
+  failure = (): string | null => this.workspace?.draft.coordinator.failureCode ?? null
 }

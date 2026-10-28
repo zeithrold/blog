@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { DeparturePermit } from '@/features/editor/workspace/editor-departure'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import {
   BlockNoteViewRaw,
@@ -18,19 +19,22 @@ import { useEditorMediaUpload } from '@/features/editor/media/editor-upload-mode
 import { EditorMediaContext } from '@/features/editor/media/media-context'
 import { MediaPanelBridge } from '@/features/editor/media/media-panel-bridge'
 import { EditorMediaOverlay } from '@/features/editor/media/media-upload'
-import { EditorNavigation } from '@/features/editor/workspace/editor-navigation'
+import { useEditorDepartureAttachment } from '@/features/editor/workspace/editor-departure-context'
 import { useInputGuards } from '@/features/editor/workspace/input-guards'
 import { EditorToolbar } from '@/features/editor/workspace/toolbar'
 import { EditorText } from '@/i18n/labels'
 
-export function EditorBody({ workspace }: { workspace: Workspace }): ReactNode {
+export function EditorBody({ workspace, permit }: {
+  workspace: Workspace
+  permit: DeparturePermit | null
+}): ReactNode {
   const { model } = workspace
   const { editor } = model
   const [overlay, setOverlay] = useState<HTMLDivElement | null>(null)
-  const media = useEditorMediaUpload(workspace)
+  const media = useEditorMediaUpload(workspace, permit)
+  useEditorDepartureAttachment(workspace, media.queue)
   return (
     <EditorMediaContext value={media}>
-      <EditorNavigation workspace={workspace} queue={media.queue} />
       <EditorToolbar
         editor={editor}
         disabled={workspace.busy || model.uploading}
