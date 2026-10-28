@@ -16,8 +16,6 @@ const utility2Class = ['publication-summary grid gap-3 p-[14px] border border-bo
 
 const utility3Class = ['editor-field-help m-0 text-muted-foreground text-help leading-[1.65] wrap-anywhere'].join(' ')
 
-const utility4Class = ['editor-field-help m-0 text-muted-foreground text-help leading-[1.65] wrap-anywhere'].join(' ')
-
 const layout1Class = [utility1Class, '[&_dd]:m-0 [&_dd]:wrap-anywhere'].join(' ')
 
 export function PublicationSummary({ workspace, reveal }: {
@@ -47,9 +45,6 @@ export function PublicationSummary({ workspace, reveal }: {
           </ul>
         </div>
       )}
-      <p className={utility4Class}>
-        {text('theServerChecksTheRevisionReferencesDiagramsAnd')}
-      </p>
     </div>
   )
 }

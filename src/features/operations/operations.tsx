@@ -61,7 +61,6 @@ export function OperationsPanel({ csrfToken }: { csrfToken: string }): ReactNode
       </p>
       <AdminFeedback loading={model.loading} error={model.error} retry={model.refresh} />
       {model.data !== null && <OperationDetails data={model.data} model={model} />}
-      <RefreshedAt value={model.updatedAt} />
       {model.confirm && (
         <ConfirmDialog
           title={text('Resume writes after checking restored content, media and owner access?')}
@@ -227,19 +226,4 @@ function Stat({
       </dd>
     </div>
   )
-}
-
-function RefreshedAt({ value }: { value: number | null }): ReactNode {
-  const locale = useFrontendPreferences().preferences.locale
-  return value === null
-    ? null
-    : (
-        <p className="admin-feedback text-muted-foreground text-help">
-          <EditorText value="Last refreshed" />
-          {' · '}
-          <time dateTime={new Date(value).toISOString()}>
-            {new Date(value).toLocaleTimeString(locale)}
-          </time>
-        </p>
-      )
 }

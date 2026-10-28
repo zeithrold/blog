@@ -114,7 +114,7 @@ function useLocalRecovery(input: LocalRecoveryInput): () => Promise<boolean> {
             savedAt,
             document,
           })
-          setLocalNotice(localTime(savedAt))
+          setLocalNotice('')
           return true
         }
         catch {
@@ -265,8 +265,4 @@ class DraftSignals {
   notify(...args: Parameters<DraftSignals['status']>): void {
     this.status(...args)
   }
-}
-
-function localTime(savedAt: number): string {
-  return `Local copy saved ${new Date(savedAt).toLocaleTimeString()}`
 }

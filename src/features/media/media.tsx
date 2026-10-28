@@ -72,7 +72,6 @@ const layout5Class = [utility8Class, 'whitespace-nowrap border-0'].join(' ')
 type Model = ReturnType<typeof useMediaManager>
 const MEDIA_NOTE = 'Upload once, reuse in your writing. Media becomes public only while referenced '
   + 'by a published document.'
-const QUEUE_NOTE = 'Uploads stay available as you move between pages in this tab. Keep this tab open until they finish.'
 export function MediaManager({ session, retry }: {
   session: GallerySession
   retry: () => Promise<void>
@@ -98,7 +97,6 @@ export function MediaManager({ session, retry }: {
           onOpenChange={model.setOpen}
         />
       </header>
-      <GalleryQueueNote model={model} />
       <MediaToolbar {...{ model, query, setQuery, role, setRole }} />
       <AdminFeedback loading={model.loading} error={model.error} retry={model.unavailable ? retry : model.load} />
       {model.loaded && items.length === 0 && model.error === '' && (
@@ -123,16 +121,6 @@ export function MediaManager({ session, retry }: {
       )}
     </section>
   )
-}
-
-function GalleryQueueNote({ model }: { model: Model }): ReactNode {
-  return model.uploads.items.length === 0
-    ? null
-    : (
-        <p className="media-session-note mb-6 text-help leading-relaxed text-muted-foreground" role="status">
-          <EditorText value={QUEUE_NOTE} />
-        </p>
-      )
 }
 
 function MediaToolbar({ model, query, setQuery, role, setRole }: {

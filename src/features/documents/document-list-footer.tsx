@@ -50,9 +50,7 @@ export function DocumentLoading({ copy, initial }: { copy: DocumentListCopy, ini
 
 export function DocumentPagination({ controller, state, copy }: ListProps): ReactNode {
   if (state.cursor === null) {
-    return state.loaded && state.entries.length > 0 && state.loading === null
-      ? <p className="document-list-end text-muted-foreground text-help">{copy.end}</p>
-      : null
+    return null
   }
   return (
     <div className={utility2Class}>

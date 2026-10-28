@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react'
 import type { Envelope } from '@/features/editor/workspace/document-model'
 import type { EditorProps, SessionProps, Workspace } from '@/features/editor/workspace/editor-types'
-import { CircleAlert, FileCheck2 } from 'lucide-react'
+import { CircleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Input, Label, useFrontendPreferences } from '@/components/ui/ztd-me/client'
 import { cn } from '@/components/ui/ztd-me/ui/cn'
@@ -210,21 +210,13 @@ function TitleField({
 
 function LocalCopyStatus({ value }: { value: string }): ReactNode {
   const text = useEditorLabels()
-  const prefix = 'Local copy saved '
-  const saved = value.startsWith(prefix)
   if (value === '') {
     return null
   }
   return (
-    <p className={layout3Class} role="status" data-state={saved ? 'saved' : 'unavailable'}>
-      {saved
-        ? <FileCheck2 size={14} aria-hidden="true" />
-        : <CircleAlert size={14} aria-hidden="true" />}
-      <span>
-        {saved
-          ? text('Local copy saved {{value0}}', { value0: value.slice(prefix.length) })
-          : text(value)}
-      </span>
+    <p className={layout3Class} role="status" data-state="unavailable">
+      <CircleAlert size={14} aria-hidden="true" />
+      <span>{text(value)}</span>
     </p>
   )
 }

@@ -63,6 +63,22 @@ it('a failed first load offers Try again and the retry renders the list', async 
   expect(calls).toBe(2)
 })
 
+it('a fully loaded list has no redundant end-of-list status', async () => {
+  const entry = documentEntry({ title: 'Only document' })
+  const view = mountDocuments({
+    handlers: {
+      'GET /api/admin/documents': call => selectDocuments([entry], call),
+    },
+  })
+  await settleDocuments(view)
+
+  expect(view.container.querySelector(`[href="/admin/documents/${entry.documentId}"]`)?.textContent)
+    .toBe(entry.title)
+  expect(view.container.querySelector('.document-list-end')).toBeNull()
+  expect(view.container.textContent).not.toContain('All matching documents are loaded.')
+  expect(all<HTMLButtonElement>(view.container, 'button').some(item => item.textContent === 'Load more')).toBe(false)
+})
+
 it('filters narrow the list and their chips remove individually', async () => {
   const prefix = 'DOM filter case'
   const pageTarget = documentEntry({ kind: 'page', title: `${prefix} page target` })
