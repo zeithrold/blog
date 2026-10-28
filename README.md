@@ -25,10 +25,11 @@ pnpm check:css
 pnpm typecheck
 pnpm test:unit
 pnpm test:dom
+pnpm test:browser # Chromium smoke, dedicated local checkout only
 pnpm build
 pnpm test:integration
 pnpm test      # test:unit then test:dom
-pnpm check     # lint, css, typecheck, test, build, integration
+pnpm check     # lint, css, typecheck, test, build, integration, browser
 ```
 
 `pnpm test:unit` runs every `tests/unit/**/*.test.ts` with the native Node test runner and its `spec`
@@ -41,11 +42,13 @@ the built Worker, so run `pnpm build` first; it is optional and not part of `pnp
   `editor`, `history`, `media`, `publication`, `reader`, `references`, `shared`, `components`).
 - `tests/dom` runs Vitest in jsdom, grouped into `documents`, `catalog`, `history`, `reader`,
   `media` and `editor`. Domain fixtures stay with their tests; `shared` contains DOM queries,
-  HTTP replies and minimal host setup. `vitest.config.ts` is the only test configuration.
+  HTTP replies and minimal host setup. `vitest.config.ts` configures this layer.
   Tests render real components or hooks, with explicit HTTP replies, fixed media preferences,
   no-op resize observation/scrolling and anchor-only links. Catalog tests reject navigation.
   None of these stand-ins proves layout, scrolling or routing.
 - `tests/integration` runs the built Worker in Miniflare against local D1 and R2.
+- `tests/browser/smoke.spec.ts` holds three independent Chromium smoke cases,
+  configured by `playwright.config.ts`; see the browser smoke instructions below.
 - `tests/support/unit` holds assertions and the React server-render fixture; `tests/support/worker`
   holds the Miniflare runtime and response helpers; `tests/support/development` holds the
   development-only login that Vite aliases in.
@@ -57,18 +60,47 @@ through `node --import tsx`.
 
 ## Verification limits
 
-Browser coverage was intentionally removed. The Playwright suites, the component bundle harness, the
-performance measurements and the development-server checks are gone, along with their configs,
-direct dependency and evidence reporters. The CSS-check tool still has a transitive Playwright peer;
-it does not install browsers or run browser tests in this project.
+The previous broad Playwright suites, component bundle harness, performance measurements and
+custom evidence infrastructure were intentionally removed. Only the three browser smoke cases
+described below have been reintroduced; they are not equivalent to the retired coverage.
 DOM tests that reconstructed BlockNote, editor workspaces, route lifecycles or file-upload hosts
 were also removed rather than maintained with growing shims. New tests should use ordinary
 components/hooks and small boundary fixtures, not rebuild those harnesses.
-No check now proves a browser engine, real navigation or
-routing, SSR and hydration, viewport and typography behavior, drag or IME handling, accessibility
-scanning, or any performance budget. `pnpm test:dom` covers client-side behavior in jsdom only; a
-passing `pnpm check` therefore says nothing about those behaviors. Tests report natively to stdout;
-there are no screenshots, traces, receipts or run ledgers to retain.
+The smoke command exercises Chromium, selected navigation and narrow-screen focus behavior
+against the development server only. It does not prove production SSR/hydration, production Access,
+typography, drag or OS IME handling, accessibility scanning or any performance budget.
+`pnpm test:dom` covers client-side behavior in jsdom only; `pnpm check` additionally runs the
+three browser cases, not broad browser acceptance. Tests report natively to stdout; there are no
+custom receipts or run ledgers.
+
+### Browser smoke
+
+Use a dedicated checkout with no personal development data or production `.dev.vars`/environment
+secrets. `pnpm test:browser` starts `pnpm dev`, applies migrations to that checkout's local D1 and
+uses local R2 through the existing development login. It creates documents that remain in the
+checkout's ignored `.wrangler` state; it does not reset the database. Fresh browser contexts isolate
+cookies and local storage, not D1/R2. Do not run it against a personal working database.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm exec playwright install chromium
+pnpm test:browser
+# pnpm check also runs these browser cases
+```
+
+Port 8800 must be free; Playwright refuses to reuse another server and owns its server's lifecycle.
+The three cases cover Chinese text input/save/server read-back/reload, list-to-editor navigation
+with native Back/Forward, and a 390px settings drawer's keyboard activation/Escape/focus return.
+Each prepares its own document. The tests wait for the client list to load before interacting;
+they do not cover clicks before hydration. Chinese text input is not an OS IME test.
+
+Only Chromium runs, with one worker, no retries, no video and no explicit screenshots.
+Failures retain native traces under ignored `test-results/` until the next run. Open a failed
+case's `trace.zip` with `pnpm exec playwright show-trace <path>`.
+The command is included in `pnpm check` and CI; production browser and Access behavior
+remain separate verification. CI installs Chromium with its system dependencies before `pnpm check`
+and uploads `test-results/` on failure with seven-day retention. Project guidance lives in
+`.agents/skills/browser-smoke/SKILL.md`; do not rebuild the retired harnesses or evidence gates.
 
 `pnpm check` is the full gate, and CI runs exactly it: the `Verify CMS` workflow performs a frozen install
 and then `pnpm check` in its `Verify` job. Dependency versions stay pinned; the workflow actions stay
@@ -316,5 +348,5 @@ and are installed once for the current user in `~/.agents/skills`; this reposito
 `zt.lock.json` stays as an empty retired lock; no project-level Skill sync remains. The root module
 declaration in `zt.json` supports read-only discovery.
 
-Where the Skills' verification guidance assumes a browser layer, this repository's removed browser
-coverage takes precedence: see the verification limits above.
+Where generic Skills assume broad browser gates, this repository's deliberately limited
+browser smoke takes precedence: see the verification limits above.

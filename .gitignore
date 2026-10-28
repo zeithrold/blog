@@ -40,3 +40,7 @@ tsconfig.tsbuildinfo
 
 
 .vinext/
+
+# Native Playwright failure output
+test-results/
+playwright-report/
