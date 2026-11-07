@@ -12,7 +12,6 @@ import {
   Trash2,
   Undo2,
 } from 'lucide-react'
-import Link from 'next/link'
 import { useEffect, useId, useRef } from 'react'
 import { Button, useFrontendPreferences } from '@/components/ui/ztd-me/client'
 import { hasDocumentFilters } from '@/content/document-list-query'
@@ -201,9 +200,9 @@ function DocumentRow({ entry, controller, state, copy, locale }: ListProps & {
               </span>
             )
           : (
-              <Link id={titleId} className={layout13Class} href={`/admin/documents/${entry.documentId}`}>
+              <a id={titleId} className={layout13Class} href={`/admin/documents/${entry.documentId}`}>
                 {title}
-              </Link>
+              </a>
             )}
       </div>
       <span className="document-kind text-muted-foreground text-help">{copy[entry.kind]}</span>

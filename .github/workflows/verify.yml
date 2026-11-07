@@ -24,9 +24,19 @@ jobs:
           node-version: 24.21.0
       - run: npm install --global pnpm@11.22.0 --ignore-scripts
       - run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Check
         timeout-minutes: 25
         run: pnpm check
+      - name: Upload browser failure traces
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: browser-failures-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Record build source
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: printf '%s\n' "$GITHUB_SHA" > dist/source-sha.txt

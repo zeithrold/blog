@@ -3,11 +3,13 @@ import type { OpenDocument } from '@/contracts/documents'
 import type { DraftStatus } from '@/features/editor/draft/draft'
 import type { PublicationRejection } from '@/features/editor/draft/draft-errors'
 import type { DocumentModel } from '@/features/editor/workspace/document-model'
+import type { DeparturePermit } from '@/features/editor/workspace/editor-departure'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { acknowledgementSchema } from '@/contracts/documents'
 import { DraftCoordinator } from '@/features/editor/draft/draft'
 import { useDraftErrors } from '@/features/editor/draft/draft-errors'
 import { recovery } from '@/features/editor/draft/recovery'
+import { approvedUnload } from '@/features/editor/workspace/editor-departure'
 import { Client } from '@/shared/admin/api-client'
 
 type DraftInput = {
@@ -16,6 +18,8 @@ type DraftInput = {
   csrfToken: string
   model: DocumentModel
   recovered: boolean
+  /** The one departure the editor boundary already approved, if any. */
+  permit: DeparturePermit | null
 }
 
 export type Draft = {
@@ -61,6 +65,7 @@ export function useDraft(input: DraftInput): Draft {
     model,
     persistLocal,
     changed,
+    permit: input.permit,
   })
   useEffect(() => {
     if (input.recovered) {
@@ -171,8 +176,9 @@ function useDraftLifecycle(input: {
   model: DocumentModel
   persistLocal: () => Promise<boolean>
   changed: () => void
+  permit: DeparturePermit | null
 }): void {
-  const { coordinator, model, persistLocal, changed } = input
+  const { coordinator, model, persistLocal, changed, permit } = input
   useEffect(() => {
     const stop = model.editor.onChange((_editor, transaction) => {
       if (transaction.getChanges().length > 0) {
@@ -180,7 +186,9 @@ function useDraftLifecycle(input: {
       }
     })
     const unload = (event: BeforeUnloadEvent): void => {
-      if (coordinator.dirty) {
+      // Claim even a clean departure, so a restored document cannot reuse it.
+      const approved = approvedUnload(permit, event)
+      if (coordinator.dirty && !approved) {
         event.preventDefault()
       }
     }
@@ -218,6 +226,7 @@ function useDraftLifecycle(input: {
     model.editor,
     persistLocal,
     changed,
+    permit,
   ])
 }
 

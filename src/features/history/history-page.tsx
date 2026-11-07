@@ -3,7 +3,6 @@ import type { ReactNode } from 'react'
 import type { HistoryAction, HistoryModel, HistoryPageProps } from '@/features/history/history-page-model'
 import type { BlogMessageKey, BlogTranslator } from '@/i18n/instance'
 import { AlertCircle, ArrowLeft, LoaderCircle, RefreshCw } from 'lucide-react'
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/ztd-me/client'
 import { validateDocument } from '@/content/document'
@@ -192,10 +191,10 @@ function HistoryHeader({ model, text }: { model: HistoryModel, text: BlogTransla
   return (
     <header className={layout6Class}>
       <div>
-        <Link className={layout7Class} href={`/admin/documents/${model.current.documentId}`}>
+        <a className={layout7Class} href={`/admin/documents/${model.current.documentId}`}>
           <ArrowLeft size={15} aria-hidden="true" />
           {text('backToEditor')}
-        </Link>
+        </a>
         <h1 className={layout8Class}>{text('revisionHistory')}</h1>
         <p>{documentTitle(model.current.document.meta.title, text)}</p>
       </div>

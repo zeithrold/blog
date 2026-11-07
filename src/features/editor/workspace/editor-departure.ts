@@ -1,5 +1,5 @@
 export type DepartureState = { phase: 'idle' | 'saving' | 'error', error: string, recovered: boolean }
-type DepartureTarget = { href: string, commit?: () => void }
+type DepartureTarget = { href: string }
 export type DepartureSource = {
   wait: (current: () => boolean) => Promise<void>
   save: () => Promise<boolean>
@@ -8,13 +8,34 @@ export type DepartureSource = {
   navigate: (href: string) => void
 }
 
+/**
+ * Approval is consumed by one unload event. Both guards see that same event;
+ * a later departure or BFCache restoration cannot reuse it.
+ */
+export type DeparturePermit = { approved: boolean, event: Event | null }
+
+export function approvedUnload(permit: DeparturePermit | null, event: Event): boolean {
+  if (permit === null) {
+    return false
+  }
+  if (permit.event === event) {
+    return true
+  }
+  if (!permit.approved) {
+    return false
+  }
+  permit.approved = false
+  permit.event = event
+  return true
+}
+
 export class EditorDeparture {
   private state: DepartureState = { phase: 'idle', error: '', recovered: false }
   private readonly listeners = new Set<() => void>()
   private generation = 0
   private target: DepartureTarget | null = null
 
-  constructor(private readonly source: DepartureSource) {}
+  constructor(private readonly source: DepartureSource, private readonly permit: DeparturePermit) {}
 
   snapshot = (): DepartureState => this.state
   subscribe = (listener: () => void): (() => void) => {
@@ -22,14 +43,18 @@ export class EditorDeparture {
     return () => this.listeners.delete(listener)
   }
 
-  request = (href: string, commit?: () => void): void => {
-    this.target = { href, commit }
+  request = (href: string): void => {
+    this.permit.approved = false
+    this.permit.event = null
+    this.target = { href }
     const request = ++this.generation
     this.update({ phase: 'saving', error: '', recovered: false })
     this.finish(request).catch(() => {})
   }
 
   cancel = (): void => {
+    this.permit.approved = false
+    this.permit.event = null
     this.generation++
     this.target = null
     this.update({ phase: 'idle', error: '', recovered: false })
@@ -37,7 +62,7 @@ export class EditorDeparture {
 
   retry = (): void => {
     if (this.target !== null && this.state.phase === 'error') {
-      this.request(this.target.href, this.target.commit)
+      this.request(this.target.href)
     }
   }
 
@@ -50,6 +75,8 @@ export class EditorDeparture {
   }
 
   dispose = (): void => {
+    this.permit.approved = false
+    this.permit.event = null
     this.generation++
     this.target = null
     this.listeners.clear()
@@ -91,11 +118,15 @@ export class EditorDeparture {
   }
 
   private depart(target: DepartureTarget): void {
-    if (target.commit !== undefined) {
-      target.commit()
-    }
-    else {
+    this.permit.approved = true
+    this.permit.event = null
+    try {
       this.source.navigate(target.href)
+    }
+    finally {
+      // Native location.assign dispatches beforeunload while starting the
+      // departure. If it throws or no unload occurs, no approval may linger.
+      this.permit.approved = false
     }
   }
 }

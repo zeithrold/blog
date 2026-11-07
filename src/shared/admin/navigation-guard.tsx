@@ -1,47 +1,27 @@
 'use client'
 import type { ComponentProps, ReactNode } from 'react'
-import type { HistoryNavigation } from './history-navigation'
-import type { Guard, HistoryGuardRegistration } from './navigation-guard-context'
+import type { Guard } from './navigation-guard-context'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { use, useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import { HistoryBrowser } from './history-browser'
-import { HistoryCancelContext, HistoryGuardContext, NavigationGuardContext } from './navigation-guard-context'
+import { use, useRef } from 'react'
+import { NavigationGuardContext } from './navigation-guard-context'
 
+/**
+ * Holds the guard in-app links consult. It deliberately covers nothing else: no
+ * history state, no pop listeners and no router interception, so browser
+ * Back/Forward, refresh and close stay native navigations.
+ */
 export function NavigationGuardProvider({ children }: { children: ReactNode }): ReactNode {
   const guardRef = useRef<Guard | null>(null)
-  const historyRef = useRef<HistoryGuardRegistration | null>(null)
-  const navigationRef = useRef<HistoryNavigation | null>(null)
-  const cancelHistory = useCallback(() => navigationRef.current?.cancel(), [])
-  const pathname = usePathname()
-  const search = useSearchParams().toString()
-  useLayoutEffect(() => {
-    const driver = new HistoryBrowser(
-      () => historyRef.current?.resolve() ?? null,
-      () => historyRef.current?.cancel(),
-    )
-    const { navigation, pop } = driver
-    navigationRef.current = navigation
-    window.addEventListener('blog:history-pop', pop)
-    window.addEventListener('blog:history-write', navigation.written)
-    window.addEventListener('hashchange', navigation.sync)
-    return () => {
-      driver.dispose()
-      window.removeEventListener('blog:history-pop', pop)
-      window.removeEventListener('blog:history-write', navigation.written)
-      window.removeEventListener('hashchange', navigation.sync)
-    }
-  }, [])
-  useEffect(() => navigationRef.current?.sync(), [pathname, search])
-  return (
-    <NavigationGuardContext value={guardRef}>
-      <HistoryGuardContext value={historyRef}>
-        <HistoryCancelContext value={cancelHistory}>{children}</HistoryCancelContext>
-      </HistoryGuardContext>
-    </NavigationGuardContext>
-  )
+  return <NavigationGuardContext value={guardRef}>{children}</NavigationGuardContext>
 }
 
+/**
+ * An in-app link that asks the registered guard first. The guard receives the
+ * destination and decides; when it accepts, the departure itself is performed by
+ * the owner of that guard (for the editor document, a document navigation).
+ * Modified and non-primary clicks never reach `onNavigate`, so they keep the
+ * browser's own behavior.
+ */
 export function GuardedLink({ deferGuard, ...props }: Omit<ComponentProps<typeof Link>, 'href' | 'onNavigate'> & {
   href: string
   deferGuard?: (request: () => void) => void

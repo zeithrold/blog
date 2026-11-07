@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { equal } from '~/tests/support/unit/assertions'
 import { runtime } from '~/tests/support/worker/runtime'
 
-test('built HTML installs the history bridge before router scripts under its response nonce', async (t) => {
+test('built HTML is served as the router rendered it, still under the response nonce', async (t) => {
   const app = await runtime()
   t.after(async () => await app.dispose())
   const response = await app.fetch('/admin/documents')
@@ -11,13 +10,11 @@ test('built HTML installs the history bridge before router scripts under its res
   const policy = response.headers.get('content-security-policy') ?? ''
   const nonce = /'nonce-([^']+)'/u.exec(policy)?.[1]
   assert.ok(nonce !== undefined)
+  assert.match(policy, /script-src 'self' 'nonce-/u)
   const html = await response.text()
-  const script = /<head[^>]*>\s*<script\s+nonce="([^"]+)">([\s\S]*?)<\/script>/u.exec(html)
-  assert.ok(script !== null)
-  assert.equal(script[1], nonce)
-  assert.match(String(script[2]), /const key = '__blogHistory'/u)
-  equal(html.indexOf('<script'), script.index + script[0].indexOf('<script'))
-  assert.equal(response.headers.get('content-length'), null)
+  // The Worker adds no pre-hydration script: no history state stamping, no
+  // injected pop listener and no worker-owned navigation state.
+  assert.doesNotMatch(html, /__blogHistory|blog:history-pop|blog:history-write/u)
   const health = await app.fetch('/api/health')
   assert.match(health.headers.get('content-type') ?? '', /application\/json/u)
   assert.doesNotMatch(await health.text(), /<script/u)

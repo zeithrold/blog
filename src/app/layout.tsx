@@ -5,6 +5,8 @@ import { SiteShell } from '@/components/site-shell'
 import {
   createPreferencePolicy,
   frontendRootAttributes,
+  GOOGLE_FONTS_SANS_URL,
+  GOOGLE_FONTS_SERIF_URL,
   resolveInitialPreferences,
 } from '@/components/ui/ztd-me'
 import { BlogFrontend } from '@/i18n/frontend'
@@ -41,6 +43,8 @@ export default async function Layout({
     <html {...frontendRootAttributes(initial)}>
       <head>
         <meta name="cms-nonce" content={requestHeaders.get('x-blog-nonce') ?? ''} />
+        <link rel="stylesheet" href={GOOGLE_FONTS_SANS_URL} />
+        <link rel="stylesheet" href={GOOGLE_FONTS_SERIF_URL} />
       </head>
       <body className={utility1Class}>
         <BlogFrontend

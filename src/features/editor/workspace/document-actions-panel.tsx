@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/ztd-me/client'
 import { cn } from '@/components/ui/ztd-me/ui/cn'
 import { useEditorLabels } from '@/i18n/use-labels'
+import { GuardedLink } from '@/shared/admin/navigation-guard'
 
 const template1Class = [
   'document-drawer-action [&.document-action-danger]:text-destructive justify-start gap-3 w-full',
@@ -163,14 +164,9 @@ function DrawerAction({ action, close }: { action: DocumentAction, close: Props[
   if (action.href !== undefined) {
     return (
       <Button variant="ghost" asChild className={className}>
-        <a
-          href={action.href}
-          target={action.external === true ? '_blank' : undefined}
-          rel="noopener noreferrer"
-          onClick={() => close(false)}
-        >
-          <ActionCopy action={action} />
-        </a>
+        {action.external === true
+          ? <ExternalAction action={action} onClick={() => close(false)} />
+          : <GuardedLink href={action.href} onClick={() => close(false)}><ActionCopy action={action} /></GuardedLink>}
       </Button>
     )
   }
@@ -196,13 +192,30 @@ function MenuAction({ action }: { action: DocumentAction }): ReactNode {
   }
   return (
     <Menu.Item asChild={action.href !== undefined} className={className} disabled={action.disabled} onSelect={select}>
-      {action.href === undefined
-        ? <ActionCopy action={action} />
-        : (
-            <a href={action.href} target={action.external === true ? '_blank' : undefined} rel="noopener noreferrer">
-              <ActionCopy action={action} />
-            </a>
-          )}
+      {menuItemContent(action)}
     </Menu.Item>
+  )
+}
+
+/**
+ * The menu item's child: a new-tab destination, a guarded in-app departure, or
+ * plain content for an action this panel runs itself.
+ */
+function menuItemContent(action: DocumentAction): ReactNode {
+  if (action.href === undefined) {
+    return <ActionCopy action={action} />
+  }
+  if (action.external === true) {
+    return <ExternalAction action={action} />
+  }
+  return <GuardedLink href={action.href}><ActionCopy action={action} /></GuardedLink>
+}
+
+/** A new-tab destination is not a departure from this document. */
+function ExternalAction({ action, onClick }: { action: DocumentAction, onClick?: () => void }): ReactNode {
+  return (
+    <a href={action.href} target="_blank" rel="noopener noreferrer" onClick={onClick}>
+      <ActionCopy action={action} />
+    </a>
   )
 }
