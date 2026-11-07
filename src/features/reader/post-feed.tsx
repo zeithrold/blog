@@ -46,13 +46,13 @@ const arrowClass = [
 ].join(' ')
 
 const titleClass = [
-  'post-feed-title mt-3.5 mb-0 font-serif text-[length:23px] font-bold leading-[1.4]',
+  'post-feed-title mt-3.5 mb-0 font-sans text-[length:23px] font-bold leading-[1.4]',
   'tracking-[-.025em] wrap-anywhere [html:lang(zh-CN)_&]:tracking-normal [html:lang(zh-CN)_&]:leading-[1.5]',
   'max-[701px]:text-[length:21px]',
 ].join(' ')
 
 const descriptionClass = [
-  'post-feed-description line-clamp-4 mt-2.5 mb-0 text-muted-foreground text-body leading-[1.8]',
+  'post-feed-description line-clamp-4 mt-2.5 mb-0 font-serif text-muted-foreground text-body leading-[1.8]',
   'wrap-anywhere',
 ].join(' ')
 

@@ -5,6 +5,7 @@ import * as Menu from '@radix-ui/react-dropdown-menu'
 import { Activity, ArrowUpRight, ChevronDown, Files, FolderOpen, Image, Rss, Search, Tags } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useRef } from 'react'
+import { PublicMobileMenu } from '@/components/public-mobile-menu'
 import { ApplicationShell, Button, PublicShell } from '@/components/ui/ztd-me/client'
 import { useAdminAppbarHeight } from '@/hooks/use-sticky-height'
 import { useViewportHints } from '@/hooks/use-viewport'
@@ -52,8 +53,8 @@ const layout2Class = [
 
 const layout3Class = [
   utility5Class,
-  'max-[639.99px]:overflow-hidden max-[639.99px]:[clip-path:inset(50%)]',
-  'max-[639.99px]:whitespace-nowrap',
+  'max-[641px]:overflow-hidden max-[641px]:[clip-path:inset(50%)]',
+  'max-[641px]:whitespace-nowrap',
 ].join(' ')
 
 const layout4Class = [
@@ -100,9 +101,10 @@ const layout8Class = [
 ].join(' ')
 
 const publicChromeClass = [
-  'max-[440px]:flex-wrap max-[440px]:gap-y-1 max-[440px]:py-2',
-  'max-[440px]:[&>.ztd-actions]:w-full max-[440px]:[&>.ztd-actions]:justify-between',
-  'max-[440px]:[&>.ztd-actions]:flex-wrap max-[440px]:[&>.ztd-actions]:gap-y-1',
+  'max-[641px]:h-[55px] max-[641px]:min-h-[55px] max-[641px]:gap-2',
+  'max-[641px]:[&>.ztd-actions]:gap-1 max-[641px]:[&>.ztd-actions>button]:hidden',
+  'max-[641px]:[&_.nav-link_svg]:size-5 max-[641px]:[&_.brand-mark]:hidden',
+  'max-[641px]:[&_.ztd-brand]:text-control',
 ].join(' ')
 
 function RouterLink(props: LinkProps): ReactNode {
@@ -122,19 +124,23 @@ function BrandMark(): ReactNode {
 function PublicActions({ pathname }: { pathname: string }): ReactNode {
   const text = useSiteText()
   return (
-    <nav className="project-actions flex items-center gap-[2px]" aria-label={text('Site navigation')}>
+    <nav
+      className="project-actions flex items-center gap-[2px] max-[641px]:gap-1"
+      aria-label={text('Site navigation')}
+    >
       <Link className={layout2Class} href="/search" aria-current={pathname === '/search' ? 'page' : undefined}>
         <Search size={16} aria-hidden="true" />
         <span className={layout3Class}>
           {text('Search')}
         </span>
       </Link>
-      <a className={layout4Class} href="/rss.xml" aria-label={text('Subscribe via RSS')}>
+      <a className={`${layout4Class} max-[641px]:hidden`} href="/rss.xml" aria-label={text('Subscribe via RSS')}>
         <Rss size={16} aria-hidden="true" />
         <span className={layout5Class}>
           {text('RSS')}
         </span>
       </a>
+      <PublicMobileMenu />
     </nav>
   )
 }

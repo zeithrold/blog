@@ -26,7 +26,7 @@ const moreLinkStyle4 = [
 
 const introStyle5 = [
   'intro grid grid-cols-[1fr_280px] items-end gap-12 pt-14 pb-14 max-[960px]:gap-8',
-  'max-[701px]:grid-cols-1 max-[701px]:gap-6 max-[701px]:pt-10 max-[701px]:pb-10',
+  'max-[701px]:grid-cols-1 max-[701px]:gap-6 max-[701px]:pt-6 max-[701px]:pb-10',
 ].join(' ')
 
 const eyebrowStyle6 = [

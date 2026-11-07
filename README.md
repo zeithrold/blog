@@ -91,7 +91,9 @@ pnpm test:browser
 Port 8800 must be free; Playwright refuses to reuse another server and owns its server's lifecycle.
 The three cases cover Chinese text input/save/server read-back/reload, the editor document boundary
 (full-document entry and Back/Forward, then the browser's own confirmation on unsaved Back, dismissed
-to stay), and a 390px settings drawer's keyboard activation/Escape/focus return.
+to stay), and narrow-screen keyboard activation/Escape/focus return for settings and public navigation.
+The public navigation check also switches appearance and language inside the More popover
+and closes it when returning to a wide viewport.
 Each prepares its own document. The tests wait for the client list to load before interacting;
 they do not cover clicks before hydration. Chinese text input is not an OS IME test. Document
 navigations are asserted with a per-document marker, not URL equality, and the unsaved case proves
@@ -252,8 +254,13 @@ The animation is CSS-only and runs on the inner card, never on the grid item mea
 It does not hide content behind a scroll observer, replay on every resize, or require JavaScript.
 Reduced-motion preferences disable it, and keyboard-focused cards appear immediately.
 
+The public mobile AppBar uses a single 56px row with 44px Search and More targets.
+More contains the existing appearance, language and RSS controls; desktop and admin navigation retain
+their existing layout. The mobile homepage intro starts with 24px of top spacing.
+
 Display type caps at 50px on wide layouts and 36px on narrow layouts. Secondary public titles share
-the Serif section scale at 40/32px; recovery and license titles use 32/26px. Feed titles use 23/21px.
+the Serif section scale at 40/32px; recovery and license titles use 32/26px.
+Feed titles use bold Sans at 23/21px, descriptions use Serif, and article titles use bold Sans.
 Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
 Compact UI text retains reachable controls and visible keyboard focus.
 

@@ -57,7 +57,7 @@ const layout3Class = [
 ].join(' ')
 
 const layout4Class = [
-  'm-0 text-[clamp(44px,6vw,68px)] font-medium tracking-[-0.045em] leading-[1.08]',
+  'm-0 text-[clamp(44px,6vw,68px)] font-bold tracking-[-0.045em] leading-[1.08]',
   '[html:lang(zh-CN)_&]:tracking-[-0.02em] [html:lang(zh-CN)_&]:leading-[1.2]',
 ].join(' ')
 

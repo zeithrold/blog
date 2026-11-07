@@ -17,8 +17,8 @@ export const utility4Class = [
 ].join(' ')
 
 export const utility5Class = [
-  'nav-label max-[639.99px]:absolute max-[639.99px]:w-px max-[639.99px]:h-px',
-  'max-[639.99px]:m-[-1px]',
+  'nav-label max-[641px]:absolute max-[641px]:w-px max-[641px]:h-px',
+  'max-[641px]:m-[-1px]',
 ].join(' ')
 
 export const utility6Class = [

@@ -1,5 +1,8 @@
 export const site = {
   'Site navigation': 'siteNavigation',
+  'More options': 'moreOptions',
+  'Appearance': 'appearance',
+  'Language': 'language',
   'Admin navigation': 'adminNavigation',
   'Media library': 'mediaLibrary',
   'Tags': 'tags',

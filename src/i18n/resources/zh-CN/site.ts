@@ -2,6 +2,9 @@ import type { site as english } from '@/i18n/resources/en/site'
 
 export const site = {
   'siteNavigation': '站点导航',
+  'moreOptions': '更多选项',
+  'appearance': '外观',
+  'language': '语言',
   'adminNavigation': '后台导航',
   'mediaLibrary': '媒体库',
   'tags': '标签',
