@@ -1,7 +1,8 @@
 'use client'
 import type { ReactNode } from 'react'
 import type { Document } from '@/content/document'
-import { ArrowLeft, Hash, Layers } from 'lucide-react'
+import { ArrowLeft, Layers } from 'lucide-react'
+import { TagChip } from '@/features/reader/tag-chip'
 import { useSiteLocale, useSiteText } from '@/i18n/site-locale'
 import { SiteDate } from '@/i18n/site-text'
 
@@ -30,19 +31,6 @@ const utility6Class = [
   'hover:text-foreground',
 ].join(' ')
 
-const utility7Class = [
-  'taxonomy-chip relative inline-flex items-center gap-[6px] min-h-[34px] py-0 px-3 border',
-].join(' ')
-
-const utility8Class = [
-  'border-border rounded-full bg-card text-muted-foreground text-help leading-[1.2] no-underline',
-].join(' ')
-
-const utility9Class = [
-  'hover:border-[color-mix(in_srgb,_var(--ztd-accent)_50%,_var(--ztd-border))]',
-  'hover:text-foreground',
-].join(' ')
-
 const layout1Class = [utility1Class, '[&_.back-link]:mb-5 [&_.back-link]:ml-[-2px]'].join(' ')
 
 const layout2Class = [
@@ -66,14 +54,6 @@ const layout5Class = [
   utility5Class,
   '[transition:border-color_0.2s,_color_0.2s]',
   utility6Class,
-  '[&_svg]:text-accent-foreground',
-].join(' ')
-
-const layout6Class = [
-  utility7Class,
-  utility8Class,
-  '[transition:border-color_0.2s,_color_0.2s]',
-  utility9Class,
   '[&_svg]:text-accent-foreground',
 ].join(' ')
 
@@ -128,15 +108,7 @@ export function ReaderHeader({
             </a>
           ))}
           {meta.tags.map(tag => (
-            <a
-              key={tag.id}
-              href={`/tags/${tag.slug}`}
-              className={`${layout6Class} tag-color`}
-              data-tag-color={tag.color ?? 'neutral'}
-            >
-              <Hash size={13} aria-hidden="true" />
-              {tag.label}
-            </a>
+            <TagChip key={tag.id} tag={tag} href={`/tags/${tag.slug}`} />
           ))}
         </nav>
       )}

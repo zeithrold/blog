@@ -1,7 +1,9 @@
 import type { PublicFeedItem } from '@/server/reader/public-repository'
 import { createElement } from 'react'
 import { expect, it } from 'vitest'
+import { emptyDocument } from '@/content/document'
 import { PostFeed } from '@/features/reader/post-feed'
+import { ReaderHeader } from '@/features/reader/reader-header'
 import { renderWithLocale } from '~/tests/support/unit/render-fixture'
 
 function feedItem(overrides: Partial<PublicFeedItem> = {}): PublicFeedItem {
@@ -107,15 +109,16 @@ it('empty feed reuses the published-posts empty state', () => {
   expect(html).not.toContain('post-feed grid')
 })
 
-it('feed cards display snapshot colors and keep one article link without an empty tag row', () => {
+it('feed tags keep one article link while header tags retain taxonomy links', () => {
+  const post = feedItem({
+    title: 'Tagged card',
+    tags: [
+      { id: crypto.randomUUID(), slug: 'systems', label: '系统设计', color: 'blue' },
+      { id: crypto.randomUUID(), slug: 'legacy', label: 'Legacy label' },
+    ],
+  })
   const html = renderWithLocale(createElement(PostFeed, { items: [
-    feedItem({
-      title: 'Tagged card',
-      tags: [
-        { id: crypto.randomUUID(), slug: 'systems', label: '系统设计', color: 'blue' },
-        { id: crypto.randomUUID(), slug: 'legacy', label: 'Legacy label' },
-      ],
-    }),
+    post,
     feedItem({ title: 'Untagged card' }),
   ] }))
   const tagged = card(html, 'Tagged card')
@@ -127,6 +130,22 @@ it('feed cards display snapshot colors and keep one article link without an empt
   expect(tagged.match(/<a /g)).toHaveLength(1)
   expect(tagged).not.toContain('href="/tags/')
   expect(card(html, 'Untagged card')).not.toContain('post-feed-tags')
+
+  const meta = emptyDocument().meta
+  meta.tags = post.tags
+  meta.series = [
+    { id: crypto.randomUUID(), slug: 'essays', title: 'Essays', position: 0 },
+  ]
+  const header = document.createElement('div')
+  header.innerHTML = renderWithLocale(createElement(ReaderHeader, { meta }))
+  expect(Array.from(header.querySelectorAll('.reader-taxonomy a'), link => ({
+    label: link.textContent,
+    href: link.getAttribute('href'),
+  }))).toEqual([
+    { label: 'Essays', href: '/series/essays' },
+    { label: '系统设计', href: '/tags/systems' },
+    { label: 'Legacy label', href: '/tags/legacy' },
+  ])
 })
 
 it('card entrance uses a bounded stagger independent of pagination and masonry sizing', () => {
