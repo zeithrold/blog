@@ -84,7 +84,12 @@ function library(options: { gate?: Promise<void>, failFirst?: boolean }): Return
   })
 }
 
-function mountHarness(container: HTMLElement, updates: CoverUpdate[], initial: CoverUpdate): void {
+function mountHarness(
+  container: HTMLElement,
+  updates: CoverUpdate[],
+  initial: CoverUpdate,
+  uploads: ReturnType<typeof uploadMedia>[],
+): void {
   const client = new Client('cover-csrf')
   function Harness() {
     const [cover, setCover] = useState<CoverUpdate>(initial)
@@ -94,7 +99,11 @@ function mountHarness(container: HTMLElement, updates: CoverUpdate[], initial: C
           value={cover}
           busy={false}
           run={() => {}}
-          upload={async (file, signal) => await uploadMedia(client, file, 'image', signal)}
+          upload={async (file, signal) => {
+            const upload = uploadMedia(client, file, 'image', signal)
+            uploads.push(upload)
+            return await upload
+          }}
           update={(next) => {
             updates.push(next)
             setCover(next)
@@ -138,14 +147,17 @@ function mountCoverField(options: {
   container: HTMLElement
   updates: CoverUpdate[]
   api: ReturnType<typeof serveFetch>
+  uploads: ReturnType<typeof uploadMedia>[]
 } {
   installBrowserShims()
   const api = library(options)
   const updates: CoverUpdate[] = []
+  // HTTP settlement does not include file reads or hashing before the first request.
+  const uploads: ReturnType<typeof uploadMedia>[] = []
   const container = document.createElement('div')
   document.body.append(container)
-  mountHarness(container, updates, options.initial ?? null)
-  return { container, updates, api }
+  mountHarness(container, updates, options.initial ?? null, uploads)
+  return { container, updates, api, uploads }
 }
 
 it('chooses a ready image from the media library, edits its description and clears it', async () => {
@@ -214,7 +226,7 @@ function chooseFile(dialog: HTMLElement): void {
 
 it('uploads one image as the cover and prevents dismissal until upload completes', async () => {
   const gate = defer()
-  const { container, updates, api } = mountCoverField({ gate: gate.promise })
+  const { container, updates, uploads } = mountCoverField({ gate: gate.promise })
   act(() => click(button(container, 'Choose cover')))
   const dialog = one(document.body, '[data-slot="dialog-content"]')
   expect(one(dialog, '[role="tab"][data-state="active"]').textContent).toBe('Direct upload')
@@ -229,7 +241,7 @@ it('uploads one image as the cover and prevents dismissal until upload completes
   expect(document.body.contains(dialog)).toBe(true)
   await act(async () => {
     gate.open()
-    await api.settle()
+    await Promise.allSettled(uploads)
   })
   expect(updates.at(-1)).toEqual({ assetId: uploadedId, alt: '' })
   expect(one<HTMLImageElement>(container, '.cover-preview img').getAttribute('src'))
@@ -239,20 +251,20 @@ it('uploads one image as the cover and prevents dismissal until upload completes
 
 it('keeps the existing cover on upload failure and preserves its description after retry', async () => {
   const original = { assetId: '0fefef2b-8b5b-4bf7-abd1-dfd4f52b9da8', alt: 'Original cover description' }
-  const { container, updates, api } = mountCoverField({ initial: original, failFirst: true })
+  const { container, updates, uploads } = mountCoverField({ initial: original, failFirst: true })
   act(() => click(button(container, 'Change cover')))
   const dialog = one(document.body, '[data-slot="dialog-content"]')
   chooseFile(dialog)
   await act(async () => {
     click(button(one(dialog, '.media-upload-actions'), 'Upload files'))
-    await api.settle()
+    await Promise.allSettled(uploads)
   })
   expect(one(dialog, '.media-upload-item').getAttribute('data-state')).toBe('failed')
   expect(updates).toEqual([])
   expect(one<HTMLInputElement>(container, 'input').value).toBe(original.alt)
   await act(async () => {
     click(button(dialog, 'Retry'))
-    await api.settle()
+    await Promise.allSettled(uploads)
   })
   expect(updates.at(-1)).toEqual({ assetId: uploadedId, alt: original.alt })
   expect(one<HTMLImageElement>(container, '.cover-preview img').getAttribute('src'))
