@@ -60,7 +60,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole('button', { name: 'New post', exact: true })).toBeEnabled()
 })
 
-test('real editor saves Chinese text and reloads it', async ({ page }) => {
+test('real editor saves Chinese text and context menu edits across reload', async ({ page }) => {
   await page.getByRole('button', { name: 'New post', exact: true }).click()
   await expect(page).toHaveURL(/\/admin\/documents\/[a-f0-9-]+$/)
   const path = new URL(page.url()).pathname
@@ -70,6 +70,32 @@ test('real editor saves Chinese text and reloads it', async ({ page }) => {
   await expect(body).toBeVisible()
   await page.getByRole('textbox', { name: 'Title', exact: true }).fill(title)
   await body.fill(text)
+  const paragraph = body.locator('.bn-inline-content').first()
+  await paragraph.click({ clickCount: 3 })
+  await paragraph.click({ button: 'right' })
+  const menu = page.getByRole('menu', { name: 'Editor context menu', exact: true })
+  await expect(menu).toBeVisible()
+  await menu.getByRole('menuitemcheckbox', { name: 'Bold', exact: true }).click()
+  await expect(menu).toBeHidden()
+  await expect(body).toBeFocused()
+  await expect(paragraph.locator('strong')).toHaveText(text)
+  await body.press('ArrowRight')
+  await body.press('Enter')
+  await body.press('/')
+  await page.keyboard.type('table')
+  await page.getByRole('listbox', { name: 'Insert block', exact: true }).getByText('Table', { exact: true }).click()
+  const table = body.locator('table')
+  await expect(table).toBeVisible()
+  const rowCount = await table.locator('tr').count()
+  await table.locator('td,th').last().click({ button: 'right' })
+  await menu.getByRole('menuitem', { name: 'Add row above', exact: true }).click()
+  await expect(table.locator('tr')).toHaveCount(rowCount + 1)
+  await expect(body).toBeFocused()
+  await body.press('Shift+F10')
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
+  await expect(body).toBeFocused()
   await expect(page.locator('.save-status')).toHaveAttribute('data-status', 'saved')
 
   // Server read-back prevents IndexedDB recovery from disguising a failed save.
@@ -78,10 +104,12 @@ test('real editor saves Chinese text and reloads it', async ({ page }) => {
   const saved = openDocumentSchema.parse(await response.json())
   expect(saved.document.meta.title).toBe(title)
   expect(JSON.stringify(saved.document.blocks)).toContain(text)
+  expect(JSON.stringify(saved.document.blocks)).toContain('"bold":true')
 
   await page.reload()
   await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(title)
-  await expect(body).toHaveText(text)
+  await expect(body.locator('.bn-inline-content').first()).toHaveText(text)
+  await expect(body.locator('table tr')).toHaveCount(rowCount + 1)
 })
 
 test('the editor is a document boundary and unsaved Back stays native', async ({ page }) => {
@@ -162,9 +190,10 @@ test('the editor is a document boundary and unsaved Back stays native', async ({
 
 test('narrow settings and public navigation restore keyboard focus', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  const id = await createDocument(page)
-  await page.goto(`/admin/documents/${id}`)
+  await page.goto(`/admin/documents/${await createDocument(page)}`)
   await expect(page.getByRole('textbox', { name: 'Document body', exact: true })).toBeVisible()
+  await page.locator('.bn-block-outer').first().click({ button: 'right' })
+  await expect(page.getByRole('menu', { name: 'Editor context menu', exact: true })).toBeHidden()
   const trigger = page.getByRole('button', { name: 'Document settings', exact: true })
   await expect(trigger).toBeInViewport({ ratio: 1 })
   await trigger.press('Enter')

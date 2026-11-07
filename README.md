@@ -95,6 +95,9 @@ to stay), and narrow-screen keyboard activation/Escape/focus return for settings
 The public navigation check also switches appearance and language inside the More popover
 and closes it when returning to a wide viewport. It holds client scripts before the first
 interaction to verify that More stays disabled until hydration makes it operable.
+The editor case also checks selection-preserving context formatting, table row insertion,
+keyboard context-menu focus return, and persistence of those edits across reload.
+The narrow case checks that right-click keeps the native browser menu.
 Each prepares its own document. The tests wait for the client list to load before interacting;
 they do not cover clicks before hydration. Chinese text input is not an OS IME test. Document
 navigations are asserted with a per-document marker, not URL equality, and the unsaved case proves

@@ -11,4 +11,8 @@ export const formatting = {
   blockType: '块类型',
   block: '正文块',
   insertBlock: '插入正文块',
+  editorContextMenu: '编辑器右键菜单',
+  contextMenuClipboardHelp: '复制、剪切和粘贴可继续使用快捷键。Shift + 右键打开浏览器菜单。',
+  contextDeleteBlock: '删除块',
+  contextDeleteTable: '删除表格',
 } as const

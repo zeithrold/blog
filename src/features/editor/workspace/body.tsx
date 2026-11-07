@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { DeparturePermit } from '@/features/editor/workspace/editor-departure'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import {
+  BlockNoteViewEditor,
   BlockNoteViewRaw,
   ComponentsContext,
   SuggestionMenuController,
@@ -13,6 +14,7 @@ import { editorComponents } from '@/features/editor/adapters/components'
 import { EditorTableControls } from '@/features/editor/blocks/table/table-controls'
 import { tableCanvasClass } from '@/features/editor/blocks/table/table-controls-utilities'
 import { EditorSideMenu } from '@/features/editor/controls/block-actions/side-menu'
+import { EditorContextMenu } from '@/features/editor/controls/context-menu'
 import { EditorFormattingControls } from '@/features/editor/controls/formatting/formatting-controls'
 import { useSlashItems } from '@/features/editor/controls/slash-items'
 import { useEditorMediaUpload } from '@/features/editor/media/editor-upload-model'
@@ -96,12 +98,16 @@ function NativeCanvas({
         linkToolbar={false}
         tableHandles={false}
         editable={!busy}
+        renderEditor={false}
         portalElements={{
           default: overlay ?? undefined,
         }}
         applyThemedRoot={element => element.classList.add('blog-editor')}
         {...guards}
       >
+        <EditorContextMenu workspace={workspace} portalElement={overlay}>
+          <BlockNoteViewEditor />
+        </EditorContextMenu>
         <EditorFormattingControls disabled={busy} composingRef={composingRef} portalElement={overlay} />
         <EditorSideMenu />
         <MediaPanelBridge />

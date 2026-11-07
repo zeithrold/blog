@@ -11,4 +11,8 @@ export const formatting = {
   blockType: 'Block type',
   block: 'Block',
   insertBlock: 'Insert block',
+  editorContextMenu: 'Editor context menu',
+  contextMenuClipboardHelp: 'Use copy, cut and paste shortcuts. Shift + right-click opens the browser menu.',
+  contextDeleteBlock: 'Delete block',
+  contextDeleteTable: 'Delete table',
 } as const
