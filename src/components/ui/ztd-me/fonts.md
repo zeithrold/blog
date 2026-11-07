@@ -1,4 +1,4 @@
-# Noto typography through Google Fonts
+# Typography through Google Fonts
 
 The source UI uses the Google Fonts CSS2 API directly. `styles/fonts.css` imports Noto Sans and
 Noto Sans SC/JP/KR as a variable weight range from 400 through 700, plus **Noto Color Emoji** at its native weight 400.
@@ -15,10 +15,12 @@ correct language on content and portals; changing the shared UI locale does not 
 content. The shared controls still support English and Simplified Chinese, independently of the font
 coverage. Consumers adding other languages should verify the appropriate Noto variant and its license.
 
-Noto Serif and its appropriate CJK variants are permitted for content that benefits from serif
-typography. The ordinary UI does not load unused Serif families. Add an explicit Google Fonts API
+Source Serif 4 handles English and Latin reading content, paired with Noto Serif SC/JP/KR for
+CJK glyphs. The ordinary UI does not load unused Serif families. Add an explicit Google Fonts API
 request by importing delivered `styles/fonts-serif.css`, then apply `font-serif` (or `.ztd-prose`)
 to reading content. `--ztd-font-serif` supplies the semantic stack, with matching CJK language forms.
+Source Serif 4 requests real upright and italic faces, weights 400 through 700, and the optical-size
+axis from 8 through 60. Native optical sizing follows the rendered size; CJK faces remain upright.
 
 `--ztd-font-sans` and `--ztd-font-emoji` are the delivered font tokens. Latin and CJK precede emoji in the
 ordinary text stack, preserving normal digits and text symbols. Use `.ztd-emoji` for an explicitly composed emoji
@@ -79,6 +81,10 @@ The five loaded Noto families use SIL Open Font License 1.1. Complete copyright/
 delivered in `third-party/NOTO-*-OFL.txt`, including `NOTO-COLOR-EMOJI-OFL.txt`. The earlier monochrome
 notice is also retained; preserve these six notices with the source. Fonts are served by Google, rather than
 redistributed as registry or npm assets. The shadcn MIT notice remains separate and intact.
+
+Optional Source Serif 4 is also served by Google under SIL OFL 1.1; its
+[upstream copyright and license](https://github.com/google/fonts/blob/main/ofl/sourceserif4/OFL.txt)
+remain separate from the retained Noto notices. No Source Serif font binary is bundled.
 
 The browser specimen checks real rendered font usage through Chromium's
 [CSS.getPlatformFontsForNode](https://chromedevtools.github.io/devtools-protocol/tot/CSS/#method-getPlatformFontsForNode),

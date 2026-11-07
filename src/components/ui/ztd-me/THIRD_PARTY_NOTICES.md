@@ -31,5 +31,7 @@ reviewed static behavioral CSS retains the native presence, drag and snap-point 
 components layer. It fixes the upstream invalid hitarea selector, removes a duplicate selector and
 uses semantic handle color and scoped keyframe names. No CSP policy is weakened.
 
-Noto Serif, Noto Serif SC, Noto Serif JP and Noto Serif KR are opt-in Google Fonts families, each with
-its upstream SIL OFL 1.1 notice retained. UI defaults remain Noto Sans with CJK and Color Emoji.
+Source Serif 4, Noto Serif SC, Noto Serif JP and Noto Serif KR are opt-in Google Fonts families under
+SIL OFL 1.1. Preserve the retained Noto notices; Source Serif 4's
+[upstream notice](https://github.com/google/fonts/blob/main/ofl/sourceserif4/OFL.txt) is separate.
+UI defaults remain Noto Sans with CJK and Color Emoji.

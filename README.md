@@ -201,7 +201,7 @@ rehearsal before release.
 
 ## Public reading design
 
-The public index uses a restrained journal composition: Noto Serif display type, Noto Sans UI and
+The public index uses a restrained journal composition: Source Serif 4 display type with Noto Serif CJK, Noto Sans UI and
 real publication metadata. Articles form a two-column staggered card feed above 701px and a single
 column on narrow screens. Optional covers reserve a 3:2 image area; text-only cards are a first-class
 variant, not a missing-image placeholder. Cards retain chronological DOM, keyboard and reading order.
