@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { Document } from '@/content/document'
+import type { CoverUpload } from '@/features/editor/workspace/cover-upload'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import type { MediaAsset } from '@/features/media/media-types'
 import { useState } from 'react'
@@ -18,7 +19,8 @@ import {
   Input,
   Label,
 } from '@/components/ui/ztd-me/client'
-import { MediaLibrary } from '@/features/editor/media/media-library'
+import { CoverSources } from '@/features/editor/workspace/cover-media'
+import { useCoverUpload } from '@/features/editor/workspace/cover-upload'
 import { useEditorLabels } from '@/i18n/use-labels'
 
 type Cover = NonNullable<Document['meta']['cover']>
@@ -27,6 +29,7 @@ export type CoverFieldProps = {
   value: Document['meta']['cover']
   busy: boolean
   run: Workspace['run']
+  upload: CoverUpload
   update: (cover: Cover | null) => void
 }
 
@@ -41,8 +44,8 @@ const previewClass = 'cover-preview overflow-hidden rounded-lg border border-bor
 const altHelp = 'Describe the cover for readers who cannot see it. '
   + 'Leave blank when the title already describes the image.'
 
-/** Optional article cover chosen from the existing media library. */
-export function CoverField({ value, busy, run, update }: CoverFieldProps): ReactNode {
+/** Optional article cover uploaded directly or chosen from the media library. */
+export function CoverField({ value, busy, run, upload, update }: CoverFieldProps): ReactNode {
   const text = useEditorLabels()
   const cover = value ?? null
   return (
@@ -63,6 +66,7 @@ export function CoverField({ value, busy, run, update }: CoverFieldProps): React
         <CoverPicker
           busy={busy}
           run={run}
+          upload={upload}
           hasCover={cover !== null}
           select={asset => update({
             assetId: asset.assetId,
@@ -96,39 +100,50 @@ export function CoverField({ value, busy, run, update }: CoverFieldProps): React
   )
 }
 
-function CoverPicker({ busy, run, hasCover, select }: {
+function CoverPicker({ busy, run, upload, hasCover, select }: {
   busy: boolean
   run: Workspace['run']
+  upload: CoverUpload
   hasCover: boolean
   select: (asset: MediaAsset) => void
 }): ReactNode {
   const text = useEditorLabels()
   const [open, setOpen] = useState(false)
+  const choose = (asset: MediaAsset): void => {
+    select(asset)
+    setOpen(false)
+  }
+  const model = useCoverUpload(upload, choose)
+  const setPickerOpen = (value: boolean): void => {
+    if (!model.queue.snapshot().running) {
+      model.queue.clearCompleted()
+      setOpen(value)
+    }
+  }
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setPickerOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" disabled={busy}>
           {text(hasCover ? 'Change cover' : 'Choose cover')}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="editor-media-dialog w-[min(720px,calc(100vw-32px))] max-h-[calc(100dvh-48px)]">
         <DialogHeader>
           <DialogTitle>{text('Choose a cover image')}</DialogTitle>
           <DialogDescription>
-            {text('Only images from the media library can be used as a cover.')}
+            {text('Upload an image or choose one from the media library.')}
           </DialogDescription>
         </DialogHeader>
-        <MediaLibrary
-          workspace={{ busy, run }}
-          role="image"
-          select={(asset) => {
-            select(asset)
-            setOpen(false)
-          }}
-        />
+        {open && (
+          <CoverSources
+            workspace={{ busy, run }}
+            model={{ ...model, uploading: busy || model.uploading }}
+            select={choose}
+          />
+        )}
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="ghost">{text('Close')}</Button>
+            <Button type="button" variant="ghost" disabled={busy || model.uploading}>{text('Close')}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

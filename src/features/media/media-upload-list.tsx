@@ -51,7 +51,7 @@ export function MediaUploadList({ model }: { model: Model }): ReactNode {
           <div className="media-upload-actions flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              disabled={running || !items.some(item => item.state === 'queued')}
+              disabled={model.uploading || !items.some(item => item.state === 'queued')}
               onClick={() => { model.queue.start().catch(() => {}) }}
             >
               <EditorText value={running ? 'Uploading…' : 'Upload files'} />

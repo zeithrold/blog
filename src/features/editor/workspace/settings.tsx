@@ -4,7 +4,7 @@ import type { ScheduleModel, useScheduleList } from '@/features/editor/publicati
 import type { Envelope } from '@/features/editor/workspace/document-model'
 import type { Workspace } from '@/features/editor/workspace/editor-types'
 import { FileText, Send } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   ScrollArea,
   Tabs,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/ztd-me/client'
 import { cn } from '@/components/ui/ztd-me/ui/cn'
 import { CatalogSettings } from '@/features/catalog/catalog-settings'
+import { uploadMedia } from '@/features/editor/media/media-service'
 import { LivePreview } from '@/features/editor/preview/live-preview'
 import { PublicationSummary } from '@/features/editor/publication/publication-summary'
 import { useSchedule } from '@/features/editor/publication/schedule-controller'
@@ -25,6 +26,7 @@ import { MetaFields } from '@/features/editor/workspace/meta-fields'
 import { SettingsDrawer } from '@/features/editor/workspace/settings-drawer'
 import { useCompactLayout } from '@/hooks/use-compact-layout'
 import { useEditorLabels } from '@/i18n/use-labels'
+import { Client } from '@/shared/admin/api-client'
 import {
   editorSectionClass,
   layout4Class,
@@ -167,6 +169,8 @@ export function ContentSettings({ workspace, update, livePath, referenceOpen, se
   setReferenceOpen: (open: boolean) => void
 }): ReactNode {
   const text = useEditorLabels()
+  const { owner, csrfToken } = workspace.props
+  const client = useMemo(() => new Client(csrfToken, owner), [csrfToken, owner])
   return (
     <TabsContent forceMount value="content">
       <section className={editorSectionClass}>
@@ -179,6 +183,10 @@ export function ContentSettings({ workspace, update, livePath, referenceOpen, se
             value={workspace.model.envelope.meta.cover}
             busy={workspace.busy}
             run={workspace.run}
+            upload={async (file, signal) => {
+              await client.verifyOwner(signal)
+              return await uploadMedia(client, file, 'image', signal)
+            }}
             update={cover => update({
               meta: {
                 ...workspace.model.envelope.meta,

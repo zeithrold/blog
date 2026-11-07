@@ -34,7 +34,11 @@ const layout1Class = [
 type Model = MediaUploadModel
 const CLEANUP_NOTE = 'Unused uploads can be cleaned up after 24 hours. '
   + 'Draft and historical references protect media.'
-export function MediaUploadForm({ model }: { model: Model }): ReactNode {
+export function MediaUploadForm({ model, allowRoleChange = true, multiple = true }: {
+  model: Model
+  allowRoleChange?: boolean
+  multiple?: boolean
+}): ReactNode {
   const text = useEditorLabels()
   const helpId = useId()
   const options = [
@@ -43,14 +47,16 @@ export function MediaUploadForm({ model }: { model: Model }): ReactNode {
   ]
   return (
     <div className="media-upload-form grid gap-4">
-      <ChoiceSelect
-        value={model.role}
-        options={options}
-        label={text('Media role')}
-        disabled={model.uploading}
-        onValueChange={value => model.setRole(value === 'auto' ? 'auto' : assetRoleSchema.parse(value))}
-      />
-      <MediaDropzone model={model} helpId={helpId} />
+      {allowRoleChange && (
+        <ChoiceSelect
+          value={model.role}
+          options={options}
+          label={text('Media role')}
+          disabled={model.uploading}
+          onValueChange={value => model.setRole(value === 'auto' ? 'auto' : assetRoleSchema.parse(value))}
+        />
+      )}
+      <MediaDropzone model={model} helpId={helpId} multiple={multiple} />
       <p id={helpId} className="media-upload-help m-0 text-muted-foreground text-help leading-[1.6]">
         {mediaLimits[model.role]}
       </p>
@@ -62,7 +68,11 @@ export function MediaUploadForm({ model }: { model: Model }): ReactNode {
   )
 }
 
-function MediaDropzone({ model, helpId }: { model: Model, helpId: string }): ReactNode {
+function MediaDropzone({ model, helpId, multiple }: {
+  model: Model
+  helpId: string
+  multiple: boolean
+}): ReactNode {
   const text = useEditorLabels()
   const [dragging, setDragging] = useState(false)
   const depthRef = useRef(0)
@@ -95,7 +105,7 @@ function MediaDropzone({ model, helpId }: { model: Model, helpId: string }): Rea
         event.preventDefault()
         depthRef.current = 0
         setDragging(false)
-        model.queue.enqueue(Array.from(event.dataTransfer.files), model.role)
+        enqueueFiles(model, Array.from(event.dataTransfer.files), multiple)
       }}
     >
       <CloudUpload size={32} aria-hidden="true" />
@@ -104,15 +114,24 @@ function MediaDropzone({ model, helpId }: { model: Model, helpId: string }): Rea
         label={text('Media file')}
         hideLabel
         className="w-full max-w-60"
-        multiple
+        multiple={multiple}
         accept={mediaFormats[model.role]}
         disabled={model.uploading}
         aria-describedby={helpId}
         onChange={(event) => {
-          model.queue.enqueue(Array.from(event.currentTarget.files ?? []), model.role)
+          enqueueFiles(model, Array.from(event.currentTarget.files ?? []), multiple)
           event.currentTarget.value = ''
         }}
       />
     </div>
   )
+}
+
+function enqueueFiles(model: Model, files: readonly File[], multiple: boolean): void {
+  if (!multiple) {
+    for (const item of model.queue.snapshot().items) {
+      model.queue.remove(item.id)
+    }
+  }
+  model.queue.enqueue(multiple ? files : files.slice(0, 1), model.role)
 }

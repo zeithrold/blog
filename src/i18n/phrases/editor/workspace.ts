@@ -15,7 +15,8 @@ export const workspace = {
   'Change cover': 'changeCover',
   'Remove cover': 'removeCover',
   'Choose a cover image': 'chooseACoverImage',
-  'Only images from the media library can be used as a cover.': 'onlyImagesFromMediaLibraryCanBeUsedAsACover',
+  'Direct upload': 'directUpload',
+  'Upload an image or choose one from the media library.': 'uploadCoverImageHelp',
   'Cover description': 'coverDescription',
   [
   'Describe the cover for readers who cannot see it. '

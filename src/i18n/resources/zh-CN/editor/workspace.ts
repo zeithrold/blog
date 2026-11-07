@@ -14,7 +14,8 @@ export const workspace = {
   changeCover: '更换封面',
   removeCover: '移除封面',
   chooseACoverImage: '选择封面图片',
-  onlyImagesFromMediaLibraryCanBeUsedAsACover: '只能从媒体库中选择图片作为封面。',
+  directUpload: '直接上传',
+  uploadCoverImageHelp: '直接上传图片，或从媒体库中选择封面。',
   coverDescription: '封面描述',
   describeTheCoverForReadersWhoCannotSeeIt:
     '为无法看到图片的读者描述封面。若标题已能说明图片内容，可留空。',
