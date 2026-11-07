@@ -46,6 +46,12 @@ async function createDocument(page: Page): Promise<string> {
   return acknowledgementSchema.parse(await response.json()).documentId
 }
 
+async function expectCompactNavigation(page: Page): Promise<void> {
+  await expect(page.locator('.ztd-appbar')).toHaveCSS('height', '56px')
+  await expect(page.locator('.intro')).toHaveCSS('padding-top', '24px')
+  await expect(page.locator('a[href="/search"]')).toHaveCSS('width', '44px')
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/__fixture/login')
   await expect(page).toHaveURL('/admin')
@@ -161,25 +167,36 @@ test('narrow settings and public navigation restore keyboard focus', async ({ pa
   await expect(page.getByRole('textbox', { name: 'Document body', exact: true })).toBeVisible()
   const trigger = page.getByRole('button', { name: 'Document settings', exact: true })
   await expect(trigger).toBeInViewport({ ratio: 1 })
-  await trigger.focus()
-  await page.keyboard.press('Enter')
+  await trigger.press('Enter')
   const dialog = page.getByRole('dialog', { name: 'Document settings', exact: true })
   await expect(dialog).toBeVisible()
   const publication = dialog.getByRole('tab', { name: 'Publication', exact: true })
-  await publication.focus()
-  await page.keyboard.press('Enter')
+  await publication.press('Enter')
   await expect(publication).toHaveAttribute('aria-selected', 'true')
   await expect(publication).toBeInViewport({ ratio: 1 })
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
 
-  await page.goto('/')
-  await expect(page.locator('.ztd-appbar')).toHaveCSS('height', '56px')
-  await expect(page.locator('.intro')).toHaveCSS('padding-top', '24px')
+  const hydration = Promise.withResolvers<undefined>()
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() === 'script') {
+      await hydration.promise
+    }
+    await route.continue()
+  })
+  await page.goto('/', { waitUntil: 'commit' })
   const more = page.getByRole('button', { name: 'More options', exact: true })
-  await more.focus()
-  await page.keyboard.press('Enter')
+  try {
+    await expect(more).toBeDisabled()
+  }
+  finally {
+    hydration.resolve(undefined)
+  }
+  await page.unrouteAll({ behavior: 'wait' })
+  await expect(more).toBeEnabled()
+  await expectCompactNavigation(page)
+  await more.press('Enter')
   const preferences = page.getByRole('dialog', { name: 'More options', exact: true })
   await expect(preferences).toBeVisible()
   await preferences.getByRole('button', { name: 'Appearance', exact: true }).click()
@@ -196,8 +213,7 @@ test('narrow settings and public navigation restore keyboard focus', async ({ pa
   const translatedMore = page.getByRole('button', { name: '更多选项', exact: true })
   await expect(translatedMore).toBeFocused()
   await page.setViewportSize({ width: 640, height: 900 })
-  await expect(page.locator('.ztd-appbar')).toHaveCSS('height', '56px')
-  await expect(page.locator('a[href="/search"]')).toHaveCSS('width', '44px')
+  await expectCompactNavigation(page)
   await page.keyboard.press('Enter')
   await expect(translated).toBeVisible()
   await page.setViewportSize({ width: 641, height: 900 })

@@ -93,7 +93,8 @@ The three cases cover Chinese text input/save/server read-back/reload, the edito
 (full-document entry and Back/Forward, then the browser's own confirmation on unsaved Back, dismissed
 to stay), and narrow-screen keyboard activation/Escape/focus return for settings and public navigation.
 The public navigation check also switches appearance and language inside the More popover
-and closes it when returning to a wide viewport.
+and closes it when returning to a wide viewport. It holds client scripts before the first
+interaction to verify that More stays disabled until hydration makes it operable.
 Each prepares its own document. The tests wait for the client list to load before interacting;
 they do not cover clicks before hydration. Chinese text input is not an OS IME test. Document
 navigations are asserted with a per-document marker, not URL equality, and the unsaved case proves
@@ -256,7 +257,8 @@ Reduced-motion preferences disable it, and keyboard-focused cards appear immedia
 
 The public mobile AppBar uses a single 56px row with 44px Search and More targets.
 More contains the existing appearance, language and RSS controls; desktop and admin navigation retain
-their existing layout. The mobile homepage intro starts with 24px of top spacing.
+their existing layout. More remains disabled until React owns the control.
+The mobile homepage intro starts with 24px of top spacing.
 
 Display type caps at 50px on wide layouts and 36px on narrow layouts. Secondary public titles share
 the Serif section scale at 40/32px; recovery and license titles use 32/26px.

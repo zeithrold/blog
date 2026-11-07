@@ -5,6 +5,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { Ellipsis, Rss } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AppearanceMenu, Button, LocaleSelect, useFrontendPreferences } from '@/components/ui/ztd-me/client'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { useSiteText } from '@/i18n/site-locale'
 
 const menuClass = [
@@ -13,7 +14,17 @@ const menuClass = [
   '[&_.ztd-wide-label]:hidden',
 ].join(' ')
 
+function PreferenceRow({ label, children }: { label: string, children: ReactNode }): ReactNode {
+  return (
+    <div className="flex min-h-11 items-center justify-between pl-2">
+      <span>{label}</span>
+      {children}
+    </div>
+  )
+}
+
 export function PublicMobileMenu(): ReactNode {
+  const hydrated = useHydrated()
   const [open, setOpen] = useState(false)
   const { portalContainer } = useFrontendPreferences()
   const text = useSiteText()
@@ -33,6 +44,7 @@ export function PublicMobileMenu(): ReactNode {
         <Button
           type="button"
           variant="ghost"
+          disabled={!hydrated}
           className="hidden size-11 p-0 max-[641px]:inline-flex"
           aria-label={text('More options')}
         >
@@ -47,14 +59,12 @@ export function PublicMobileMenu(): ReactNode {
           collisionPadding={16}
           aria-label={text('More options')}
         >
-          <div className="flex min-h-11 items-center justify-between pl-2">
-            <span>{text('Appearance')}</span>
+          <PreferenceRow label={text('Appearance')}>
             <AppearanceMenu />
-          </div>
-          <div className="flex min-h-11 items-center justify-between pl-2">
-            <span>{text('Language')}</span>
+          </PreferenceRow>
+          <PreferenceRow label={text('Language')}>
             <LocaleSelect />
-          </div>
+          </PreferenceRow>
           <div className="my-1 h-px bg-border" />
           <a
             className={[
