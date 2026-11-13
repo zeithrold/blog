@@ -16,7 +16,6 @@ entries; actual user navigation still fetches normally. No URL/message matching,
 page-error suppression, response replay, CSP change or navigation retry is added.
 
 Remove this patch after an upstream release handles failed speculative batches
-without dispatching more work into a departing document. Recheck the native queue
-regressions in `tests/unit/prefetch-queue.test.ts` and real WebKit page departures;
-a mock that sends `pagehide` before transport rejection cannot establish this
-ordering. The installed Vinext MIT license remains unchanged.
+without dispatching more work into a departing document. Verify real WebKit page
+departures when upgrading; the current Chromium smoke tests do not establish
+WebKit's cancellation ordering. The installed Vinext MIT license remains unchanged.

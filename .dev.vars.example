@@ -13,5 +13,6 @@ NOTION_API_KEY="replace-with-your-notion-integration-key"
 # Generate a random value of at least 32 characters; use ?setup=<value> on the webhook URL.
 # POST stores the initial verification token in KV for 600 seconds.
 # GET with the same setup token retrieves it. Then provision NOTION_WEBHOOK_SECRET
-# and remove this setup secret and the setup query token from the subscription URL.
+# and remove this Worker setup secret. Keep the verified subscription URL unchanged;
+# its setup query no longer grants access once the normal signing secret is set.
 # NOTION_WEBHOOK_SETUP_TOKEN="replace-with-a-random-setup-token-of-at-least-32-characters"
