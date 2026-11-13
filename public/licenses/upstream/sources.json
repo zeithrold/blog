@@ -2,6 +2,16 @@
   "schema": 1,
   "supplementalNotices": [
     {
+      "name": "@napi-rs/canvas-darwin-arm64",
+      "version": "0.1.100",
+      "license": "MIT",
+      "path": "public/licenses/upstream/canvas.txt",
+      "source": "https://raw.githubusercontent.com/Brooooooklyn/canvas/db337893b9b53483050ca7b24c6d306e4da06741/LICENSE",
+      "sourceCommit": "db337893b9b53483050ca7b24c6d306e4da06741",
+      "sha256": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6",
+      "scope": "Platform package npm gitHead matches the original repository license"
+    },
+    {
       "name": "khroma",
       "version": "2.1.0",
       "license": "MIT",
@@ -30,6 +40,36 @@
       "sourceCommit": "8ca9ba5ea52de03308fe8ced94f7b159a44d28ff",
       "sha256": "a79aae0c0f21990d9d963bb3c5a79cdcea9a46f8523ba55c58d7fe776b6ebc84",
       "scope": "Official repository notice; installed manifest declares MIT; npm gitHead is malformed and is not claimed as verified"
+    },
+    {
+      "name": "notion-types",
+      "version": "8.0.8",
+      "license": "MIT",
+      "path": "public/licenses/upstream/notion-x.txt",
+      "source": "https://raw.githubusercontent.com/NotionX/react-notion-x/41b48886967373d4eed8d26aea6fb278e33a89df/license",
+      "sourceCommit": "41b48886967373d4eed8d26aea6fb278e33a89df",
+      "sha256": "2778dd340db0a81edc537c0b7abf863c1c41db7e7cb564cdeeed7923af0f97c7",
+      "scope": "Shared repository license at the annotated v8.0.8 release commit; package version verified in source"
+    },
+    {
+      "name": "notion-utils",
+      "version": "8.0.8",
+      "license": "MIT",
+      "path": "public/licenses/upstream/notion-x.txt",
+      "source": "https://raw.githubusercontent.com/NotionX/react-notion-x/41b48886967373d4eed8d26aea6fb278e33a89df/license",
+      "sourceCommit": "41b48886967373d4eed8d26aea6fb278e33a89df",
+      "sha256": "2778dd340db0a81edc537c0b7abf863c1c41db7e7cb564cdeeed7923af0f97c7",
+      "scope": "Shared repository license at the annotated v8.0.8 release commit; package version verified in source"
+    },
+    {
+      "name": "react-notion-x",
+      "version": "8.0.8",
+      "license": "MIT",
+      "path": "public/licenses/upstream/notion-x.txt",
+      "source": "https://raw.githubusercontent.com/NotionX/react-notion-x/41b48886967373d4eed8d26aea6fb278e33a89df/license",
+      "sourceCommit": "41b48886967373d4eed8d26aea6fb278e33a89df",
+      "sha256": "2778dd340db0a81edc537c0b7abf863c1c41db7e7cb564cdeeed7923af0f97c7",
+      "scope": "Shared repository license at the annotated v8.0.8 release commit; package version verified in source"
     }
   ]
 }

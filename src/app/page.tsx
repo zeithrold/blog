@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { ArrowDown, Asterisk, Rss } from 'lucide-react'
+import { notFound } from 'next/navigation'
 import { PostFeed } from '@/features/reader/post-feed'
 import { SiteAfterword } from '@/features/reader/post-list'
 import { SiteCount, SiteText } from '@/i18n/site-text'
-import { repository } from '@/server/runtime/context'
+import { publishedCatalog } from '@/server/runtime/context'
 
 const siteContentStyle1 = [
   'site-content w-[min(var(--blog-content-width),_calc(100%_-_96px))] mx-auto',
@@ -57,7 +58,15 @@ export default async function Home({
 }): Promise<ReactNode> {
   const query = await searchParams
   const offset = Number(query.offset ?? 0)
-  const posts = await repository().posts(offset)
+  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000) {
+    notFound()
+  }
+  const catalog = await publishedCatalog()
+  const entries = catalog.items.filter(item => item.path.startsWith('/posts/'))
+  const posts = {
+    items: entries.slice(offset, offset + 50),
+    nextOffset: offset + 50 < entries.length ? offset + 50 : null,
+  }
   return (
     <div className={siteContentStyle1} id="top">
       <HomeIntro />

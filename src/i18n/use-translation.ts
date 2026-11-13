@@ -22,20 +22,10 @@ export function useBlogTranslation<N extends BlogNamespace>(namespace: N): {
 export function usePhraseTranslation(namespace: BlogNamespace): UiText {
   const { binding, adapter } = useBlogBinding()
   return (value, values) => {
-    const namespaces: BlogNamespace[] = [
-      namespace,
-      ...([
-        'editor',
-        'site',
-        'documents',
-      ] as const).filter(item => item !== namespace),
-    ]
-    for (const candidate of namespaces) {
-      const keys: Readonly<Record<string, string>> = phraseKeys[candidate]
-      const key = keys[value]
-      if (key !== undefined) {
-        return adapter.instance.translate({ locale: binding.locale, namespace: candidate, key, values: values ?? {} })
-      }
+    const keys: Readonly<Record<string, string>> = phraseKeys[namespace]
+    const key = keys[value]
+    if (key !== undefined) {
+      return adapter.instance.translate({ locale: binding.locale, namespace, key, values: values ?? {} })
     }
     return value
   }

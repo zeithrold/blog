@@ -1,32 +1,177 @@
-.taxonomy-chip::after {
-  position: absolute;
-  inset: -5px 0;
-  content: '';
+/* Imported after react-notion-x/styles.css: Zeithrold owns the reading surface. */
+.reader-body.notion {
+  --notion-font: var(--ztd-font-serif);
+  --notion-max-width: 100%;
+  --fg-color: var(--ztd-foreground);
+  --fg-color-0: var(--ztd-border);
+  --fg-color-1: var(--ztd-border);
+  --fg-color-2: var(--ztd-muted-foreground);
+  --fg-color-3: var(--ztd-muted-foreground);
+  --fg-color-4: var(--ztd-foreground);
+  --fg-color-5: var(--ztd-muted);
+  --fg-color-6: var(--ztd-foreground);
+  --fg-color-7: var(--ztd-muted-foreground);
+  --fg-color-icon: var(--ztd-muted-foreground);
+  --bg-color: var(--ztd-background);
+  --bg-color-0: var(--ztd-muted);
+  --bg-color-1: var(--ztd-surface);
+  --bg-color-2: var(--ztd-muted);
+  --select-color-0: var(--ztd-accent);
+  --select-color-1: var(--ztd-muted);
+  --select-color-2: var(--ztd-muted);
+  --notion-red: var(--blog-inline-red);
+  --notion-pink: var(--blog-inline-pink);
+  --notion-blue: var(--blog-inline-blue);
+  --notion-purple: var(--blog-inline-purple);
+  --notion-teal: var(--blog-inline-green);
+  --notion-yellow: var(--blog-inline-yellow);
+  --notion-orange: var(--blog-inline-orange);
+  --notion-brown: var(--blog-inline-brown);
+  --notion-gray: var(--blog-inline-gray);
+
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  font-family: var(--ztd-font-serif);
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--ztd-foreground);
+  background: transparent;
 }
 
-.callout {
-  --blog-callout-tone: var(--blog-inline-blue);
-
-  border-color: color-mix(in srgb, var(--blog-callout-tone) 22%, var(--ztd-border));
-  background: color-mix(in srgb, var(--blog-callout-tone) 5%, var(--ztd-surface));
+.reader-body :is([class~='notion-red_background'], [class~='notion-red_background_co']) {
+  background-color: var(--blog-highlight-red);
 }
 
-.callout[data-tone='warning'] {
-  --blog-callout-tone: var(--blog-inline-yellow);
+.reader-body :is([class~='notion-pink_background'], [class~='notion-pink_background_co']) {
+  background-color: var(--blog-highlight-pink);
 }
 
-.callout[data-tone='success'] {
-  --blog-callout-tone: var(--blog-inline-green);
+.reader-body :is([class~='notion-blue_background'], [class~='notion-blue_background_co']) {
+  background-color: var(--blog-highlight-blue);
 }
 
-.callout[data-tone='danger'] {
-  --blog-callout-tone: var(--blog-inline-red);
+.reader-body :is([class~='notion-purple_background'], [class~='notion-purple_background_co']) {
+  background-color: var(--blog-highlight-purple);
 }
 
-.callout-header {
-  color: color-mix(in srgb, var(--blog-callout-tone) 75%, var(--ztd-foreground));
+.reader-body :is([class~='notion-teal_background'], [class~='notion-teal_background_co']) {
+  background-color: var(--blog-highlight-green);
 }
 
-.callout-icon {
-  color: var(--blog-callout-tone);
+.reader-body :is([class~='notion-yellow_background'], [class~='notion-yellow_background_co']) {
+  background-color: var(--blog-highlight-yellow);
+}
+
+.reader-body :is([class~='notion-orange_background'], [class~='notion-orange_background_co']) {
+  background-color: var(--blog-highlight-orange);
+}
+
+.reader-body :is([class~='notion-brown_background'], [class~='notion-brown_background_co']) {
+  background-color: var(--blog-highlight-brown);
+}
+
+.reader-body :is([class~='notion-gray_background'], [class~='notion-gray_background_co']) {
+  background-color: var(--blog-highlight-gray);
+}
+
+.reader-body [class*='notion-'][class*='_background'] {
+  color: var(--blog-highlight-foreground);
+}
+
+.reader-body .notion-text {
+  margin: 0 0 1.1em;
+  padding: 0;
+}
+
+.reader-body > .notion-viewport + * {
+  margin-top: 0;
+}
+
+.reader-body :is(.notion-h1, .notion-h2, .notion-h3, .notion-h4) {
+  padding: 0;
+  font-family: var(--ztd-font-sans);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.reader-body .notion-h1 {
+  margin: 2.2em 0 0.7em;
+  font-size: 1.75em;
+}
+
+.reader-body .notion-h2 {
+  margin: 1.9em 0 0.6em;
+  font-size: 1.4em;
+}
+
+.reader-body :is(.notion-h3, .notion-h4) {
+  margin: 1.6em 0 0.5em;
+  font-size: 1.2em;
+}
+
+.reader-body .notion-link {
+  color: inherit;
+  opacity: 1;
+  border: 0;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ztd-accent) 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+.reader-body .notion-link:hover {
+  text-decoration-color: var(--ztd-accent);
+}
+
+.reader-body .notion-code {
+  margin: 1.6em 0;
+  border: 1px solid var(--ztd-border);
+  border-radius: 12px;
+  background: var(--ztd-surface);
+  font-family: var(--ztd-font-mono);
+}
+
+.reader-body .notion-inline-code {
+  background: var(--ztd-muted);
+  color: inherit;
+  font-family: var(--ztd-font-mono);
+}
+
+.reader-body .token.comment { color: var(--blog-inline-gray); }
+.reader-body .token.keyword { color: var(--blog-inline-purple); }
+.reader-body .token.string { color: var(--blog-inline-green); }
+.reader-body .token.number { color: var(--blog-inline-orange); }
+.reader-body .token.function { color: var(--blog-inline-blue); }
+
+.reader-body .notion-asset-wrapper {
+  max-width: 100%;
+}
+
+.reader-body .notion-simple-table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.reader-body .notion-callout {
+  border-color: var(--ztd-border);
+  border-radius: 12px;
+}
+
+.reader-tag[data-tag-color='default'] { --tag-ink: var(--ztd-muted-foreground); }
+.reader-tag[data-tag-color='gray'] { --tag-ink: var(--blog-inline-gray); }
+.reader-tag[data-tag-color='brown'] { --tag-ink: var(--blog-inline-brown); }
+.reader-tag[data-tag-color='orange'] { --tag-ink: var(--blog-inline-orange); }
+.reader-tag[data-tag-color='yellow'] { --tag-ink: var(--blog-inline-yellow); }
+.reader-tag[data-tag-color='green'] { --tag-ink: var(--blog-inline-green); }
+.reader-tag[data-tag-color='blue'] { --tag-ink: var(--blog-inline-blue); }
+.reader-tag[data-tag-color='purple'] { --tag-ink: var(--blog-inline-purple); }
+.reader-tag[data-tag-color='pink'] { --tag-ink: var(--blog-inline-pink); }
+.reader-tag[data-tag-color='red'] { --tag-ink: var(--blog-inline-red); }
+
+.reader-tag[data-tag-color] {
+  color: var(--tag-ink);
+  background: color-mix(in srgb, var(--tag-ink) 10%, var(--ztd-surface));
+  border-color: color-mix(in srgb, var(--tag-ink) 30%, var(--ztd-border));
 }

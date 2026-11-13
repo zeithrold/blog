@@ -1,29 +1,8 @@
+import type { PublicPath } from '@/contracts/notion'
 import { env } from 'cloudflare:workers'
-import { headers } from 'next/headers'
-import { requireAdmin, sessionToken, trustedOrigin } from '@/server/auth/auth'
-import { Problem } from '@/server/http/problem'
-import { PublicRepository } from '@/server/reader/public-repository'
+import { cache } from 'react'
+import { readCatalog } from '@/server/notion/catalog'
+import { readPage } from '@/server/notion/page'
 
-export function repository(): PublicRepository {
-  return new PublicRepository(env.DB)
-}
-export async function serverOwner(): Promise<string> {
-  return await requireAdmin(new Headers(await headers()), env)
-}
-export async function serverSessionToken(owner: string): Promise<string> {
-  const requestOrigin = (await headers()).get('x-blog-request-origin')
-  const origin = trustedOrigin(env)
-  if (requestOrigin === origin.origin) {
-    return await sessionToken(owner, origin.origin, env)
-  }
-  if (requestOrigin !== null) {
-    const preview = new URL(requestOrigin)
-    if (
-      preview.protocol === 'https:'
-      && (env.ALLOWED_PREVIEW_HOSTS ?? '').split(',').includes(preview.host)
-    ) {
-      return await sessionToken(owner, preview.origin, env)
-    }
-  }
-  throw new Problem(403, 'HOST_INVALID')
-}
+export const publishedCatalog = cache(async () => await readCatalog(env))
+export const publicPage = cache(async (path: PublicPath) => await readPage(env, path))

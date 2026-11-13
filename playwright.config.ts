@@ -1,4 +1,8 @@
+import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
+
+const port = Number(process.env.BLOG_BROWSER_PORT ?? 8801)
+const baseURL = `http://127.0.0.1:${port}`
 
 export default defineConfig({
   testDir: './tests/browser',
@@ -10,7 +14,7 @@ export default defineConfig({
   reporter: 'list',
   outputDir: 'test-results',
   use: {
-    baseURL: 'http://127.0.0.1:8800',
+    baseURL,
     locale: 'en-US',
     trace: 'retain-on-failure',
     screenshot: 'off',
@@ -20,9 +24,11 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://127.0.0.1:8800/__fixture/login',
+    command: 'exec node --import tsx tests/support/worker/browser-server.ts',
+    url: `${baseURL}/api/health`,
+    env: { BLOG_BROWSER_PORT: String(port) },
     reuseExistingServer: false,
     timeout: 60_000,
+    gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
   },
 })

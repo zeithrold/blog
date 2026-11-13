@@ -1,31 +1,22 @@
 import type { Environment } from '@/server/runtime/environment'
 import type { SecurityContext } from '@/worker/security'
-import { requireAdmin, trustedOrigin } from '@/server/auth/auth'
 import { Problem } from '@/server/http/problem'
-import { privatePath } from '@/worker/security'
+import { publicOrigin } from '@/server/runtime/origin'
 
-export async function requestContext(
+export function requestContext(
   request: Request,
   env: Environment,
   nonce: string,
-): Promise<{
+): {
   url: URL
   request: Request
   security: SecurityContext
-}> {
+} {
   const url = new URL(request.url)
-  const origin = trustedOrigin(env)
-  const previews = (env.ALLOWED_PREVIEW_HOSTS ?? '').split(',').filter(Boolean)
-  const preview
-    = url.origin !== origin.origin && url.protocol === 'https:' && previews.includes(url.host)
-  if (url.origin !== origin.origin && !preview) {
+  if (url.origin !== publicOrigin(env)) {
     throw new Problem(403, 'HOST_INVALID')
   }
   validatePath(url.pathname)
-  const protectedRequest = preview || privatePath(url.pathname)
-  if (protectedRequest) {
-    await requireAdmin(request.headers, env)
-  }
   const headers = new Headers(request.headers)
   headers.set('x-blog-nonce', nonce)
   headers.set('x-blog-request-origin', url.origin)
@@ -33,7 +24,7 @@ export async function requestContext(
   return {
     url,
     request: new Request(request, { headers }),
-    security: { nonce, privateResponse: protectedRequest, head: request.method === 'HEAD' },
+    security: { nonce, head: request.method === 'HEAD' },
   }
 }
 

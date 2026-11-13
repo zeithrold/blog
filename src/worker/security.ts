@@ -1,15 +1,8 @@
-import { EDITOR_STYLE_HASHES } from '@/server/security/editor-csp'
-import { SONNER_STYLE_HASH } from '@/server/security/toast-csp'
-
 export type SecurityContext = {
-  nonce: string
-  privateResponse: boolean
-  head: boolean
+  readonly nonce: string
+  readonly head: boolean
 }
 
-export function privatePath(path: string): boolean {
-  return /^\/(?:admin|api\/admin)(?:\/|$)/.test(path)
-}
 export function security(
   response: Response,
   context: SecurityContext,
@@ -22,13 +15,14 @@ export function security(
   const directives = [
     'default-src \'self\'',
     `script-src 'self' 'nonce-${context.nonce}'`,
-    `style-src 'self' 'nonce-${context.nonce}' ${EDITOR_STYLE_HASHES} ${SONNER_STYLE_HASH} https://fonts.googleapis.com`,
+    `style-src 'self' 'nonce-${context.nonce}' https://fonts.googleapis.com`,
     'style-src-attr \'unsafe-inline\'',
     'font-src \'self\' https://fonts.gstatic.com',
-    'img-src \'self\' data:',
+    'img-src \'self\' data: https:',
+    'media-src \'self\' https:',
     'connect-src \'self\'',
     'worker-src \'self\'',
-    'frame-src \'self\' https://www.youtube-nocookie.com',
+    'frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com',
     'object-src \'none\'',
     'base-uri \'none\'',
     'frame-ancestors \'none\'',
@@ -36,9 +30,6 @@ export function security(
   ]
   headers.set('Content-Security-Policy', policy ?? directives.join('; '))
   headers.set('Cache-Control', 'no-store')
-  if (context.privateResponse) {
-    headers.set('X-Robots-Tag', 'noindex, nofollow')
-  }
   if (context.head) {
     response.body?.cancel().catch(() => undefined)
   }

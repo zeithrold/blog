@@ -27,18 +27,6 @@
   --blog-highlight-purple: #f3e8ff;
   --blog-inline-pink: #9d174d;
   --blog-highlight-pink: #fce7f3;
-  --admin-appbar-height: 73px;
-  --admin-header-height: 61px;
-  --admin-sidebar-width: 232px;
-  --admin-sidebar-background: color-mix(in srgb, var(--ztd-muted) 45%, var(--ztd-background));
-  --admin-hover: color-mix(in srgb, var(--ztd-muted) 80%, transparent);
-  --admin-selected: var(--ztd-muted);
-}
-
-@media (width < 1024px) {
-  :root {
-    --admin-appbar-height: 65px;
-  }
 }
 
 :root[data-frontend-mode='dark'] {

@@ -3,19 +3,24 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import vinext from 'vinext'
 import { defineConfig } from 'vite'
-import { developmentLogin } from './tests/support/development/login-plugin'
 
-export default defineConfig(async ({ command, isPreview }): Promise<UserConfig> => {
-  const login = command === 'serve' && isPreview !== true ? await developmentLogin() : undefined
+export default defineConfig(({ command, isPreview }): UserConfig => {
+  const development = command === 'serve' && isPreview !== true
   return {
-    resolve: { tsconfigPaths: true, alias: login?.aliases },
+    resolve: { tsconfigPaths: true },
     worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
     plugins: [
-      ...(login !== undefined ? [login.plugin] : []),
       tailwindcss(),
       vinext(),
       cloudflare({
-        ...(login !== undefined ? { config: login.config, remoteBindings: false } : {}),
+        ...(development
+          ? {
+              config: config => ({
+                vars: { ...config.vars, PUBLIC_ORIGIN: 'http://127.0.0.1:8800' },
+              }),
+              remoteBindings: false,
+            }
+          : {}),
         viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
       }),
     ],

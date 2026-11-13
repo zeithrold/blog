@@ -1,26 +1,30 @@
-import { ContentError } from '@/content/document'
+import { NotionContentError } from '@/server/notion/api'
 
 export class Problem extends Error {
   constructor(
-    public status: number,
-    public code: string,
+    readonly status: number,
+    readonly code: string,
   ) {
     super(code)
   }
 }
 export function problemResponse(error: unknown): Response {
-  const status
-    = error instanceof Problem || error instanceof ContentError ? error.status : 500
-  const code
-    = error instanceof Problem || error instanceof ContentError ? error.code : 'INTERNAL_ERROR'
+  let status = 500
+  let code = 'INTERNAL_ERROR'
+  if (error instanceof Problem) {
+    status = error.status
+    code = error.code
+  }
+  else if (error instanceof NotionContentError) {
+    status = 502
+    code = 'NOTION_CONTENT_INVALID'
+  }
   return Response.json(
     {
-      type: `urn:ztd:cms:problem:${code.toLowerCase().replaceAll('_', '-')}`,
+      type: `urn:ztd:blog:problem:${code.toLowerCase().replaceAll('_', '-')}`,
       title: code,
       status,
       code,
-      messageKey: `errors.${code}`,
-      ...(error instanceof ContentError && error.issues.length > 0 ? { issues: error.issues } : {}),
       requestId: crypto.randomUUID(),
     },
     {

@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react'
+import type { PublicItem } from '@/contracts/notion'
 import { ArrowDown, ArrowRight, Search as SearchIcon } from 'lucide-react'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { Button, Input } from '@/components/ui/ztd-me/client'
 import { SiteAfterword } from '@/features/reader/post-list'
 import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteCount, SiteText } from '@/i18n/site-text'
-import { repository } from '@/server/runtime/context'
+import { publishedCatalog } from '@/server/runtime/context'
 import {
   utility1Class,
   utility2Class,
@@ -97,7 +99,10 @@ const layout14Class = [
   utility21Class,
 ].join(' ')
 
-type SearchResult = Awaited<ReturnType<ReturnType<typeof repository>['search']>>
+type SearchResult = {
+  readonly items: readonly PublicItem[]
+  readonly nextOffset: number | null
+}
 
 export default async function Search({
   searchParams,
@@ -109,7 +114,23 @@ export default async function Search({
 }): Promise<ReactNode> {
   const { q = '', offset: rawOffset } = await searchParams
   const offset = Number(rawOffset ?? 0)
-  const result = await repository().search(q, offset)
+  if (typeof q !== 'string' || q.length > 120 || !Number.isSafeInteger(offset) || offset < 0 || offset > 100000) {
+    notFound()
+  }
+  const terms = q.normalize('NFKC').toLocaleLowerCase().trim().split(/\s+/u).filter(Boolean)
+  const { items } = await publishedCatalog()
+  const matches = terms.length === 0
+    ? []
+    : items.filter((item) => {
+        const text = `${item.title}\n${item.summary}\n${item.tags.map(tag => tag.label).join(' ')}`
+          .normalize('NFKC')
+          .toLocaleLowerCase()
+        return terms.every(term => text.includes(term))
+      })
+  const result: SearchResult = {
+    items: matches.slice(offset, offset + 50),
+    nextOffset: offset + 50 < matches.length ? offset + 50 : null,
+  }
   return (
     <div className={layout1Class} id="top">
       <SearchIntro query={q} />
@@ -127,7 +148,7 @@ function SearchIntro({ query }: { query: string }): ReactNode {
         <SiteText value="Search" />
       </p>
       <PublicPageTitle id="search-heading"><SiteText value="Search published writing" /></PublicPageTitle>
-      <p className={utility22Class}><SiteText value="Find posts by title or text." /></p>
+      <p className={utility22Class}><SiteText value="Find posts by title, summary, or tag." /></p>
       <form action="/search" role="search" className={layout5Class}>
         <label htmlFor="search-query" className={layout6Class}>
           <SiteText value="Search terms" />
@@ -192,7 +213,7 @@ function ResultList({ items }: { items: SearchResult['items'] }): ReactNode {
                 {item.title}
               </h3>
               <p className={[utility23Class, 'wrap-anywhere'].join(' ')}>
-                {item.excerpt}
+                {item.summary}
               </p>
               <span className={utility24Class}>{item.path}</span>
             </div>

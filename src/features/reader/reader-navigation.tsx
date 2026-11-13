@@ -188,7 +188,7 @@ export function ReaderNavigation({
   cover,
 }: {
   children: ReactNode
-  language: string
+  language?: string
   cover?: ReactNode
 }): ReactNode {
   const articleRef = useRef<HTMLElement>(null)

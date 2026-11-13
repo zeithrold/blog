@@ -1,4 +1,4 @@
-name: Verify CMS
+name: Verify Blog
 on:
   push:
     branches: [main, 'codex/**']
@@ -91,9 +91,13 @@ jobs:
           const config = JSON.parse(readFileSync('dist/server/wrangler.json', 'utf8'))
           assert.equal(config.name, 'ztd-blog')
           assert.equal(config.vars.PUBLIC_ORIGIN, 'https://blog.ztd.me')
-          assert.equal(config.d1_databases.find(db => db.binding === 'DB')?.database_id,
-            'c8fbc39c-4eed-40c8-b2db-8e36bb240cef')
-          assert.equal(config.r2_buckets.find(bucket => bucket.binding === 'MEDIA')?.bucket_name, 'ztd-blog')
+          assert.equal(config.d1_databases?.length ?? 0, 0)
+          assert.equal(config.r2_buckets?.length ?? 0, 0)
+          assert.equal(config.triggers?.crons?.length ?? 0, 0)
+          assert.equal(config.kv_namespaces.filter(namespace => namespace.binding === 'NOTION_CACHE').length, 1)
+          assert.equal(config.vars.NOTION_DATA_SOURCE_ID, '417c263c-c594-8099-a9f5-000be11373f6')
+          assert.equal(Object.hasOwn(config.vars, 'NOTION_API_KEY'), false)
+          assert.equal(Object.hasOwn(config.vars, 'NOTION_WEBHOOK_SECRET'), false)
           const response = await fetch(
             `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/git/ref/heads/main`,
             { headers: { authorization: `Bearer ${process.env.GITHUB_TOKEN}` }, signal: AbortSignal.timeout(15000) },
@@ -104,7 +108,7 @@ jobs:
           if (!deploy) console.log('::notice::Skipping superseded main commit; no production changes will run.')
           appendFileSync(process.env.GITHUB_OUTPUT, `deploy=${deploy}\n`)
           JS
-      - name: Migrate production D1
+      - name: Verify required Notion secrets
         if: steps.boundary.outputs.deploy == 'true'
         timeout-minutes: 5
         env:
@@ -112,7 +116,20 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
-          pnpm exec wrangler d1 migrations apply ztd-blog --remote --config wrangler.jsonc
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict'
+          import { execFileSync } from 'node:child_process'
+          const secrets = JSON.parse(execFileSync(
+            'pnpm', ['exec', 'wrangler', 'secret', 'list', '--config', 'dist/server/wrangler.json'],
+            { encoding: 'utf8', timeout: 45000 },
+          ))
+          const names = new Set(secrets.map(secret => secret.name))
+          assert.ok(names.has('NOTION_API_KEY'), 'Provision the Notion API key before deployment')
+          assert.ok(
+            names.has('NOTION_WEBHOOK_SECRET') || names.has('NOTION_WEBHOOK_SETUP_TOKEN'),
+            'Provision a webhook verification secret or a temporary setup token before deployment',
+          )
+          JS
       - name: Deploy tested Worker
         if: steps.boundary.outputs.deploy == 'true'
         timeout-minutes: 5

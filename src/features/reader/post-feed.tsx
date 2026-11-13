@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { PublicFeedItem } from '@/server/reader/public-repository'
+import type { PublicItem } from '@/contracts/notion'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -9,6 +9,7 @@ import { FEED_ROW_HEIGHT, masonrySpan } from '@/features/reader/post-feed-masonr
 import { PostListEmpty } from '@/features/reader/post-list'
 import { TagChip } from '@/features/reader/tag-chip'
 import { SiteDate } from '@/i18n/site-text'
+import { MediaExpiryRefresh } from './media-expiry-refresh'
 
 /*
  * A measured grid masonry: items keep DOM order, and only the row span is
@@ -57,64 +58,82 @@ const descriptionClass = [
   'wrap-anywhere',
 ].join(' ')
 
-export function PostFeed({ items, start = 0 }: { items: PublicFeedItem[], start?: number }): ReactNode {
+export function PostFeed({ items, start = 0 }: {
+  readonly items: readonly PublicItem[]
+  readonly start?: number
+}): ReactNode {
   const { listRef, spans } = useFeedSpans(items)
+  const expiries = items.flatMap(item =>
+    item.cover === null || item.cover.expiresAt === null ? [] : [item.cover.expiresAt])
   if (items.length === 0) {
     return <PostListEmpty />
   }
   return (
-    <ol
-      ref={listRef}
-      start={start + 1}
-      className={feedClass}
-      style={spans === null ? undefined : { gridAutoRows: `${FEED_ROW_HEIGHT}px` }}
-    >
-      {items.map((post, index) => (
-        <li
-          key={post.documentId}
-          data-feed-item={post.documentId}
-          className={itemClass}
-          style={spanStyle(spans, post.documentId)}
-        >
-          <Link
-            href={post.path}
-            className={cardClass}
-            style={{ animationDelay: `${Math.min(index, 5) * 35}ms` }}
-            aria-labelledby={`feed-post-${post.documentId}`}
+    <>
+      <MediaExpiryRefresh expiresAt={expiries.length === 0 ? null : Math.min(...expiries)} />
+      <ol
+        ref={listRef}
+        start={start + 1}
+        className={feedClass}
+        style={spans === null ? undefined : { gridAutoRows: `${FEED_ROW_HEIGHT}px` }}
+      >
+        {items.map((post, index) => (
+          <li
+            key={post.id}
+            data-feed-item={post.id}
+            className={itemClass}
+            style={spanStyle(spans, post.id)}
           >
-            {post.cover !== null && (
-              <div className={coverClass}>
-                <img
-                  className={coverImageClass}
-                  src={`/assets/${post.cover.assetId}`}
-                  alt={post.cover.alt}
-                  width={960}
-                  height={640}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-            )}
-            <div className={post.cover === null ? bodyTextClass : bodyClass}>
-              <span className={metaClass}>
-                <span className="collection-number font-mono text-accent-foreground">
-                  {String(start + index + 1).padStart(2, '0')}
-                </span>
-                <SiteDate value={post.publishedAt} />
-                <span className={arrowClass} aria-hidden="true"><ArrowRight size={16} /></span>
-              </span>
-              <h3 className={titleClass} id={`feed-post-${post.documentId}`}>{post.title}</h3>
-              {post.description !== '' && <p className={descriptionClass}>{post.description}</p>}
-              <FeedTags tags={post.tags} />
-            </div>
-          </Link>
-        </li>
-      ))}
-    </ol>
+            <FeedCard post={post} index={index} start={start} />
+          </li>
+        ))}
+      </ol>
+    </>
   )
 }
 
-function FeedTags({ tags }: { tags: PublicFeedItem['tags'] }): ReactNode {
+function FeedCard({ post, index, start }: {
+  readonly post: PublicItem
+  readonly index: number
+  readonly start: number
+}): ReactNode {
+  return (
+    <Link
+      href={post.path}
+      className={cardClass}
+      style={{ animationDelay: `${Math.min(index, 5) * 35}ms` }}
+      aria-labelledby={`feed-post-${post.id}`}
+    >
+      {post.cover !== null && (
+        <div className={coverClass}>
+          <img
+            className={coverImageClass}
+            src={post.cover.url}
+            alt=""
+            width={960}
+            height={640}
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      )}
+      <div className={post.cover === null ? bodyTextClass : bodyClass}>
+        <span className={metaClass}>
+          <span className="collection-number font-mono text-accent-foreground">
+            {String(start + index + 1).padStart(2, '0')}
+          </span>
+          <SiteDate value={post.publishedAt} />
+          <span className={arrowClass} aria-hidden="true"><ArrowRight size={16} /></span>
+        </span>
+        <h3 className={titleClass} id={`feed-post-${post.id}`}>{post.title}</h3>
+        {post.summary !== '' && <p className={descriptionClass}>{post.summary}</p>}
+        <FeedTags tags={post.tags} />
+      </div>
+    </Link>
+  )
+}
+
+function FeedTags({ tags }: { readonly tags: PublicItem['tags'] }): ReactNode {
   if (tags.length === 0) {
     return null
   }
@@ -132,7 +151,7 @@ function spanStyle(spans: Spans | null, id: string): { gridRowEnd: string } | un
   return span === undefined ? undefined : { gridRowEnd: `span ${span}` }
 }
 
-function useFeedSpans(items: PublicFeedItem[]): {
+function useFeedSpans(items: readonly PublicItem[]): {
   listRef: React.RefObject<HTMLOListElement | null>
   spans: Spans | null
 } {
@@ -167,7 +186,7 @@ function useFeedSpans(items: PublicFeedItem[]): {
   }, [items])
   // Apply spans only once every current card has one; a newly replaced list
   // keeps the readable auto-row fallback until observation catches up.
-  const complete = spans !== null && items.every(item => spans[item.documentId] !== undefined)
+  const complete = spans !== null && items.every(item => spans[item.id] !== undefined)
   return {
     listRef,
     spans: complete ? spans : null,

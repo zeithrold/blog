@@ -61,32 +61,20 @@ const sources = [
     label: 'Original dependency license and copyright notices',
   },
   {
-    href: '/licenses/upstream/sonner.txt',
-    label: 'Sonner 2.0.8 license and copyright notice (MIT)',
+    href: '/licenses/upstream/notion-x.txt',
+    label: 'Notion X license and copyright notice (MIT)',
   },
   {
     href: '/licenses/sbom.json',
-    label: 'Dependency and bundled-module inventory snapshot',
+    label: 'Installed production dependency inventory',
   },
   {
-    href: 'https://github.com/kieler/elkjs/tree/a8304cf79fde75bc2ab1a89d28320f53f8637436',
-    label: 'ELK.js 0.9.3 source and build instructions (EPL 2.0)',
+    href: 'https://github.com/NotionX/react-notion-x',
+    label: 'React Notion X source',
   },
   {
-    href: 'https://github.com/eclipse/elk',
-    label: 'Eclipse Layout Kernel Java source repository',
-  },
-  {
-    href: 'https://registry.npmjs.org/@blocknote/core/-/core-0.55.0.tgz',
-    label: 'Corresponding core source',
-  },
-  {
-    href: 'https://registry.npmjs.org/@blocknote/react/-/react-0.55.0.tgz',
-    label: 'Corresponding React source',
-  },
-  {
-    href: 'https://www.mozilla.org/en-US/MPL/2.0/',
-    label: 'MPL 2.0 license',
+    href: 'https://github.com/makenotion/notion-sdk-js',
+    label: 'Official Notion client source',
   },
   {
     href: 'https://github.com/zeithrold/tools/tree/6f1ab6f1e820b7e498c95c11bed7bdd81378eb46/packages/ui',
@@ -111,8 +99,8 @@ export default function Licenses(): React.ReactNode {
       </section>
       <section className="license-content max-w-190 pb-18 text-body leading-[1.8]" lang="en">
         <p>
-          BlockNote core and React 0.55.0 are licensed under MPL 2.0. These packages are used
-          without source modifications.
+          Article bodies use React Notion X and the official Notion client. Their original
+          licenses and copyright notices are retained with the dependency inventory.
         </p>
         <ul className={layout5Class}>
           {sources.map(source => (
@@ -126,9 +114,9 @@ export default function Licenses(): React.ReactNode {
           ))}
         </ul>
         <p className="muted text-muted-foreground">
-          Noto fonts use the SIL Open Font License. React, Radix, Lucide, vinext, Zod and jose
-          have their original third-party licenses. The inventory is a retained snapshot from a
-          previous build and is not regenerated automatically. Dependency changes require updates
+          Noto fonts use the SIL Open Font License. React, Radix, Lucide, vinext and Zod
+          have their original third-party licenses. The inventory records the installed production
+          dependency graph and is not regenerated automatically. Dependency changes require updates
           to the corresponding notices and inventory.
         </p>
       </section>

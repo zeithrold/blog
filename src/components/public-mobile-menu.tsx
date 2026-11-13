@@ -29,7 +29,7 @@ export function PublicMobileMenu(): ReactNode {
   const { portalContainer } = useFrontendPreferences()
   const text = useSiteText()
   useEffect(() => {
-    const wide = matchMedia('(min-width: 641px)')
+    const wide = matchMedia('(min-width: 642px)')
     const closeWide = (event: MediaQueryListEvent): void => {
       if (event.matches) {
         setOpen(false)

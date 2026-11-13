@@ -1,55 +1,38 @@
 import type { Metadata } from 'next'
 import { env } from 'cloudflare:workers'
-import { headers } from 'next/headers'
-import { SLUG } from '@/content/document'
-import { trustedOrigin } from '@/server/auth/auth'
-import { repository } from '@/server/runtime/context'
+import { slugSchema } from '@/contracts/notion'
+import { publicPage } from '@/server/runtime/context'
+import { publicOrigin } from '@/server/runtime/origin'
 
 export async function documentMetadata(
   kind: 'posts' | 'pages',
-  params: Promise<{
-    slug: string
-  }>,
+  params: Promise<{ readonly slug: string }>,
 ): Promise<Metadata> {
   const { slug } = await params
-  if (!SLUG.safeParse(slug).success) {
+  if (!slugSchema.safeParse(slug).success) {
     return {}
   }
-  const document = await repository().publicDocument(`/${kind}/${slug}`)
-  if (document === null) {
+  const page = await publicPage(`/${kind}/${slug}`)
+  if (page === null) {
     return {}
   }
-  const origin = trustedOrigin(env).origin
-  const canonical = `${origin}/${kind}/${slug}`
-  const preview = (await headers()).get('x-blog-request-origin') !== origin
-  const cover = document.meta.cover ?? null
+  const { item } = page
+  const origin = publicOrigin(env)
+  const canonical = origin + item.path
   return {
-    title: document.meta.title,
-    description: document.meta.description,
-    alternates: {
-      canonical,
-    },
-    robots: {
-      index: !document.meta.seo.noindex && !preview,
-      follow: !preview,
-    },
+    title: item.title,
+    description: item.summary,
+    alternates: { canonical },
     openGraph: {
       type: kind === 'posts' ? 'article' : 'website',
-      title: document.meta.title,
-      description: document.meta.description,
+      title: item.title,
+      description: item.summary,
       url: canonical,
-      locale: document.meta.documentLocale === 'zh-CN' ? 'zh_CN' : 'en_US',
-      // The cover is already a live, publicly reachable asset; no new SEO surface.
-      ...(cover === null
+      ...(item.cover === null
         ? {}
-        : {
-            images: [
-              {
-                url: `${origin}/assets/${cover.assetId}`,
-                alt: cover.alt,
-              },
-            ],
-          }),
+        : { images: [
+            { url: `${origin}/notion-media/${item.id}/cover` },
+          ] }),
     },
   }
 }

@@ -23,16 +23,3 @@ export function useStickyHeight(property: string): React.RefObject<HTMLElement |
   }, [property])
   return ref
 }
-
-export function useAdminAppbarHeight(admin: boolean): void {
-  useEffect(() => {
-    if (!admin) {
-      return
-    }
-    const shell = document.querySelector<HTMLElement>('.ztd-application')
-    const appbar = shell?.querySelector<HTMLElement>(':scope > .ztd-appbar')
-    if (shell !== null && appbar !== undefined && appbar !== null) {
-      return observeHeight(appbar, shell, '--admin-appbar-height')
-    }
-  }, [admin])
-}

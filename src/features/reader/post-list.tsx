@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { PublicItem } from '@/server/reader/public-repository'
+import type { PublicItem } from '@/contracts/notion'
 import { ArrowRight, ArrowUp, PenLine } from 'lucide-react'
 import Link from 'next/link'
 import { SiteDate, SiteText } from '@/i18n/site-text'
@@ -62,15 +62,18 @@ export function PostListEmpty(): ReactNode {
   )
 }
 
-export function PostList({ items, start = 0 }: { items: PublicItem[], start?: number }): ReactNode {
+export function PostList({ items, start = 0 }: {
+  readonly items: readonly PublicItem[]
+  readonly start?: number
+}): ReactNode {
   if (items.length === 0) {
     return <PostListEmpty />
   }
   return (
-    <ol className="post-list grid m-0 p-0 list-none border-b border-border">
+    <ol className="post-list grid m-0 p-0 list-none border-b border-border" start={start + 1}>
       {items.map((post, index) => (
-        <li key={post.documentId}>
-          <Link href={post.path} className={postEntryStyle3} aria-labelledby={`post-${post.documentId}`}>
+        <li key={post.id}>
+          <Link href={post.path} className={postEntryStyle3} aria-labelledby={`post-${post.id}`}>
             <span className={postMetaStyle4}>
               <span className="collection-number font-mono text-accent-foreground">
                 {String(start + index + 1).padStart(2, '0')}
@@ -78,8 +81,8 @@ export function PostList({ items, start = 0 }: { items: PublicItem[], start?: nu
               <SiteDate value={post.publishedAt} />
             </span>
             <div className="post-body min-w-0">
-              <h3 className={postTitleStyle5} id={`post-${post.documentId}`}>{post.title}</h3>
-              {post.description !== '' && <p className={postDescriptionStyle6}>{post.description}</p>}
+              <h3 className={postTitleStyle5} id={`post-${post.id}`}>{post.title}</h3>
+              {post.summary !== '' && <p className={postDescriptionStyle6}>{post.summary}</p>}
             </div>
             <span className={postArrowStyle7} aria-hidden="true"><ArrowRight size={17} /></span>
           </Link>

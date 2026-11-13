@@ -22,11 +22,7 @@ export function createBlogI18n(locale: Locale): i18n {
     supportedLngs: [
       ...LOCALES,
     ],
-    ns: [
-      'site',
-      'editor',
-      'documents',
-    ],
+    ns: ['site'],
     defaultNS: 'site',
     resources: { en, 'zh-CN': zhCN },
     initAsync: false,
