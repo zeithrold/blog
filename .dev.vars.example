@@ -1,3 +1,17 @@
-ACCESS_TEAM_DOMAIN="your-team.cloudflareaccess.com"
-ACCESS_AUD="replace-with-your-application-audience"
-CSRF_SIGNING_SECRET="replace-with-a-random-secret-of-at-least-32-characters"
+# Local values only; production credentials are Worker Secrets.
+# Share the configured data source's database/pages with this integration.
+NOTION_API_KEY="replace-with-your-notion-integration-key"
+# Source ID is configured in wrangler.jsonc:
+# 417c263c-c594-8099-a9f5-000be11373f6
+
+# Normal webhook mode: use the verification token retrieved during protected setup.
+# NOTION_WEBHOOK_SECRET="replace-with-retrieved-notion-verification-token"
+# Optional restriction to one verified subscription:
+# NOTION_WEBHOOK_SUBSCRIPTION_ID="replace-with-subscription-id"
+
+# Temporary setup mode only, while NOTION_WEBHOOK_SECRET is absent/empty.
+# Generate a random value of at least 32 characters; use ?setup=<value> on the webhook URL.
+# POST stores the initial verification token in KV for 600 seconds.
+# GET with the same setup token retrieves it. Then provision NOTION_WEBHOOK_SECRET
+# and remove this setup secret and the setup query token from the subscription URL.
+# NOTION_WEBHOOK_SETUP_TOKEN="replace-with-a-random-setup-token-of-at-least-32-characters"

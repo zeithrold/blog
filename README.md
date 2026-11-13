@@ -1,23 +1,97 @@
-# Blog CMS
+# Blog
 
-A BlockNote-based blog CMS with document editing and publishing, private media, tags and series,
-scheduled publication, and search.
+Zeithrold's public blog uses Notion as its content source and keeps the existing site shell.
+The Worker reads the official Notion API with `@notionhq/client` 5.31.1, converts supported blocks
+to a `notion-types` 8.0.8 record map, and renders the body with `react-notion-x` 8.0.8.
+Equations use KaTeX 0.18.4. Editing, media management and publication happen in Notion.
+The application has no CMS admin, D1, R2 or Cron runtime.
+
+## Notion content contract
+
+The configured data source is `417c263c-c594-8099-a9f5-000be11373f6`. Share its containing database
+and content with the integration used by `NOTION_API_KEY`, granting read access to page properties
+and content. An integration token alone does not give access to an unshared source. This is an
+integration connection, not a requirement to publish the database on the web.
+
+Keep these exact property names and native Notion types:
+
+| Property | Native type | Meaning |
+|----------|-------------|---------|
+| `Title` | `title` | Nonempty article or page title |
+| `Slug` | `rich_text` | A bare slug such as `hello` becomes `/posts/hello`; full paths are `/posts/hello` or `/pages/about` |
+| `Status` | `status` | `Published` is public; `Draft` is not public |
+| `PublishedAt` | `date` | Valid publication date used for ordering and feeds |
+| `Summary` | `rich_text` | Summary, which may be empty |
+| `Tag` | `multi_select` | Native Notion option IDs, names and colors |
+
+Slugs use lowercase ASCII letters, digits and hyphens, begin with a letter or digit, and contain at
+most 120 characters after the route prefix. Public paths must be unique. A select or text property
+named `Status` does not satisfy the native status contract; neither does text in place of `Tag`.
+Only unarchived, untrashed pages directly belonging to the configured data source and having
+`Status = Published` are eligible. `PublishedAt` is metadata, not a scheduling mechanism:
+the application has no Cron that changes publication status.
+
+Notion page covers supply optional feed and article images. Notion owns the body and media;
+there is no second canonical CMS document, revision database, tag catalog or media bucket.
+The adapter validates API metadata, pagination and supported blocks rather than silently accepting
+incomplete content. Public page links map known Notion page IDs to their blog paths.
+
+## Cache and webhook
+
+`NOTION_CACHE` is a disposable Cloudflare KV cache, not the content store or a backup.
+Catalog snapshots remain fresh for at most 60 seconds and page bodies for at most 300 seconds.
+Signed media expiry shortens these windows by a 60-second safety margin. Expired entries are
+not served as an indefinite stale fallback. Each article request retrieves fresh page metadata
+before reusing its body; it rechecks source membership, public status, archive/trash state and
+path, and reuses a body only when `last_edited_time` still matches. Catalog lists can remain stale
+within their finite window, including while webhook invalidations propagate through KV.
+Already loaded pages are not a live publication stream.
+
+Configure a Notion integration webhook at `https://blog.ztd.me/api/notion/webhook`.
+Subscribe to page creation, content/property updates, moves, deletion and restoration, plus relevant
+data source content/schema and lifecycle events. The handler invalidates the catalog and the
+affected page body for `page.*` events whose entity is a page; `data_source.*` events for the
+configured source invalidate the catalog. These notifications trigger fresh API reads rather than
+supplying replacement content.
+
+The implemented initial verification flow is protected setup mode:
+
+1. Provision a random Worker Secret `NOTION_WEBHOOK_SETUP_TOKEN` of at least 32 characters.
+   Setup mode is active only while `NOTION_WEBHOOK_SECRET` is absent or empty.
+2. Register the webhook URL with `?setup=<NOTION_WEBHOOK_SETUP_TOKEN>`. The initial POST's
+   `verification_token` is stored in KV for 600 seconds.
+3. Retrieve it with an authenticated GET to that same URL and setup query token. The response is
+   `no-store`; before a challenge arrives or after expiry it returns 404.
+4. Use the retrieved token to complete Notion's subscription verification and provision it as the
+   Worker Secret `NOTION_WEBHOOK_SECRET`. Remove `NOTION_WEBHOOK_SETUP_TOKEN` and the setup query
+   token from the subscription URL. Optionally configure `NOTION_WEBHOOK_SUBSCRIPTION_ID` to
+   restrict accepted events to that subscription.
+
+Normal requests must be POSTs with a valid `X-Notion-Signature` HMAC-SHA256 over the raw body,
+using the verification token as secret. Setup GETs are unavailable once the normal secret is set.
+Keep both secret values out of committed files, static assets, build artifacts and logs.
 
 ## Local development
 
-Requires Node 24.21.0 and pnpm 11.22.0.
+Requires Node 24.21.0 and pnpm 11.22.0. Dependencies stay pinned.
+Copy the variable names in `.dev.vars.example` into an ignored `.dev.vars` and supply an integration
+key for content you are authorized to read. `wrangler.jsonc` provides the data source ID.
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open `http://127.0.0.1:8800/__fixture/login` to sign in to the local admin interface. The development
-server uses Vite hot module replacement and applies local D1 migrations on startup. Development login
-code lives in `tests/support/development` and is enabled only in development mode; production uses
-Cloudflare Access. `pnpm preview` requires a real Access configuration.
+Open `http://127.0.0.1:8800`. Vite provides hot module replacement, uses local KV, disables remote
+bindings in development, and sets that exact local `PUBLIC_ORIGIN`. Development still reads the
+configured Notion source over the API. There is no local admin login or D1 migration step.
+`pnpm preview` uses the built Worker with local bindings and the same local origin.
+Pass `--env-file .dev.vars` (or your ignored `.env`) to preview when supplying local credentials
+explicitly. The Cloudflare build plugin can generate `dist/server/.dev.vars` for local preview;
+this server-only credential file must be excluded from release archives, as the CI artifact rule does.
+It is not a browser asset or a production Worker Secret.
 
-## Commands
+## Commands and verification
 
 ```sh
 pnpm lint
@@ -25,356 +99,101 @@ pnpm check:css
 pnpm typecheck
 pnpm test:unit
 pnpm test:dom
-pnpm test:browser # Chromium smoke, dedicated local checkout only
+pnpm test:browser
 pnpm build
 pnpm test:integration
-pnpm test      # test:unit then test:dom
-pnpm check     # lint, css, typecheck, test, build, integration, browser
+pnpm test      # unit, then DOM
+pnpm check     # lint, CSS, types, tests, build, integration, browser
 ```
 
-`pnpm test:unit` runs every `tests/unit/**/*.test.ts` with the native Node test runner and its `spec`
-reporter. `pnpm test:dom` runs Vitest over `tests/dom`. `pnpm test:integration` starts Miniflare on
-the built Worker, so run `pnpm build` first; it is optional and not part of `pnpm test`.
+Unit tests run with Node through `tsx`; DOM tests use Vitest/jsdom. Built-Worker integration tests
+require `pnpm build` first and cover the Worker boundary. Browser smoke is the separate real-browser
+layer. Integration and browser hosts run the built Worker with real local KV and deterministic
+official Notion API responses. The browser server uses port 8801 by default (`BLOG_BROWSER_PORT`
+overrides it), owns its temporary state, and refuses to reuse another server. No layer alone proves production Notion
+permissions, webhook delivery, KV provisioning, routing, accessibility, OS IME/drag or performance.
+Native stdout and the configured browser failure traces are the reporting surfaces; do not rebuild
+retired broad harnesses or custom evidence ledgers.
 
-## Test organization
+Use `@/*` for application imports, `~/tests/*` across test directories, and relative imports within
+one directory. Resolve filesystem resources relative to `import.meta.url`.
 
-- `tests/unit` holds Node unit tests, grouped by business area (`catalog`, `content`, `documents`,
-  `editor`, `history`, `media`, `publication`, `reader`, `references`, `shared`, `components`).
-- `tests/dom` runs Vitest in jsdom, grouped into `documents`, `catalog`, `history`, `reader`,
-  `media` and `editor`. Domain fixtures stay with their tests; `shared` contains DOM queries,
-  HTTP replies and minimal host setup. `vitest.config.ts` configures this layer.
-  Tests render real components or hooks, with explicit HTTP replies, fixed media preferences,
-  no-op resize observation/scrolling and anchor-only links. Catalog tests reject navigation.
-  None of these stand-ins proves layout, scrolling or routing.
-- `tests/integration` runs the built Worker in Miniflare against local D1 and R2.
-- `tests/browser/smoke.spec.ts` holds three independent Chromium smoke cases,
-  configured by `playwright.config.ts`; see the browser smoke instructions below.
-- `tests/support/unit` holds assertions and the React server-render fixture; `tests/support/worker`
-  holds the Miniflare runtime and response helpers; `tests/support/development` holds the
-  development-only login that Vite aliases in.
+## Production configuration and release
 
-Use `@/*` for application imports, `~/tests/*` for imports across test directories, and relative
-imports within one directory. `~/*` resolves from the repository root through `tsconfig.json`;
-filesystem resources use URLs relative to `import.meta.url`. The TypeScript test runner runs directly
-through `node --import tsx`.
+Preserve `ASSETS` for `dist/client` and the exact production
+`PUBLIC_ORIGIN = https://blog.ztd.me`, with no path or trailing slash. Keep
+`NOTION_DATA_SOURCE_ID = 417c263c-c594-8099-a9f5-000be11373f6` and bind a provisioned KV namespace as
+`NOTION_CACHE`. Store `NOTION_API_KEY` as a Worker Secret, never a plain Wrangler variable.
+Provision `NOTION_WEBHOOK_SECRET`, or temporarily the protected setup token described above.
+`NOTION_WEBHOOK_SUBSCRIPTION_ID` is optional. `BUILD_SHA` identifies the release at `/api/health`;
+that endpoint is a process/version probe, not proof of Notion or KV readiness.
 
-## Verification limits
+The source configuration declares the KV binding without a production namespace ID.
+The attempted Cloudflare KV namespace list returned authentication error `10000`; it supplies
+no evidence that a namespace was provisioned or a deployment succeeded. Content migration to Notion
+is complete, but the production source D1 database and R2 bucket have NOT been deleted.
+Removing their application bindings does not delete remote resources. No push or deployment has
+been authorized for this migration. Retain those resources until a separately authorized retirement.
 
-The previous broad Playwright suites, component bundle harness, performance measurements and
-custom evidence infrastructure were intentionally removed. Only the three browser smoke cases
-described below have been reintroduced; they are not equivalent to the retired coverage.
-DOM tests that reconstructed BlockNote, editor workspaces, route lifecycles or file-upload hosts
-were also removed rather than maintained with growing shims. New tests should use ordinary
-components/hooks and small boundary fixtures, not rebuild those harnesses.
-The smoke command exercises Chromium, selected navigation and narrow-screen focus behavior
-against the development server only. It does not prove production SSR/hydration, production Access,
-typography, drag or OS IME handling, accessibility scanning or any performance budget.
-`pnpm test:dom` covers client-side behavior in jsdom only; `pnpm check` additionally runs the
-three browser cases, not broad browser acceptance. Tests report natively to stdout; there are no
-custom receipts or run ledgers.
+The `Verify Blog` workflow performs a frozen install and `pnpm check`. A push to `main` follows
+Verify then Deploy; pull requests and `codex/**` pushes only verify. CI retains the tested `dist`
+and source SHA as `worker-<sha>` for seven days. Deploy checks out that immutable SHA, downloads
+that run's tested artifact, checks its source and production bindings, and skips superseded main
+revisions. Production deployment is serialized without canceling an active release. It deploys
+`dist/server/wrangler.json` without rebuilding or running migrations.
 
-### Browser smoke
+The deployment job requires GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID`, and checks for Worker Secret `NOTION_API_KEY` plus either
+`NOTION_WEBHOOK_SECRET` or `NOTION_WEBHOOK_SETUP_TOKEN`. A successful name check does not validate
+secret values, integration sharing or subscription setup. Post-deploy verification checks that one
+matching tagged Worker version receives 100% of traffic through the Cloudflare control plane;
+it does not request public pages or establish end-to-end content delivery.
 
-Use a dedicated checkout with no personal development data or production `.dev.vars`/environment
-secrets. `pnpm test:browser` starts `pnpm dev`, applies migrations to that checkout's local D1 and
-uses local R2 through the existing development login. It creates documents that remain in the
-checkout's ignored `.wrangler` state; it does not reset the database. Fresh browser contexts isolate
-cookies and local storage, not D1/R2. Do not run it against a personal working database.
+Before an authorized release, verify the intended source's schema/sharing, namespace binding and
+secrets, anonymous post/page reads, search/feed/sitemap output, Draft/archive/move eligibility,
+signed webhook invalidation, and expiring media behavior. Remote provisioning, deployments and
+resource deletion require separate authorization. KV can be discarded and repopulated; content
+backup/export and recovery belong to the Notion source and must be rehearsed separately.
 
-```sh
-pnpm install --frozen-lockfile
-pnpm exec playwright install chromium
-pnpm test:browser
-# pnpm check also runs these browser cases
-```
+## Public reading and source organization
 
-Port 8800 must be free; Playwright refuses to reuse another server and owns its server's lifecycle.
-The three cases cover Chinese text input/save/server read-back/reload, the editor document boundary
-(full-document entry and Back/Forward, then the browser's own confirmation on unsaved Back, dismissed
-to stay), and narrow-screen keyboard activation/Escape/focus return for settings and public navigation.
-The public navigation check also switches appearance and language inside the More popover
-and closes it when returning to a wide viewport. It holds client scripts before the first
-interaction to verify that More stays disabled until hydration makes it operable.
-The editor case also checks selection-preserving context formatting, table row insertion,
-keyboard context-menu focus return, and persistence of those edits across reload.
-The narrow case checks that right-click keeps the native browser menu.
-Each prepares its own document. The tests wait for the client list to load before interacting;
-they do not cover clicks before hydration. Chinese text input is not an OS IME test. Document
-navigations are asserted with a per-document marker, not URL equality, and the unsaved case proves
-the native dialog only by dismissing it; a clean Back is not evidence of that protection, and the
-same journey checks the desktop View site link's failed-save/stay and successful save-then-leave
-wiring, then explicit discard without a second native confirmation. Other departure-state
-combinations are covered by unit and DOM tests.
+The existing Zeithrold shell retains its journal feed, optional covers, typography, appearance and
+language preferences, responsive navigation, explicit pagination and chronological reading order.
+Keep reduced-motion behavior and keyboard visibility when changing the staggered feed.
+`react-notion-x` renders article bodies inside that shell rather than replacing it with its full-page
+header. Code and equation renderers are provided explicitly. Signed media refreshes before expiry
+and when a suspended page resumes; cover redirects recheck public metadata.
 
-Only Chromium runs, with one worker, no retries, no video and no explicit screenshots.
-Failures retain native traces under ignored `test-results/` until the next run. Open a failed
-case's `trace.zip` with `pnpm exec playwright show-trace <path>`.
-The command is included in `pnpm check` and CI; production browser and Access behavior
-remain separate verification. CI installs Chromium with its system dependencies before `pnpm check`
-and uploads `test-results/` on failure with seven-day retention. Project guidance lives in
-`.agents/skills/browser-smoke/SKILL.md`; do not rebuild the retired harnesses or evidence gates.
+`src/app` owns routes and ordered global styles; `src/worker` dispatches requests and applies
+request/security policy. `src/server/notion` owns official API reads, metadata eligibility, block
+conversion, cache and webhooks. `src/server/reader` derives feeds and metadata, and
+`src/server/runtime` supplies request bindings and origin checks. `src/contracts/notion.ts` defines
+public paths and reader snapshots. `src/features/reader` owns presentation. Browser components
+receive snapshots and never the integration key.
 
-`pnpm check` is the full gate, and CI runs exactly it: the `Verify CMS` workflow performs a frozen install
-and then `pnpm check` in its `Verify` job. Dependency versions stay pinned; the workflow actions stay
-pinned to immutable commits.
-
-### Automatic production releases
-
-A push to `main` runs **Verify → Deploy** in the same workflow. Pull requests and `codex/**` pushes
-only verify; they never receive Cloudflare credentials or run production migrations.
-The repository must provide the GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID`. Scope the token to the production account and zone, with permission to
-apply D1 migrations, deploy Workers/update routes, and read Worker deployments/versions.
-`CSRF_SIGNING_SECRET` stays in the Worker Secret store, not GitHub artifacts.
-
-After verification passes, CI retains the tested `dist` and its source SHA as `worker-<sha>` for seven
-days, including generated hidden manifests but excluding `.env`/`.dev.vars` files. Deploy checks out
-that same immutable SHA, downloads only that run's tested artifact, and verifies its source and
-production bindings. It skips superseded main revisions, including reruns of an older commit.
-Main verification runs independently; PR and other branch checks still cancel superseded runs.
-Production changes are serialized with GitHub's `queue: max` (up to 100 pending jobs), without
-canceling an active release or replacing a newer pending release with a stale rerun.
-Queued jobs recheck current main after acquiring the production slot and skip obsolete revisions.
-This does not guarantee deploying every commit; a full queue rejects additional jobs and requires a retry.
-
-The release applies pending production D1 migrations first; a failed migration stops deployment.
-It then deploys the tested Worker with `BUILD_SHA` and a version tag set to the workflow SHA.
-Post-deployment verification uses the Cloudflare control plane to confirm one matching version
-receives 100% of traffic. CI does not request public production pages or bypass Access/WAF.
-This check is not a substitute for signed-in publishing, Cron or backup/restore acceptance.
-
-Only reviewed, backward-compatible migrations should enter this automatic path. Destructive changes
-need a separate approved maintenance/backup plan before merging; CI does not classify SQL safety.
-If deployment fails after migration, the database may already be upgraded: repair/retry the release,
-do not automatically undo migrations or roll back to an incompatible decoder.
-
-## Production readiness
-
-The checked-in `wrangler.jsonc` targets Worker `ztd-blog` at `https://blog.ztd.me`, with D1 and
-private R2 resources named `ztd-blog`. Confirm the selected Cloudflare account owns these resources
-and the `ztd.me` zone before deployment. Keep the binding names `DB`, `MEDIA` and `ASSETS`.
-`pnpm dev` still uses local D1/R2; its development-only plugin overrides origin and Access identity.
-Configuring a production resource ID does not authorize a remote migration or deployment.
-Set `PUBLIC_ORIGIN` to the exact HTTPS origin, with no path or trailing slash. Requests to a different
-origin are rejected. Keep the minute Cron trigger: it drives scheduled publication and media cleanup.
-Do not expose the R2 bucket through a public bucket URL.
-
-Configure a Cloudflare Access application for both `/admin` and `/admin/*`, and both `/api/admin`
-and `/api/admin/*`. Public reading, search, RSS and sitemaps must remain public. Set
-`ACCESS_TEAM_DOMAIN` to the team hostname without `https://` and `ACCESS_AUD` to the application's
-audience. Admission is controlled by that Access application's policy: every authenticated user
-admitted to this application has full CMS admin access. There is no `OWNER_SUBS` allowlist.
-The Worker still validates the JWT signature, issuer, audience, expiration, application token type
-and nonempty user subject. Merely supplying an Access-looking header does not grant access.
-Use identity-based Allow policies, not a Bypass rule or service tokens. Restrict the policy to the
-people who should administer the whole blog; the CMS does not provide per-user roles.
-The subject remains in audit records and binds CSRF tokens and browser sessions to the signed-in
-identity. The existing session response field `ownerSub` carries that identity, not an owner whitelist.
-Store a randomly generated `CSRF_SIGNING_SECRET` of at least 32 characters as a Worker Secret;
-never commit its value. `.dev.vars.example` documents the variable names, not production credentials.
-Leave `ALLOWED_PREVIEW_HOSTS` unset unless a separate Access-protected preview host is required.
-Set `BUILD_SHA` to the release commit so `/api/health` identifies the deployed version.
-
-Apply all D1 migrations explicitly to the intended production database before serving traffic;
-application startup does not migrate production. Review the generated `dist/server/wrangler.json`
-after `pnpm build` and use that generated configuration for deployment, not the source Worker
-entry point. `pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json` checks packaging
-without publishing; it does not verify credentials, remote resources, account limits or routing.
-Pushing reviewed changes to `main` authorizes the automatic release path above. Manual deployments,
-remote resource changes outside that path, and destructive migrations still require explicit authorization.
-
-Before release, run `pnpm check` and exercise these paths against the intended environment:
-
-- Anonymous public reading works; missing, forged and wrong-application JWTs cannot access admin routes.
-- A policy-admitted user can sign in, save Chinese text, upload media, refresh, preview, publish and unpublish.
-- A second policy-admitted user also has admin access, but cannot reuse the first user's CSRF token.
-- Draft edits do not change the public article or its homepage presentation.
-- A scheduled article publishes and becomes searchable; inspect Cron failures and schedule lag.
-- Desktop and narrow-screen reading, keyboard navigation and browser back/forward remain usable.
-- Restore a paired database/media backup into an isolated environment and verify it before resuming
-  writes. A successful export alone is not recovery evidence.
-
-The health endpoint is a process/version probe, not a D1, R2 or Cron readiness check. Monitor real
-public reads, Worker errors, Cron failures, failed schedules, schedule lag and backup age as well.
-The operations page exposes storage and schedule status but does not perform an automatic backup.
-
-### Backup and restore contract
-
-Back up database rows and media together. The admin-only backup API uses the normal Access,
-same-origin, CSRF and idempotency protections for writes:
-
-1. Call `POST /api/admin/backups/freeze` and retain its `backupId`. The source remains publicly
-   readable but writes, scheduled publication and cleanup pause.
-2. For each table below, page through
-   `GET /api/admin/backups/{backupId}/rows?table={table}&after={cursor}`, starting at `0` and following
-   `nextCursor` until it is `null`. Preserve every returned column except the transport `_cursor`.
-3. Page through `GET /api/admin/backups/{backupId}/manifest?after={cursor}`, starting with an empty
-   cursor. Copy each object to durable backup storage under its original `key`, retaining metadata,
-   and verify its byte length and SHA-256 against the manifest. Do not finish the source backup
-   until both rows and media are safely retained.
-4. Finish on the **source** with `POST /api/admin/backups/finish`, passing `backupId` and the SHA-256
-   of the retained manifest. Pass `manifestSha256: null` to mark a failed backup and release its
-   maintenance lock. A source backup abandoned after freezing stays paused until explicitly finished.
-
-Restore only into an empty database with all migrations applied, paired with an isolated private
-bucket. The insertion order is:
-
-```text
-site_state, catalog, assets, documents, revisions, revision_assets, revision_catalog,
-published_documents, published_catalog, publication_events, schedules, mutations
-```
-
-Import the rows in **one D1 transaction/batch**, beginning with `PRAGMA defer_foreign_keys=ON` to
-resolve the documents/revisions reference cycle. Replace the migration-created singleton
-`site_state` row; insert other rows normally. Do not split the import into independently committed
-statements. Exported `site_state` intentionally starts in ownerless maintenance with `content_bytes=0`;
-inserting revisions rebuilds the storage counter, and inserting public projections rebuilds FTS.
-Do not import FTS shadow tables, transaction guards, backup runs or backup pins from another instance.
-
-Restore and checksum the media before routing traffic to the new instance. Inspect operations,
-article/homepage reads, search, taxonomy, RSS, sitemap, private previews and media. Confirm
-`maintenance=1`, `maintenanceOwner=null`, matching content counts and the rebuilt storage counter.
-Only after accepting the restored state, call `POST /api/admin/operations/resume` with
-`expectedGeneration` from the operations response, or use the operations page's resume action.
-Do not call backup `finish` on the restored instance: it does not own the source backup run.
-
-The integration suite exercises this contract with real local D1/R2 bindings and the built Worker.
-It is not a production backup scheduler or a general-purpose restore CLI; remote import tooling,
-transaction preservation, backup retention and off-account storage still need an operator-owned
-rehearsal before release.
-
-## Public reading design
-
-The public index uses a restrained journal composition: Source Serif 4 display type with Noto Serif CJK, Noto Sans UI and
-real publication metadata. Articles form a two-column staggered card feed above 701px and a single
-column on narrow screens. Optional covers reserve a 3:2 image area; text-only cards are a first-class
-variant, not a missing-image placeholder. Cards retain chronological DOM, keyboard and reading order.
-A small ResizeObserver-driven grid row span calculation enables the staggered layout; without
-JavaScript the server-rendered cards remain readable in an ordinary grid. Pagination remains explicit.
-Taxonomy and search retain their compact ruled lists.
-
-On entry, feed cards fade in and rise 8px over 340ms, with a 35ms stagger capped at 175ms.
-The animation is CSS-only and runs on the inner card, never on the grid item measured for masonry.
-It does not hide content behind a scroll observer, replay on every resize, or require JavaScript.
-Reduced-motion preferences disable it, and keyboard-focused cards appear immediately.
-
-The public mobile AppBar uses a single 56px row with 44px Search and More targets.
-More contains the existing appearance, language and RSS controls; desktop and admin navigation retain
-their existing layout. More remains disabled until React owns the control.
-The mobile homepage intro starts with 24px of top spacing.
-
-Display type caps at 50px on wide layouts and 36px on narrow layouts. Secondary public titles share
-the Serif section scale at 40/32px; recovery and license titles use 32/26px.
-Feed titles use bold Sans at 23/21px, descriptions use Serif, and article titles use bold Sans.
-Shared body/control/help roles remain 15/13/12px; reading and editable roles remain 17/16px.
-Compact UI text retains reachable controls and visible keyboard focus.
-
-Tags offer a neutral default and seven named colors in the catalog editor. Their chips reuse the
-editor's theme-aware ink palette with a lightly tinted background; color never replaces the label.
-Color is captured when a tag is added to a document, like its name and slug. Catalog edits do not
-rewrite historical or published snapshots; remove and re-add a draft tag to adopt its current color.
-Old documents without a color remain neutral and are not rewritten on read.
-Homepage cards show those published tag snapshots below their descriptions, wrapping when needed.
-Empty tag rows are omitted; tag chips are non-interactive inside the single article link.
-Apply `0003_tag_colors.sql` before deploying the color-aware Worker. The migration adds a column
-without altering revisions; retain it on rollback. After any catalog write (including neutral tags
-and series), rollback must retain the color-aware catalog response/journal decoder so existing
-idempotency keys can replay their saved acknowledgements. After saving colored document snapshots,
-also retain a color-aware document decoder. Older strict decoders reject these new fields.
-
-Article covers are chosen or cleared in the editor's metadata settings using the existing image
-library. An optional description supplies alt text; an empty description treats the image as
-decorative beside its titled link. The canonical `meta.cover` field is optional for older documents.
-Covers are normal image references retained by revisions, and homepage covers change only when the
-corresponding revision is published. Migration `0004_published_cover.sql` must precede this release.
-The new reader accepts old documents, but older strict readers reject revisions containing
-`meta.cover` (including `null`). Do not roll back only the Worker to a pre-cover release after new
-revisions have been saved: retain a cover-compatible reader or restore a paired pre-release snapshot.
-The added columns alone do not make older canonical decoders forward-compatible.
-
-The root layout loads the Google Sans and Serif font stylesheets once through stylesheet links.
-The installed UI font CSS is adapted to keep declarations only, avoiding nested remote imports
-after Tailwind expansion. Keep Noto language coverage, upstream license notices and the existing
-font CSP. A declared font family is not rendering evidence; browser smoke does not check rendered fonts.
-
-## Source organization
-
-`src/app` owns routes and global style composition; `src/worker` dispatches requests and applies
-Worker security. It serves the router's HTML unchanged: the nonce-bearing CSP still governs
-every script, and the Worker injects no pre-hydration code.
-
-`src/server` groups HTTP handling, authentication, document persistence, media, catalogs, publication,
-public reading, reference lookup, operations, and runtime bindings. `src/content` contains
-environment-independent document structures, validation, and content rules. `src/contracts` defines
-HTTP request/response schemas by business domain; shared response types are inferred from these
-schemas. Browser code imports contracts directly instead of server repositories. `src/shared/admin`
-owns cross-feature requests, CSRF/idempotency handling, navigation, feedback, confirmation dialogs,
-and publication issue labels. `src/components/ui/ztd-me` retains its separate upstream source and
-license boundary.
-
-`src/features` groups application behavior. Inside `editor`, `workspace` composes the session and
-settings, `engine` integrates BlockNote, and `adapters` implements its component interfaces. Draft
-persistence and recovery live in `draft`; blocks, controls, media insertion, references, publication,
-and preview keep their views and state together. Editor-specific history integration belongs to the
-workspace; `features/history` provides revision loading, comparison, and the standalone history page.
-The standalone media gallery remains in `features/media`.
-
-The editor document is a full-document navigation boundary. Its route renders `EditorBoundary`, which
-registers the in-app link guard before the editor workspace loads, so entering and leaving the editor
-are ordinary document navigations rather than client-side route changes. In-app departures (site
-links, the header's document link, the history link) wait for uploads and the final save and report a
-failure in the existing dialog before performing that navigation; Back/Forward, refresh and close are
-left to the browser, which asks through the editor's own `beforeunload` guards while the draft is
-dirty or uploads are pending. The one departure the dialog approved is exempted from that second,
-native confirmation. No history state, pop listener or restore machine is involved.
-
-Feature CSS stays with its owner and is imported by `src/app/styles.css` in the established order.
-Global CSS stays under `src/app/styles`. Translation resources and phrase mappings use matching
-semantic groups, including editor blocks, tables, references, draft state, and preview. Existing
-`site`, `editor`, and `documents` namespaces, translation keys, and phrase lookup behavior are
-retained.
-
-## Admin feedback
-
-Transient results of explicit user actions use Sonner toasts, emitted only after the operation is
-confirmed. Initial rendering, background refresh and draft autosave must not produce success toasts.
-Do not turn a persisted property into a toast effect: a loaded article being published is not a new
-publication event.
-
-Keep durable publication/save/maintenance badges, validation details, conflicts, recovery choices,
-upload progress and other actionable problems in place. A toast does not replace information the
-author needs to inspect or resolve. When a transient success message moves to a toast, remove its
-inline duplicate rather than shifting the surrounding layout.
+Feature CSS remains with its owner and follows `src/app/styles.css` order. The root layout retains
+the shared font loading and upstream font notices. `src/i18n` owns the `site` namespace, with an
+engine per mounted root or server request and matching English/Chinese resources.
+`src/components/ui/ztd-me` keeps its separate upstream source, provider, styling and license
+boundary; preserve the original project and foundation notices.
 
 ## Build and repository conventions
 
-Do not create a `scripts` directory without explicit permission from the repository owner. Define
-routine commands directly in `package.json`. Do not retain `docs`, `artifacts`, or backup copies.
+Do not create a `scripts` directory without explicit permission from the repository owner.
+Define routine commands directly in `package.json`. Do not retain new `docs`, `artifacts` or backups.
+Do not edit `next-env.d.ts`.
 
-`vite.config.ts` uses Vite 8's native `resolve.tsconfigPaths` support to read the `@/*` (source) and
-`~/*` (repository root) mappings from `tsconfig.json`, with no additional path resolution plugin. Two
-exact module aliases for development login are enabled only in development mode. Vite and TypeScript
-configuration are included in strict type checking. `skipLibCheck` skips checks inside declaration
-files to accommodate the Cloudflare toolchain's currently published declarations.
+`vite.config.ts` uses native `resolve.tsconfigPaths` for `@/*` and `~/*`, vinext, Tailwind and the
+Cloudflare RSC/SSR integration. Vite and TypeScript configuration are strictly type checked;
+`skipLibCheck` accommodates published toolchain declaration files. `pnpm build` runs `vite build`
+directly without custom license generation.
 
-`pnpm build` runs `vite build` directly, without custom pre-build or post-build scripts. Original
-third-party licenses, combined notices, and the retained dependency inventory snapshot live in the
-source tree and `public/licenses`. The public `/licenses` page links to these files, which are
-included in the build as static assets. The inventory is not regenerated on each build. Update the
-corresponding notices and inventory when adding, removing, or upgrading dependencies.
+Original third-party licenses, combined notices and the retained inventory live in the source tree
+and `public/licenses`, served as static assets linked from `/licenses`. Regenerate the corresponding
+notices and inventory when dependencies change, preserving complete original license text and the
+foundation's provenance. The inventory conservatively includes installed production dependencies,
+optional dependencies and resolved peers; it is not proof that every package is emitted.
+Do not carry forward module counts from an obsolete build as evidence for a new graph.
 
-BlockNote native JSON is the canonical document body. D1 stores revisions, publication state, tags
-and series, schedules, and search projections; R2 stores private media. Production deployments and
-remote resource changes require separate authorization.
-
-## Shared development Skills
-
-The five generic development Skills (`js-ts-testing`, `ui-foundation`, `ui-web`,
-`frontend-engineering`, `frontend-verification`) come from Tools
-[`7fd78ba96830452502adbda07575bb250af914ba`](https://github.com/zeithrold/tools/tree/7fd78ba96830452502adbda07575bb250af914ba/skills)
-and are installed once for the current user in `~/.agents/skills`; this repository keeps no copy.
-`zt.lock.json` stays as an empty retired lock; no project-level Skill sync remains. The root module
-declaration in `zt.json` supports read-only discovery.
-
-Where generic Skills assume broad browser gates, this repository's deliberately limited
-browser smoke takes precedence: see the verification limits above.
+The shared development Skills remain installed outside this repository. `zt.lock.json` is an empty
+retired lock; `zt.json` supports read-only discovery. No project-level Skill sync remains.
