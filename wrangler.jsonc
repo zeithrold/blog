@@ -18,7 +18,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "NOTION_CACHE"
+      "binding": "NOTION_CACHE",
+      "id": "a27537e46cdd486f9c90257f3adec7a2"
     }
   ]
 }
