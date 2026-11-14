@@ -1,9 +1,15 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { PublicTag } from '@/contracts/notion'
 import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { TagChip } from '@/features/reader/tag-chip'
 import { SiteCount, SiteText } from '@/i18n/site-text'
+import { listingMetadata } from '@/server/reader/listings'
 import { publishedCatalog } from '@/server/runtime/context'
+
+export function generateMetadata(): Metadata {
+  return listingMetadata('/tags', 'Tags', 'Browse published articles by topic on zeithrold/blog.')
+}
 
 export default async function Tags(): Promise<ReactNode> {
   const catalog = await publishedCatalog()

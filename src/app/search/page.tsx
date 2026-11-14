@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { PublicItem } from '@/contracts/notion'
 import { ArrowDown, ArrowRight, Search as SearchIcon } from 'lucide-react'
@@ -7,6 +8,7 @@ import { Button, Input } from '@/components/ui/ztd-me/client'
 import { SiteAfterword } from '@/features/reader/post-list'
 import { PublicPageTitle } from '@/features/reader/public-page-title'
 import { SiteCount, SiteText } from '@/i18n/site-text'
+import { paginate } from '@/server/reader/listings'
 import { publishedCatalog } from '@/server/runtime/context'
 import {
   utility1Class,
@@ -104,17 +106,22 @@ type SearchResult = {
   readonly nextOffset: number | null
 }
 
+export const metadata: Metadata = {
+  title: 'Search',
+  description: 'Search published articles by title, summary, or tag on zeithrold/blog.',
+  robots: { index: false, follow: true },
+}
+
 export default async function Search({
   searchParams,
 }: {
   searchParams: Promise<{
-    q?: string
-    offset?: string
+    q?: string | string[]
+    offset?: string | string[]
   }>
 }): Promise<ReactNode> {
   const { q = '', offset: rawOffset } = await searchParams
-  const offset = Number(rawOffset ?? 0)
-  if (typeof q !== 'string' || q.length > 120 || !Number.isSafeInteger(offset) || offset < 0 || offset > 100000) {
+  if (typeof q !== 'string' || q.length > 120) {
     notFound()
   }
   const terms = q.normalize('NFKC').toLocaleLowerCase().trim().split(/\s+/u).filter(Boolean)
@@ -127,14 +134,11 @@ export default async function Search({
           .toLocaleLowerCase()
         return terms.every(term => text.includes(term))
       })
-  const result: SearchResult = {
-    items: matches.slice(offset, offset + 50),
-    nextOffset: offset + 50 < matches.length ? offset + 50 : null,
-  }
+  const result = paginate(matches, rawOffset)
   return (
     <div className={layout1Class} id="top">
       <SearchIntro query={q} />
-      <SearchResults query={q} offset={offset} result={result} />
+      <SearchResults query={q} offset={result.offset} result={result} />
       <SiteAfterword />
     </div>
   )

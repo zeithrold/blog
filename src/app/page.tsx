@@ -1,9 +1,10 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { ArrowDown, Asterisk, Rss } from 'lucide-react'
-import { notFound } from 'next/navigation'
 import { PostFeed } from '@/features/reader/post-feed'
 import { SiteAfterword } from '@/features/reader/post-list'
 import { SiteCount, SiteText } from '@/i18n/site-text'
+import { listingMetadata, paginate } from '@/server/reader/listings'
 import { publishedCatalog } from '@/server/runtime/context'
 
 const siteContentStyle1 = [
@@ -51,22 +52,28 @@ const introLinksStyle9 = [
   '[&_a]:min-h-11 [&_a]:text-control [&_a]:no-underline [&_a:hover]:text-accent-foreground',
 ].join(' ')
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ offset?: string }>
-}): Promise<ReactNode> {
+type HomeProps = { readonly searchParams: Promise<{ offset?: string | string[] }> }
+
+async function homePosts(searchParams: HomeProps['searchParams']) {
   const query = await searchParams
-  const offset = Number(query.offset ?? 0)
-  if (!Number.isSafeInteger(offset) || offset < 0 || offset > 100000) {
-    notFound()
-  }
   const catalog = await publishedCatalog()
   const entries = catalog.items.filter(item => item.path.startsWith('/posts/'))
-  const posts = {
-    items: entries.slice(offset, offset + 50),
-    nextOffset: offset + 50 < entries.length ? offset + 50 : null,
-  }
+  return paginate(entries, query.offset)
+}
+
+export async function generateMetadata({ searchParams }: HomeProps): Promise<Metadata> {
+  const { offset } = await homePosts(searchParams)
+  return listingMetadata(
+    '/',
+    'Software, systems, and field notes',
+    'Essays and field notes by Zeithrold on software, systems, language learning, and everyday life.',
+    offset,
+  )
+}
+
+export default async function Home({ searchParams }: HomeProps): Promise<ReactNode> {
+  const posts = await homePosts(searchParams)
+  const { offset } = posts
   return (
     <div className={siteContentStyle1} id="top">
       <HomeIntro />

@@ -48,6 +48,7 @@ test('tag routes round-trip opaque native IDs through their actual published lin
     Array.from(detail.querySelectorAll('#posts .post-list a')).map(link => link.getAttribute('href')),
     ['/posts/reliable-systems', '/posts/second-note'],
   )
+  assert.equal(detail.querySelector('link[rel="canonical"]')?.getAttribute('href'), worker.origin + href)
 }).catch(rejected)
 
 test('tag identity comes from the URL even when a caller supplies the internal path header', async () => {
@@ -75,6 +76,10 @@ test('tag pagination retains its native identity and every article across pages'
   const second = await worker.fetch(nextPath)
   assert.equal(second.status, 200)
   const secondDocument = new JSDOM(await second.text()).window.document
+  assert.equal(
+    secondDocument.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+    `${worker.origin}/tags/systems?offset=50`,
+  )
   const secondPaths = Array.from(secondDocument.querySelectorAll('#posts .post-list a'))
     .map(link => link.getAttribute('href'))
   assert.equal(secondPaths.length, 1)
