@@ -3,6 +3,7 @@ import type { PublicItem } from '@/contracts/notion'
 import { env } from 'cloudflare:workers'
 import { notFound } from 'next/navigation'
 import { publicOrigin } from '@/server/runtime/origin'
+import { shareImage } from './share'
 
 type ListingPage = {
   readonly items: readonly PublicItem[]
@@ -29,11 +30,13 @@ export function paginate(items: readonly PublicItem[], rawOffset: string | strin
 export function listingMetadata(path: string, title: string, description: string, offset = 0): Metadata {
   const canonical = publicOrigin(env) + path + (offset === 0 ? '' : `?offset=${offset}`)
   const heading = offset === 0 ? title : `${title} · From post ${offset + 1}`
+  const image = shareImage(publicOrigin(env))
   return {
     title: { absolute: `${heading} · zeithrold/blog` },
     description,
     alternates: { canonical },
     robots: { index: true, follow: true },
-    openGraph: { type: 'website', title: heading, description, url: canonical },
+    openGraph: { type: 'website', title: heading, description, url: canonical, images: [image] },
+    twitter: { card: 'summary_large_image', title: heading, description, images: [image] },
   }
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { env } from 'cloudflare:workers'
 import { headers } from 'next/headers'
@@ -10,6 +11,8 @@ import {
   resolveInitialPreferences,
 } from '@/components/ui/ztd-me'
 import { BlogFrontend } from '@/i18n/frontend'
+import { shareImage } from '@/server/reader/share'
+import { publicOrigin } from '@/server/runtime/origin'
 import './styles.css'
 
 const utility1Class = [
@@ -17,12 +20,27 @@ const utility1Class = [
   'antialiased',
 ].join(' ')
 
-export const metadata = {
-  title: {
-    default: 'zeithrold/blog',
-    template: '%s · zeithrold/blog',
-  },
-  description: 'Notes on building things.',
+export function generateMetadata(): Metadata {
+  const image = shareImage(publicOrigin(env))
+  return {
+    title: {
+      default: 'zeithrold/blog',
+      template: '%s · zeithrold/blog',
+    },
+    description: 'Notes on building things.',
+    openGraph: {
+      type: 'website',
+      title: 'zeithrold/blog',
+      description: 'Notes on building things.',
+      images: [image],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'zeithrold/blog',
+      description: 'Notes on building things.',
+      images: [image],
+    },
+  }
 }
 export default async function Layout({
   children,

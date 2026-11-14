@@ -45,6 +45,12 @@ enhanced Markdown. Each request rechecks publication and fetches fresh Markdown;
 incomplete upstream responses fail rather than return partial content.
 `/tags` lists article counts, and `/tags/<native-tag-id>` aggregates matching published
 posts with pagination. Tag links keep their identity when a native label changes.
+Tag introductions come from each native multi-select option's `description` in the
+data source schema. Nonblank introductions appear on Tag pages and in their metadata;
+only described tags used by published posts enter the sitemap. Schema webhooks refresh
+these introductions through the same finite catalog cache.
+Pages without a cover use the 1200 by 630 default share image in `public/share.png`;
+`public/share.svg` is its editable source. Covered articles keep their stable media URL.
 
 ## Commands
 

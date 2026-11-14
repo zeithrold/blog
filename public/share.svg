@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <title>zeithrold/blog</title>
+  <desc>Notes on building things. The Zeithrold notebook at blog.ztd.me.</desc>
+  <!-- Shell palette: ztd-background, ztd-foreground, ztd-muted-foreground. -->
+  <rect width="1200" height="630" fill="#fafafa"/>
+  <!-- The shell's three-bar brand mark, enlarged four times. -->
+  <g transform="translate(88 88) rotate(-12 50 50)" fill="#171717">
+    <rect y="16" width="100" height="12" rx="6"/>
+    <rect y="44" width="76" height="12" rx="6"/>
+    <rect y="72" width="100" height="12" rx="6"/>
+  </g>
+  <text x="88" y="335" fill="#171717" font-family="'Source Serif 4', Georgia, serif" font-size="88" letter-spacing="-2">zeithrold/blog</text>
+  <text x="92" y="402" fill="#595959" font-family="'Noto Sans', Arial, sans-serif" font-size="32">Notes on building things.</text>
+  <text x="92" y="546" fill="#595959" font-family="'Noto Sans', Arial, sans-serif" font-size="24">blog.ztd.me</text>
+</svg>
