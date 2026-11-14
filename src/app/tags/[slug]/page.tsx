@@ -25,21 +25,22 @@ async function tagPosts(searchParams: TagProps['searchParams']) {
   if (tag === undefined) {
     notFound()
   }
-  return { tag, count: articles.length, ...paginate(articles, offset) }
+  const description = catalog.tagDescriptions.find(option => option.id === tag.id)?.description
+  return { tag, description, count: articles.length, ...paginate(articles, offset) }
 }
 
 export async function generateMetadata({ searchParams }: TagProps): Promise<Metadata> {
-  const { tag, offset } = await tagPosts(searchParams)
+  const { tag, description, offset } = await tagPosts(searchParams)
   return listingMetadata(
     tagUrl(tag.id),
     `${tag.label} articles`,
-    `Published articles tagged ${tag.label} on zeithrold/blog.`,
+    description?.replace(/\s+/gu, ' ') ?? `Published articles tagged ${tag.label} on zeithrold/blog.`,
     offset,
   )
 }
 
 export default async function TagArticles({ searchParams }: TagProps): Promise<ReactNode> {
-  const { tag, count, items, offset, nextOffset } = await tagPosts(searchParams)
+  const { tag, description, count, items, offset, nextOffset } = await tagPosts(searchParams)
   return (
     <>
       <header className="pt-14 pb-8 max-[701px]:pt-10">
@@ -47,6 +48,11 @@ export default async function TagArticles({ searchParams }: TagProps): Promise<R
           <SiteText value="All tags" />
         </Link>
         <PublicPageTitle id="tag-heading">{tag.label}</PublicPageTitle>
+        {description !== undefined && (
+          <p className="mt-5 mb-0 max-w-prose text-body text-muted-foreground wrap-anywhere whitespace-pre-line">
+            {description}
+          </p>
+        )}
         <p className="mt-5 mb-0 text-muted-foreground text-help tabular-nums">
           <SiteCount count={count} one="1 post" other="{count} posts" />
         </p>

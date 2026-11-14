@@ -79,6 +79,27 @@ export function item(): PublicItem {
   return parsed
 }
 
+export function dataSource(): {
+  readonly object: string
+  readonly id: string
+  readonly properties: {
+    readonly Tag: {
+      readonly type: string
+      readonly multi_select: {
+        readonly options: readonly { readonly id: string, readonly description: string | null }[]
+      }
+    }
+  }
+} {
+  return {
+    object: 'data_source',
+    id: source,
+    properties: { Tag: { type: 'multi_select', multi_select: { options: [
+      { id: 'tag-native', description: null },
+    ] } } },
+  }
+}
+
 export function stored(
   id: string,
   type: string,

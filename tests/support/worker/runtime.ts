@@ -1,5 +1,5 @@
 import type { DispatchFetch, RequestInit, V4MiniflareOptions, V4ModuleDefinition } from 'miniflare'
-import type { MarkdownFixtureMode } from './notion-fixture'
+import type { NotionFixtureOptions } from './notion-fixture'
 import { rmSync } from 'node:fs'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -43,6 +43,7 @@ type WorkerFixture = {
   readonly origin: string
   readonly revise: () => void
   readonly unpublish: () => void
+  readonly reviseTagDescription: () => void
   readonly fetch: (path: string, init?: RequestInit) => ReturnType<DispatchFetch>
   readonly [Symbol.asyncDispose]: () => Promise<void>
 }
@@ -65,12 +66,8 @@ async function startRuntime(options: V4MiniflareOptions, root: string): Promise<
   }
 }
 
-type WorkerFixtureOptions = {
+type WorkerFixtureOptions = NotionFixtureOptions & {
   readonly port?: number
-  readonly markdownMode?: MarkdownFixtureMode
-  readonly additionalPostCount?: number
-  readonly tagId?: string
-  readonly invalidPostSlug?: boolean
 }
 
 export async function workerFixture(options: WorkerFixtureOptions = {}): Promise<WorkerFixture> {
@@ -84,8 +81,7 @@ export async function workerFixture(options: WorkerFixtureOptions = {}): Promise
       path: resolve(directory, path),
     })),
   ]
-  const { markdownMode, additionalPostCount, tagId, invalidPostSlug } = options
-  const fixture = new NotionFixture(markdownMode, additionalPostCount, tagId, invalidPostSlug)
+  const fixture = new NotionFixture(options)
   const root = await mkdtemp(join(tmpdir(), 'notion-worker-'))
   const origin = options.port === undefined ? 'https://fixture.example' : `http://127.0.0.1:${options.port}`
   const runtime = await startRuntime({
@@ -130,6 +126,7 @@ export async function workerFixture(options: WorkerFixtureOptions = {}): Promise
     origin,
     revise: () => fixture.revise(),
     unpublish: () => fixture.unpublish(),
+    reviseTagDescription: () => fixture.reviseTagDescription(),
     fetch: async (path, init) => await runtime.dispatchFetch(new URL(path, origin), init),
     [Symbol.asyncDispose]: dispose,
   }

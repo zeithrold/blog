@@ -1,12 +1,16 @@
 import type { NotionBindings } from './bindings'
 import type { CatalogSnapshot, PublicItem } from '@/contracts/notion'
 import { z } from 'zod'
-import { publicItemSchema } from '@/contracts/notion'
+import { publicItemSchema, tagDescriptionSchema } from '@/contracts/notion'
 import { nextCursor, notionClient, NotionContentError, pagination } from './api'
 import { cacheKey, deadline, envelopeSchema, readCache, writeCache } from './cache'
 import { readMetadata } from './metadata'
+import { readTagDescriptions } from './tag-descriptions'
 
-const catalogSchema = envelopeSchema.extend({ items: z.array(publicItemSchema) })
+const catalogSchema = envelopeSchema.extend({
+  items: z.array(publicItemSchema),
+  tagDescriptions: z.array(tagDescriptionSchema),
+})
 
 export async function readCatalog(bindings: NotionBindings): Promise<CatalogSnapshot> {
   const key = cacheKey(bindings, 'catalog')
@@ -44,6 +48,7 @@ export async function readCatalog(bindings: NotionBindings): Promise<CatalogSnap
   })
   const snapshot = {
     items,
+    tagDescriptions: await readTagDescriptions(client, bindings.NOTION_DATA_SOURCE_ID, items),
     fetchedAt,
     freshUntil: deadline(fetchedAt, 60, items.map(item => item.cover?.expiresAt ?? null)),
   }

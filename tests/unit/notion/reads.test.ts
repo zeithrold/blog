@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { cacheKey } from '@/server/notion/cache'
 import { readCatalog } from '@/server/notion/catalog'
 import { readPage } from '@/server/notion/page'
-import { blockValue, fixture, metadata, pageId, rich, stored } from './fixtures'
+import { blockValue, dataSource, fixture, metadata, pageId, rich, source, stored } from './fixtures'
 
 function list(results: unknown[], next: string | null = null) {
   return { object: 'list', results, has_more: next !== null, next_cursor: next }
@@ -17,10 +17,14 @@ test('an invalid published slug is excluded without blocking valid catalog entri
     rich('/post/invalid'),
   ]
   const errors = t.mock.method(console, 'error', () => {})
-  t.mock.method(globalThis, 'fetch', async () => await Promise.resolve(Response.json(list([
-    invalid,
-    metadata(),
-  ]))))
+  const responses = [
+    list([
+      invalid,
+      metadata(),
+    ]),
+    dataSource(),
+  ]
+  t.mock.method(globalThis, 'fetch', async () => await Promise.resolve(Response.json(responses.shift())))
   const result = await readCatalog(bindings)
   deepEqual(result.items.map(item => item.path), ['/posts/original'])
   equal(errors.mock.callCount(), 1)
@@ -42,6 +46,7 @@ test('catalog follows query pagination and rejects duplicate eligible paths', as
       metadata(),
     ], 'next'),
     list([other]),
+    dataSource(),
   ]
   t.mock.method(globalThis, 'fetch', async () => await Promise.resolve(Response.json(responses.shift())))
   const result = await readCatalog(bindings)
@@ -95,6 +100,7 @@ test('page body cache never bypasses current Draft, renamed or moved metadata', 
   ]
   const now = Date.now()
   await bindings.NOTION_CACHE.put(cacheKey(bindings, 'catalog'), JSON.stringify({
+    tagDescriptions: [],
     items: [
       {
         id: pageId,
@@ -140,6 +146,7 @@ test('page traverses every nested child page in order', async (t) => {
     list([
       metadata(),
     ]),
+    dataSource(),
     metadata(),
     list([parent.block]),
     list([first.block], 'next'),
@@ -161,6 +168,7 @@ test('a failed nested child request never caches a partially read body', async (
     list([
       metadata(),
     ]),
+    dataSource(),
     metadata(),
     list([parent.block]),
   ]
@@ -176,4 +184,45 @@ test('a failed nested child request never caches a partially read body', async (
   })
   await assert.rejects(readPage(bindings, '/posts/original'), /Child failure/)
   equal(await bindings.NOTION_CACHE.get(cacheKey(bindings, `page:${pageId}`)), null)
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
+test('schema read failures do not cache a catalog without its tag descriptions', async (t) => {
+  const bindings = await fixture(t)
+  const responses = [
+    Response.json(list([
+      metadata(),
+    ])),
+    Response.json({ object: 'error', code: 'restricted_resource', message: 'Schema denied' }, { status: 403 }),
+  ]
+  t.mock.method(globalThis, 'fetch', async () =>
+    await Promise.resolve(responses.shift() ?? assert.fail('Unexpected read')))
+  await assert.rejects(readCatalog(bindings), /Schema denied/)
+  equal(await bindings.NOTION_CACHE.get(cacheKey(bindings, 'catalog')), null)
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
+test('old catalog envelopes cannot hide schema descriptions after the cache contract changes', async (t) => {
+  const bindings = await fixture(t)
+  await bindings.NOTION_CACHE.put(`notion:v1:${source}:catalog`, JSON.stringify({
+    items: [],
+    fetchedAt: Date.now(),
+    freshUntil: Date.now() + 60_000,
+  }))
+  const schema = dataSource()
+  const option = schema.properties.Tag.multi_select.options[0]
+  assert.ok(option !== undefined)
+  const described = { ...schema, properties: { Tag: { ...schema.properties.Tag, multi_select: { options: [
+    { ...option, description: 'Native schema introduction.' },
+  ] } } } }
+  const responses = [
+    list([
+      metadata(),
+    ]),
+    described,
+  ]
+  t.mock.method(globalThis, 'fetch', async () => await Promise.resolve(Response.json(responses.shift())))
+  const catalog = await readCatalog(bindings)
+  deepEqual(catalog.tagDescriptions, [
+    { id: 'tag-native', description: 'Native schema introduction.' },
+  ])
+  equal(catalog.items.length, 1)
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))

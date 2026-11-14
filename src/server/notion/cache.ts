@@ -7,7 +7,8 @@ export const envelopeSchema = z.object({
 })
 
 export function cacheKey(bindings: NotionBindings, suffix: string): string {
-  return `notion:v1:${bindings.NOTION_DATA_SOURCE_ID}:${suffix}`
+  const version = suffix === 'catalog' ? 'v2' : 'v1'
+  return `notion:${version}:${bindings.NOTION_DATA_SOURCE_ID}:${suffix}`
 }
 
 export function deadline(start: number, seconds: number, expiries: readonly (number | null)[]): number {

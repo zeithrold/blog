@@ -51,12 +51,19 @@ export const publicItemSchema = z.object({
 export type PublicTag = z.infer<typeof publicTagSchema>
 export type PublicItem = z.infer<typeof publicItemSchema>
 
+export const tagDescriptionSchema = z.object({
+  id: z.string().min(1),
+  description: z.string().trim().min(1),
+}).readonly()
+export type TagDescription = z.infer<typeof tagDescriptionSchema>
+
 export function tagUrl(id: PublicTag['id']): string {
   return `/tags/${encodeURIComponent(id)}`
 }
 
 export type CatalogSnapshot = {
   readonly items: readonly PublicItem[]
+  readonly tagDescriptions: readonly TagDescription[]
   readonly fetchedAt: number
   readonly freshUntil: number
 }

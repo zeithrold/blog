@@ -1,5 +1,6 @@
 import type { PublicItem } from '@/contracts/notion'
 import type { Environment } from '@/server/runtime/environment'
+import { tagUrl } from '@/contracts/notion'
 import { readCatalog } from '@/server/notion/catalog'
 import { publicOrigin } from '@/server/runtime/origin'
 
@@ -26,7 +27,7 @@ export async function feeds(path: string, env: Environment): Promise<Response | 
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     })
   }
-  const { items } = await readCatalog(env)
+  const { items, tagDescriptions } = await readCatalog(env)
   if (path === '/rss.xml') {
     const entries = items.filter(item => item.path.startsWith('/posts/')).slice(0, 100)
     return new Response(
@@ -37,7 +38,13 @@ export async function feeds(path: string, env: Environment): Promise<Response | 
       { headers: { 'Content-Type': 'application/rss+xml; charset=utf-8' } },
     )
   }
-  return sitemap(path, origin, items)
+  const pages: SitemapPage[] = [
+    ...items,
+  ]
+  if (tagDescriptions.length > 0) {
+    pages.push({ path: '/tags' }, ...tagDescriptions.map(tag => ({ path: tagUrl(tag.id) })))
+  }
+  return sitemap(path, origin, pages)
 }
 
 function rssItem(item: PublicItem, origin: string): string {
@@ -47,7 +54,9 @@ function rssItem(item: PublicItem, origin: string): string {
     + `<pubDate>${new Date(item.publishedAt).toUTCString()}</pubDate></item>`
 }
 
-function sitemap(path: string, origin: string, items: readonly PublicItem[]): Response {
+type SitemapPage = { readonly path: string, readonly updatedAt?: number }
+
+function sitemap(path: string, origin: string, items: readonly SitemapPage[]): Response {
   const pages = Math.max(1, Math.ceil(items.length / 1000))
   if (path === '/sitemap.xml' && pages > 1) {
     return xmlResponse(
@@ -63,8 +72,9 @@ function sitemap(path: string, origin: string, items: readonly PublicItem[]): Re
   }
   const home = page === 0 ? `<url><loc>${xml(origin)}</loc></url>` : ''
   const urls = items.slice(page * 1000, (page + 1) * 1000).map(item =>
-    `<url><loc>${xml(origin + item.path)}</loc>`
-    + `<lastmod>${new Date(item.updatedAt).toISOString()}</lastmod></url>`).join('')
+    `<url><loc>${xml(origin + item.path)}</loc>${
+      item.updatedAt === undefined ? '' : `<lastmod>${new Date(item.updatedAt).toISOString()}</lastmod>`
+    }</url>`).join('')
   return xmlResponse(
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${home}${urls}</urlset>`,
   )

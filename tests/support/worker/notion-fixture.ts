@@ -17,6 +17,15 @@ export { articleId, sourceId } from './notion-wire'
 
 export type MarkdownFixtureMode = 'complete' | 'truncated' | 'unknown' | 'malformed'
 
+export type NotionFixtureOptions = {
+  readonly markdownMode?: MarkdownFixtureMode
+  readonly additionalPostCount?: number
+  readonly tagId?: string
+  readonly invalidPostSlug?: boolean
+  readonly tagDescription?: string | null
+  readonly articleCover?: boolean
+}
+
 function list(results: readonly unknown[], cursor: string | null = null) {
   return { object: 'list', results, has_more: cursor !== null, next_cursor: cursor }
 }
@@ -34,20 +43,23 @@ export class NotionFixture {
 
   private paragraph = 'A real Notion paragraph crosses the REST adapter.'
   private readonly additional: ReturnType<typeof page>[] = []
+  private tagDescription: string | null
 
-  constructor(
-    private readonly markdownMode: MarkdownFixtureMode = 'complete',
-    additionalPostCount = 0,
-    tagId = 'systems',
-    invalidPostSlug = false,
-  ) {
+  constructor(private readonly options: NotionFixtureOptions = {}) {
+    this.tagDescription = options.tagDescription ?? null
     this.draft.properties.Status = { type: 'status', status: { name: 'Draft' } }
-    if (invalidPostSlug) {
+    if (options.articleCover === true) {
+      this.article.cover = {
+        type: 'file',
+        file: { url: 'https://media.example/notion-cover.png', expiry_time: '2040-01-01T00:00:00Z' },
+      }
+    }
+    if (options.invalidPostSlug === true) {
       this.second.properties.Slug = { type: 'rich_text', rich_text: [
         rich('/post/second-note'),
       ] }
     }
-    for (let index = 0; index < additionalPostCount; index++) {
+    for (let index = 0; index < (options.additionalPostCount ?? 0); index++) {
       this.additional.push(page(
         `99999999-9999-4999-8999-${String(index).padStart(12, '0')}`,
         `Additional post ${index}`,
@@ -64,7 +76,7 @@ export class NotionFixture {
       item.properties.Tag = {
         type: 'multi_select',
         multi_select: [
-          { id: tagId, name: 'Systems', color: 'blue' },
+          { id: options.tagId ?? 'systems', name: 'Systems', color: 'blue' },
         ],
       }
     }
@@ -72,6 +84,26 @@ export class NotionFixture {
 
   unpublish(): void {
     this.article.properties.Status = { type: 'status', status: { name: 'Draft' } }
+  }
+
+  reviseTagDescription(): void {
+    this.tagDescription = 'Revised introduction from the native Tag option.'
+  }
+
+  private dataSource(): Response {
+    return Response.json({
+      object: 'data_source',
+      id: sourceId,
+      properties: { Tag: { type: 'multi_select', multi_select: { options: [
+        { id: this.options.tagId ?? 'systems', name: 'Systems', color: 'blue', description: this.tagDescription },
+        {
+          id: 'unused-tag',
+          name: 'Unused private topic',
+          color: 'gray',
+          description: 'Not linked to a published article.',
+        },
+      ] } } },
+    })
   }
 
   revise(): void {
@@ -159,12 +191,12 @@ export class NotionFixture {
       return Response.json({
         object: 'page_markdown',
         id: articleId,
-        markdown: this.markdownMode === 'malformed'
+        markdown: this.options.markdownMode === 'malformed'
           ? null
           : `## Designing for recovery\n\n${this.paragraph} **Strong evidence.**\n\n`
             + '- Keep the recovery path observable.\n\n```javascript\nconst recovery = true;\n```\n',
-        truncated: this.markdownMode === 'truncated',
-        unknown_block_ids: this.markdownMode === 'unknown' ? [toggleId] : [],
+        truncated: this.options.markdownMode === 'truncated',
+        unknown_block_ids: this.options.markdownMode === 'unknown' ? [toggleId] : [],
       })
     }
     const id = url.pathname.slice('/v1/pages/'.length)
@@ -189,14 +221,19 @@ export class NotionFixture {
       || request.headers.get('notion-version') !== '2026-03-11') {
       throw new Error(`Unexpected outbound request: ${request.method} ${url.origin}${url.pathname}`)
     }
+    if (request.method === 'GET') {
+      if (url.pathname === `/v1/data_sources/${sourceId}`) {
+        return this.dataSource()
+      }
+      if (url.pathname.startsWith('/v1/pages/')) {
+        return this.retrievePage(url)
+      }
+      if (url.pathname.startsWith('/v1/blocks/')) {
+        return this.blocks(url)
+      }
+    }
     if (request.method === 'POST' && url.pathname === `/v1/data_sources/${sourceId}/query`) {
       return await this.catalog(request)
-    }
-    if (request.method === 'GET' && url.pathname.startsWith('/v1/pages/')) {
-      return this.retrievePage(url)
-    }
-    if (request.method === 'GET' && url.pathname.startsWith('/v1/blocks/')) {
-      return this.blocks(url)
     }
     throw new Error(`Unhandled Notion fixture request: ${request.method} ${url.pathname}${url.search}`)
   }
