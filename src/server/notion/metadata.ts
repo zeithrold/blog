@@ -18,6 +18,30 @@ export const metadataSchema = z.object({
 export type PageMetadata = z.infer<typeof metadataSchema>
 const texts = z.array(richTextSchema)
 
+export function readMetadata(value: unknown, source: string): PublicItem | null {
+  try {
+    return parseMetadata(value, source)
+  }
+  catch (error) {
+    if (!(error instanceof z.ZodError)) {
+      throw error
+    }
+    const page = metadataSchema.safeParse(value)
+    if (!page.success) {
+      throw error
+    }
+    console.error('NOTION_METADATA_INVALID', {
+      pageId: page.data.id,
+      issues: error.issues.map(issue => ({
+        path: issue.path,
+        code: issue.code,
+        message: issue.message,
+      })),
+    })
+    return null
+  }
+}
+
 export function parseMetadata(value: unknown, source: string): PublicItem | null {
   const page = metadataSchema.parse(value)
   if (page.parent.type !== 'data_source_id'

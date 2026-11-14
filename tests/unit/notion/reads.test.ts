@@ -9,6 +9,27 @@ function list(results: unknown[], next: string | null = null) {
   return { object: 'list', results, has_more: next !== null, next_cursor: next }
 }
 
+test('an invalid published slug is excluded without blocking valid catalog entries', async (t) => {
+  const bindings = await fixture(t)
+  const invalid = metadata()
+  invalid.id = '33333333-3333-4333-8333-333333333333'
+  invalid.properties.Slug.rich_text = [
+    rich('/post/invalid'),
+  ]
+  const errors = t.mock.method(console, 'error', () => {})
+  t.mock.method(globalThis, 'fetch', async () => await Promise.resolve(Response.json(list([
+    invalid,
+    metadata(),
+  ]))))
+  const result = await readCatalog(bindings)
+  deepEqual(result.items.map(item => item.path), ['/posts/original'])
+  equal(errors.mock.callCount(), 1)
+  const diagnostic = JSON.stringify(errors.mock.calls[0]?.arguments)
+  assert.match(diagnostic, /33333333-3333-4333-8333-333333333333/)
+  assert.match(diagnostic, /invalid_format/)
+  assert.doesNotMatch(diagnostic, /Actual title|\/post\/invalid/)
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
 test('catalog follows query pagination and rejects duplicate eligible paths', async (t) => {
   const bindings = await fixture(t)
   const other = metadata()
@@ -56,6 +77,10 @@ test('page body cache never bypasses current Draft, renamed or moved metadata', 
   ]
   const moved = metadata()
   moved.parent.type = 'page_id'
+  const invalid = metadata()
+  invalid.properties.Slug.rich_text = [
+    rich('/post/invalid'),
+  ]
   const responses = [
     metadata(),
     list([
@@ -66,6 +91,7 @@ test('page body cache never bypasses current Draft, renamed or moved metadata', 
     draft,
     renamed,
     moved,
+    invalid,
   ]
   const now = Date.now()
   await bindings.NOTION_CACHE.put(cacheKey(bindings, 'catalog'), JSON.stringify({
@@ -93,7 +119,7 @@ test('page body cache never bypasses current Draft, renamed or moved metadata', 
   const firstPage = await readPage(bindings, '/posts/original')
   assert.ok(firstPage !== null)
   equal(blockValue(firstPage.recordMap, 'text')?.type, 'text')
-  for (let index = 0; index < 3; index++) {
+  for (let index = 0; index < 4; index++) {
     equal(await readPage(bindings, '/posts/original'), null)
   }
   equal(responses.length, 0)

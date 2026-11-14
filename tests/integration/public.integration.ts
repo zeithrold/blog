@@ -16,6 +16,29 @@ function rejected(error: unknown): never {
   throw new Error('Native test registration failed', { cause: error })
 }
 
+test('invalid published metadata cannot take down public readers or expose the invalid article', async () => {
+  await using worker = await workerFixture({ invalidPostSlug: true })
+  const response = await worker.fetch('/')
+  assert.equal(response.status, 200)
+  const document = html(await response.text())
+  assert.deepEqual(
+    Array.from(document.querySelectorAll('#posts ol a[aria-labelledby^="feed-post-"]'))
+      .map(link => link.getAttribute('href')),
+    ['/posts/reliable-systems'],
+  )
+  const tags = await worker.fetch('/tags/systems')
+  assert.equal(tags.status, 200)
+  assert.match(html(await tags.text()).querySelector('main header')?.textContent ?? '', /1 post/)
+  const article = await worker.fetch('/posts/reliable-systems')
+  assert.equal(article.status, 200)
+  assert.match(html(await article.text()).querySelector('.notion')?.textContent ?? '', /A real Notion paragraph/)
+  const markdown = await worker.fetch('/posts/reliable-systems.md')
+  assert.equal(markdown.status, 200)
+  assert.match(await markdown.text(), /A real Notion paragraph/)
+  assert.equal((await worker.fetch('/posts/second-note')).status, 404)
+  assert.equal((await worker.fetch('/posts/second-note.md')).status, 404)
+}).catch(rejected)
+
 test('home lists published posts from every Notion query page', async () => {
   await using worker = await workerFixture()
   const response = await worker.fetch('/')

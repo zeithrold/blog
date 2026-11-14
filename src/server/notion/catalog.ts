@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { publicItemSchema } from '@/contracts/notion'
 import { nextCursor, notionClient, NotionContentError, pagination } from './api'
 import { cacheKey, deadline, envelopeSchema, readCache, writeCache } from './cache'
-import { parseMetadata } from './metadata'
+import { readMetadata } from './metadata'
 
 const catalogSchema = envelopeSchema.extend({ items: z.array(publicItemSchema) })
 
@@ -26,7 +26,7 @@ export async function readCatalog(bindings: NotionBindings): Promise<CatalogSnap
       ...((cursor !== null) ? { start_cursor: cursor } : {}),
     }))
     for (const value of response.results) {
-      const item = parseMetadata(value, bindings.NOTION_DATA_SOURCE_ID)
+      const item = readMetadata(value, bindings.NOTION_DATA_SOURCE_ID)
       if (item === null) {
         continue
       }

@@ -7,7 +7,7 @@ import { convertBlocks, storedBlockSchema } from './blocks'
 import { cacheKey, deadline, envelopeSchema, readCache, writeCache } from './cache'
 import { readCatalog } from './catalog'
 import { fetchBlocks } from './fetch-blocks'
-import { parseMetadata } from './metadata'
+import { readMetadata } from './metadata'
 
 const bodySchema = envelopeSchema.extend({
   updatedAt: z.number(),
@@ -16,7 +16,7 @@ const bodySchema = envelopeSchema.extend({
 
 async function currentMetadata(bindings: NotionBindings, id: string) {
   try {
-    return parseMetadata(await notionClient(bindings).pages.retrieve({ page_id: id }), bindings.NOTION_DATA_SOURCE_ID)
+    return readMetadata(await notionClient(bindings).pages.retrieve({ page_id: id }), bindings.NOTION_DATA_SOURCE_ID)
   }
   catch (error) {
     if (isNotionClientError(error) && error.code === APIErrorCode.ObjectNotFound) {

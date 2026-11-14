@@ -70,6 +70,7 @@ type WorkerFixtureOptions = {
   readonly markdownMode?: MarkdownFixtureMode
   readonly additionalPostCount?: number
   readonly tagId?: string
+  readonly invalidPostSlug?: boolean
 }
 
 export async function workerFixture(options: WorkerFixtureOptions = {}): Promise<WorkerFixture> {
@@ -83,7 +84,8 @@ export async function workerFixture(options: WorkerFixtureOptions = {}): Promise
       path: resolve(directory, path),
     })),
   ]
-  const fixture = new NotionFixture(options.markdownMode, options.additionalPostCount, options.tagId)
+  const { markdownMode, additionalPostCount, tagId, invalidPostSlug } = options
+  const fixture = new NotionFixture(markdownMode, additionalPostCount, tagId, invalidPostSlug)
   const root = await mkdtemp(join(tmpdir(), 'notion-worker-'))
   const origin = options.port === undefined ? 'https://fixture.example' : `http://127.0.0.1:${options.port}`
   const runtime = await startRuntime({

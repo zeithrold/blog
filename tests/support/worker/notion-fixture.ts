@@ -39,8 +39,14 @@ export class NotionFixture {
     private readonly markdownMode: MarkdownFixtureMode = 'complete',
     additionalPostCount = 0,
     tagId = 'systems',
+    invalidPostSlug = false,
   ) {
     this.draft.properties.Status = { type: 'status', status: { name: 'Draft' } }
+    if (invalidPostSlug) {
+      this.second.properties.Slug = { type: 'rich_text', rich_text: [
+        rich('/post/second-note'),
+      ] }
+    }
     for (let index = 0; index < additionalPostCount; index++) {
       this.additional.push(page(
         `99999999-9999-4999-8999-${String(index).padStart(12, '0')}`,
