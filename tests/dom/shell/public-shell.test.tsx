@@ -58,9 +58,13 @@ it('opens mobile preferences and RSS then restores trigger focus on Escape', asy
   expect(required('button[aria-label="Appearance"]')).not.toBeNull()
   expect(required('[role="combobox"][aria-label="Language"]')).not.toBeNull()
   expect(required('a[href="/rss.xml"]').textContent).toBe('RSS')
+  const focusRestored = new Promise<void>((resolve) => {
+    trigger.addEventListener('focus', () => resolve(), { once: true })
+  })
   await interact(() => {
     required('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
   })
+  await focusRestored
   expect(document.querySelector('[role="dialog"]')).toBeNull()
   expect(document.activeElement).toBe(trigger)
 })
