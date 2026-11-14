@@ -1,5 +1,5 @@
 import type { NotionBindings } from './bindings'
-import type { PageSnapshot, PublicPath } from '@/contracts/notion'
+import type { CatalogSnapshot, PageSnapshot, PublicItem, PublicPath } from '@/contracts/notion'
 import { APIErrorCode, isNotionClientError } from '@notionhq/client'
 import { z } from 'zod'
 import { canonicalId, notionClient } from './api'
@@ -26,17 +26,29 @@ async function currentMetadata(bindings: NotionBindings, id: string) {
   }
 }
 
-export async function readPage(bindings: NotionBindings, path: PublicPath): Promise<PageSnapshot | null> {
+export async function readPageMetadata(bindings: NotionBindings, path: PublicPath): Promise<{
+  readonly item: PublicItem
+  readonly catalog: CatalogSnapshot
+} | null> {
   const catalog = await readCatalog(bindings)
   const selected = catalog.items.find(item => item.path === path)
   if (selected === undefined) {
     return null
   }
-  const fetchedAt = Date.now()
   const item = await currentMetadata(bindings, selected.id)
   if (item === null || item.path !== path) {
     return null
   }
+  return { item, catalog }
+}
+
+export async function readPage(bindings: NotionBindings, path: PublicPath): Promise<PageSnapshot | null> {
+  const fetchedAt = Date.now()
+  const selected = await readPageMetadata(bindings, path)
+  if (selected === null) {
+    return null
+  }
+  const { item, catalog } = selected
   const pageLinks = Object.fromEntries(catalog.items.map(entry => [
     canonicalId(entry.id),
     entry.path,

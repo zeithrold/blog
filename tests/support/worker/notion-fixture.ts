@@ -15,6 +15,8 @@ import {
 
 export { articleId, sourceId } from './notion-wire'
 
+export type MarkdownFixtureMode = 'complete' | 'truncated' | 'unknown' | 'malformed'
+
 function list(results: readonly unknown[], cursor: string | null = null) {
   return { object: 'list', results, has_more: cursor !== null, next_cursor: cursor }
 }
@@ -31,9 +33,39 @@ export class NotionFixture {
   )
 
   private paragraph = 'A real Notion paragraph crosses the REST adapter.'
+  private readonly additional: ReturnType<typeof page>[] = []
 
-  constructor() {
+  constructor(
+    private readonly markdownMode: MarkdownFixtureMode = 'complete',
+    additionalPostCount = 0,
+    tagId = 'systems',
+  ) {
     this.draft.properties.Status = { type: 'status', status: { name: 'Draft' } }
+    for (let index = 0; index < additionalPostCount; index++) {
+      this.additional.push(page(
+        `99999999-9999-4999-8999-${String(index).padStart(12, '0')}`,
+        `Additional post ${index}`,
+        `extra-post-${index}`,
+      ))
+    }
+    for (const item of [
+      this.article,
+      this.second,
+      this.about,
+      this.draft,
+      ...this.additional,
+    ]) {
+      item.properties.Tag = {
+        type: 'multi_select',
+        multi_select: [
+          { id: tagId, name: 'Systems', color: 'blue' },
+        ],
+      }
+    }
+  }
+
+  unpublish(): void {
+    this.article.properties.Status = { type: 'status', status: { name: 'Draft' } }
   }
 
   revise(): void {
@@ -57,6 +89,7 @@ export class NotionFixture {
       return Response.json(list([
         this.second,
         this.about,
+        ...this.additional,
       ]))
     }
     throw new Error('Unexpected catalog pagination cursor')
@@ -101,7 +134,7 @@ export class NotionFixture {
         ],
       ],
     ])
-    if (id === aboutId || id === secondId) {
+    if (id === aboutId || id === secondId || this.additional.some(value => value.id === id)) {
       return Response.json(list([
         block(13, 'paragraph', { rich_text: [
           rich('This notebook is served from Notion.'),
@@ -115,6 +148,34 @@ export class NotionFixture {
     return Response.json(list(children))
   }
 
+  private retrievePage(url: URL): Response {
+    if (url.pathname === `/v1/pages/${articleId}/markdown`) {
+      return Response.json({
+        object: 'page_markdown',
+        id: articleId,
+        markdown: this.markdownMode === 'malformed'
+          ? null
+          : `## Designing for recovery\n\n${this.paragraph} **Strong evidence.**\n\n`
+            + '- Keep the recovery path observable.\n\n```javascript\nconst recovery = true;\n```\n',
+        truncated: this.markdownMode === 'truncated',
+        unknown_block_ids: this.markdownMode === 'unknown' ? [toggleId] : [],
+      })
+    }
+    const id = url.pathname.slice('/v1/pages/'.length)
+    const pages = [
+      this.article,
+      this.second,
+      this.about,
+      this.draft,
+      ...this.additional,
+    ]
+    const found = pages.find(value => value.id === id)
+    if (found === undefined) {
+      throw new Error(`Unhandled page retrieval: ${id}`)
+    }
+    return Response.json(found)
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
     if (url.origin !== 'https://api.notion.com'
@@ -125,19 +186,8 @@ export class NotionFixture {
     if (request.method === 'POST' && url.pathname === `/v1/data_sources/${sourceId}/query`) {
       return await this.catalog(request)
     }
-    if (url.pathname.startsWith('/v1/pages/')) {
-      const id = url.pathname.slice('/v1/pages/'.length)
-      const pages = [
-        this.article,
-        this.second,
-        this.about,
-        this.draft,
-      ]
-      const found = pages.find(value => value.id === id)
-      if (found === undefined) {
-        throw new Error(`Unhandled page retrieval: ${id}`)
-      }
-      return Response.json(found)
+    if (request.method === 'GET' && url.pathname.startsWith('/v1/pages/')) {
+      return this.retrievePage(url)
     }
     if (request.method === 'GET' && url.pathname.startsWith('/v1/blocks/')) {
       return this.blocks(url)

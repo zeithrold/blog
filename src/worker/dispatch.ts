@@ -2,6 +2,7 @@ import type { Environment } from '@/server/runtime/environment'
 import handler from 'vinext/server/app-router-entry'
 import { api } from '@/server/http/api'
 import { coverRedirect } from '@/server/notion/cover'
+import { markdownResponse } from '@/server/notion/markdown'
 import { feeds } from '@/server/reader/feeds'
 
 export async function dispatch(
@@ -11,6 +12,10 @@ export async function dispatch(
   const path = new URL(request.url).pathname
   if (path.startsWith('/api/')) {
     return { response: await api(request, env) }
+  }
+  const markdown = await markdownResponse(request, env)
+  if (markdown !== null) {
+    return { response: markdown }
   }
   if (['GET', 'HEAD'].includes(request.method)) {
     const cover = /^\/notion-media\/([^/]+)\/cover$/.exec(path)

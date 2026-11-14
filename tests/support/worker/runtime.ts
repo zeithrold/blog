@@ -1,4 +1,5 @@
 import type { DispatchFetch, RequestInit, V4MiniflareOptions, V4ModuleDefinition } from 'miniflare'
+import type { MarkdownFixtureMode } from './notion-fixture'
 import { rmSync } from 'node:fs'
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -41,6 +42,7 @@ async function builtConfig() {
 type WorkerFixture = {
   readonly origin: string
   readonly revise: () => void
+  readonly unpublish: () => void
   readonly fetch: (path: string, init?: RequestInit) => ReturnType<DispatchFetch>
   readonly [Symbol.asyncDispose]: () => Promise<void>
 }
@@ -63,7 +65,14 @@ async function startRuntime(options: V4MiniflareOptions, root: string): Promise<
   }
 }
 
-export async function workerFixture(options: { readonly port?: number } = {}): Promise<WorkerFixture> {
+type WorkerFixtureOptions = {
+  readonly port?: number
+  readonly markdownMode?: MarkdownFixtureMode
+  readonly additionalPostCount?: number
+  readonly tagId?: string
+}
+
+export async function workerFixture(options: WorkerFixtureOptions = {}): Promise<WorkerFixture> {
   const config = await builtConfig()
   const directory = dirname(buildPath)
   const files = await readdir(directory, { recursive: true })
@@ -74,7 +83,7 @@ export async function workerFixture(options: { readonly port?: number } = {}): P
       path: resolve(directory, path),
     })),
   ]
-  const fixture = new NotionFixture()
+  const fixture = new NotionFixture(options.markdownMode, options.additionalPostCount, options.tagId)
   const root = await mkdtemp(join(tmpdir(), 'notion-worker-'))
   const origin = options.port === undefined ? 'https://fixture.example' : `http://127.0.0.1:${options.port}`
   const runtime = await startRuntime({
@@ -118,6 +127,7 @@ export async function workerFixture(options: { readonly port?: number } = {}): P
   return {
     origin,
     revise: () => fixture.revise(),
+    unpublish: () => fixture.unpublish(),
     fetch: async (path, init) => await runtime.dispatchFetch(new URL(path, origin), init),
     [Symbol.asyncDispose]: dispose,
   }
