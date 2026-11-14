@@ -14,6 +14,20 @@ test('desktop shell navigates home search and real Notion article content', asyn
   await expect(page.locator('.notion table')).toContainText('Failure')
   await expect(page.locator('.notion pre')).toContainText('const recovery = true;')
   await expect(page.locator('.notion .katex').first()).toBeVisible()
+  await page.locator('.reader-tags').getByRole('link', { name: 'Systems', exact: true }).click()
+  await expect(page).toHaveURL('/tags/systems')
+  await expect(page.getByRole('heading', { name: 'Systems', exact: true })).toBeVisible()
+  await expect(page.locator('header').getByText('2 posts', { exact: true })).toBeVisible()
+  await expect(page.locator('#posts .post-list a')).toHaveText([
+    /Reliable systems & small tools/,
+    /A second field note/,
+  ])
+  await page.getByRole('link', { name: 'All tags', exact: true }).click()
+  const systems = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: 'Systems', exact: true }) })
+  await expect(systems).toContainText('2 posts')
+  await systems.getByRole('link', { name: 'Systems', exact: true }).click()
+  await page.getByRole('link', { name: 'Reliable systems & small tools', exact: true }).click()
+  await expect(page.locator('.notion').getByRole('heading', { name: 'Designing for recovery' })).toBeVisible()
   await page.locator('.notion').getByText('Read the recovery detail', { exact: true }).click()
   await expect(page.locator('.notion').getByText('Nested recovery instructions.', { exact: true })).toBeVisible()
   await page.locator('.notion').getByRole('link', { name: 'About this notebook' }).click()
@@ -21,6 +35,12 @@ test('desktop shell navigates home search and real Notion article content', asyn
   await expect(page.locator('.notion')).toContainText('This notebook is served from Notion.')
   await page.getByRole('link', { name: 'zeithrold/blog' }).click()
   await expect(page.getByRole('heading', { name: 'Latest writing' })).toBeVisible()
+  await page.locator('#posts .reader-tag').first().click()
+  await expect(page.getByRole('heading', { name: 'Systems', exact: true })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Site navigation' })
+    .getByRole('link', { name: 'Tags', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'Tags', exact: true })).toBeVisible()
 })
 
 test('mobile menu keyboard controls appearance and returns focus on Escape', async ({ page }) => {

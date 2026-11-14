@@ -29,7 +29,7 @@ const itemClass = 'post-feed-item min-w-0 pb-6'
 const cardClass = [
   'post-feed-card group flex flex-col overflow-hidden rounded-[var(--blog-radius-card)]',
   'border border-border bg-card text-inherit no-underline transition-colors duration-200',
-  'hover:bg-muted/20 motion-reduce:transition-none',
+  'hover:bg-muted/20 focus-within:animate-none motion-reduce:transition-none',
 ].join(' ')
 
 const coverClass = 'post-feed-cover overflow-hidden border-b border-border bg-muted'
@@ -98,38 +98,42 @@ function FeedCard({ post, index, start }: {
   readonly start: number
 }): ReactNode {
   return (
-    <Link
-      href={post.path}
+    <article
       className={cardClass}
       style={{ animationDelay: `${Math.min(index, 5) * 35}ms` }}
-      aria-labelledby={`feed-post-${post.id}`}
     >
-      {post.cover !== null && (
-        <div className={coverClass}>
-          <img
-            className={coverImageClass}
-            src={post.cover.url}
-            alt=""
-            width={960}
-            height={640}
-            loading="lazy"
-            decoding="async"
-          />
-        </div>
-      )}
-      <div className={post.cover === null ? bodyTextClass : bodyClass}>
-        <span className={metaClass}>
-          <span className="collection-number font-mono text-accent-foreground">
-            {String(start + index + 1).padStart(2, '0')}
+      <Link
+        href={post.path}
+        className="block min-h-11 text-inherit no-underline focus-visible:outline-2 focus-visible:-outline-offset-2"
+        aria-labelledby={`feed-post-${post.id}`}
+      >
+        {post.cover !== null && (
+          <div className={coverClass}>
+            <img
+              className={coverImageClass}
+              src={post.cover.url}
+              alt=""
+              width={960}
+              height={640}
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        )}
+        <div className={post.cover === null ? bodyTextClass : bodyClass}>
+          <span className={metaClass}>
+            <span className="collection-number font-mono text-accent-foreground">
+              {String(start + index + 1).padStart(2, '0')}
+            </span>
+            <SiteDate value={post.publishedAt} />
+            <span className={arrowClass} aria-hidden="true"><ArrowRight size={16} /></span>
           </span>
-          <SiteDate value={post.publishedAt} />
-          <span className={arrowClass} aria-hidden="true"><ArrowRight size={16} /></span>
-        </span>
-        <h3 className={titleClass} id={`feed-post-${post.id}`}>{post.title}</h3>
-        {post.summary !== '' && <p className={descriptionClass}>{post.summary}</p>}
-        <FeedTags tags={post.tags} />
-      </div>
-    </Link>
+          <h3 className={titleClass} id={`feed-post-${post.id}`}>{post.title}</h3>
+          {post.summary !== '' && <p className={descriptionClass}>{post.summary}</p>}
+        </div>
+      </Link>
+      <FeedTags tags={post.tags} />
+    </article>
   )
 }
 
@@ -138,7 +142,7 @@ function FeedTags({ tags }: { readonly tags: PublicItem['tags'] }): ReactNode {
     return null
   }
   return (
-    <div className="post-feed-tags flex flex-wrap gap-2 mt-4">
+    <div className="post-feed-tags flex flex-wrap gap-2 px-6 pb-6">
       {tags.map(tag => (
         <TagChip key={tag.id} tag={tag} />
       ))}

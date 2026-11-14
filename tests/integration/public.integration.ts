@@ -22,7 +22,8 @@ test('home lists published posts from every Notion query page', async () => {
   assert.equal(response.status, 200)
   const document = html(await response.text())
   assert.deepEqual(
-    Array.from(document.querySelectorAll('#posts ol a')).map(link => link.getAttribute('href')),
+    Array.from(document.querySelectorAll('#posts ol a[aria-labelledby^="feed-post-"]'))
+      .map(link => link.getAttribute('href')),
     ['/posts/reliable-systems', '/posts/second-note'],
   )
   assert.equal(document.querySelector('#posts h3')?.textContent, 'Reliable systems & small tools')

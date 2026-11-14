@@ -40,6 +40,12 @@ letter or digit and at most 120 characters. Only unarchived, untrashed pages dir
 in the configured data source with Status = Published are public. PublishedAt does
 not schedule publication. Page covers and body media remain hosted by Notion.
 
+Published posts also expose `/posts/<slug>.md`, combining the title with Notion's
+enhanced Markdown. Each request rechecks publication and fetches fresh Markdown;
+incomplete upstream responses fail rather than return partial content.
+`/tags` lists article counts, and `/tags/<native-tag-id>` aggregates matching published
+posts with pagination. Tag links keep their identity when a native label changes.
+
 ## Commands
 
 | Command | Purpose |

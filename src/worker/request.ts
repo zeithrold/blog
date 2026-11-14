@@ -20,6 +20,7 @@ export function requestContext(
   const headers = new Headers(request.headers)
   headers.set('x-blog-nonce', nonce)
   headers.set('x-blog-request-origin', url.origin)
+  headers.set('x-blog-request-path', url.pathname)
   headers.set('Content-Security-Policy', `script-src 'self' 'nonce-${nonce}'`)
   return {
     url,
@@ -29,7 +30,20 @@ export function requestContext(
 }
 
 function validatePath(path: string): void {
-  if (/%|\\|\/\//.test(path) || (path !== '/' && path.endsWith('/'))) {
+  const tag = /^\/tags\/([^/]+)$/.exec(path)?.[1]
+  if (/\\|\/\//.test(path) || (path !== '/' && path.endsWith('/'))
+    || (path.includes('%') && tag === undefined)) {
     throw new Problem(400, 'INVALID_PATH')
+  }
+  if (tag !== undefined) {
+    try {
+      decodeURIComponent(tag)
+    }
+    catch (error) {
+      if (error instanceof URIError) {
+        throw new Problem(400, 'INVALID_PATH')
+      }
+      throw error
+    }
   }
 }

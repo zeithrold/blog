@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import type { LinkProps } from '@/components/ui/ztd-me'
-import { Rss, Search } from 'lucide-react'
+import { Hash, Rss, Search } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { PublicMobileMenu } from '@/components/public-mobile-menu'
@@ -32,6 +32,14 @@ function PublicActions({ pathname }: { readonly pathname: string }): ReactNode {
       className="project-actions flex items-center gap-[2px] max-[641px]:gap-1"
       aria-label={text('Site navigation')}
     >
+      <Link
+        className={navClass}
+        href="/tags"
+        aria-current={pathname === '/tags' || pathname.startsWith('/tags/') ? 'page' : undefined}
+      >
+        <Hash size={16} aria-hidden="true" />
+        <span className={navLabelClass}>{text('Tags')}</span>
+      </Link>
       <Link className={navClass} href="/search" aria-current={pathname === '/search' ? 'page' : undefined}>
         <Search size={16} aria-hidden="true" />
         <span className={navLabelClass}>{text('Search')}</span>
