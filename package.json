@@ -41,6 +41,7 @@
     "katex": "0.18.4",
     "lucide-react": "1.49.0",
     "notion-types": "8.0.8",
+    "prismjs": "1.30.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-i18next": "17.0.15",

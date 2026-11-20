@@ -6,8 +6,8 @@ import type { MapPageUrlFn } from 'react-notion-x'
 import type { PageSnapshot } from '@/contracts/notion'
 import Link from 'next/link'
 import { NotionRenderer, useNotionContext } from 'react-notion-x'
-import { Code } from 'react-notion-x/third-party/code'
 import { Equation } from 'react-notion-x/third-party/equation'
+import { ReaderCode } from './notion-code'
 
 function mappedNotionLink(href: string, mapPageUrl: MapPageUrlFn): string {
   const url = URL.parse(href)
@@ -48,7 +48,7 @@ export function NotionBody({ page }: { readonly page: PageSnapshot }): ReactNode
       disableHeader
       isImageZoomable={false}
       mapPageUrl={mapPageUrl}
-      components={{ Code, Equation, Link: ReaderLink, PageLink: ReaderLink }}
+      components={{ Code: ReaderCode, Equation, Link: ReaderLink, PageLink: ReaderLink }}
       className="reader-body font-serif"
     />
   )
