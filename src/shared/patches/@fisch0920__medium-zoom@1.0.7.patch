@@ -1,0 +1,9 @@
+diff --git a/dist/medium-zoom.esm.js b/dist/medium-zoom.esm.js
+--- a/dist/medium-zoom.esm.js
++++ b/dist/medium-zoom.esm.js
+@@ -624,3 +624,3 @@
+-styleInject(css);
+-
++// The blog disables image zoom; do not inject its CSS into the document.
++
+ export default mediumZoom;

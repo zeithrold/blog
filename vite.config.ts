@@ -7,6 +7,9 @@ import { defineConfig } from 'vite'
 export default defineConfig(({ command, isPreview }): UserConfig => {
   const development = command === 'serve' && isPreview !== true
   return {
+    build: {
+      assetsInlineLimit: file => /\.(?:woff2?|ttf|otf)$/i.test(file) ? false : undefined,
+    },
     resolve: { tsconfigPaths: true },
     worker: { format: 'iife', rollupOptions: { output: { inlineDynamicImports: true } } },
     plugins: [

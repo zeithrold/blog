@@ -8,6 +8,7 @@ overrides:
   semver@6.3.1: 7.8.5
 
 patchedDependencies:
+  '@fisch0920/medium-zoom@1.0.7': a1607caa02bf812a3d9ac8cc74d34a3c2fd61332613438402b95eccfbd4a01f6
   '@radix-ui/react-select@2.3.7': 9ee07b67639018c5db90378f411f81e59de5f7a9865432af906b7e682fa9f24c
   vaul@1.1.2: 60ec03db164a95a87e8d241a56a63464bbdadcac2d9ffbca933f0ab9586f7c19
   vinext@1.0.1: 8dc9045e088054439534692dc4a0c8b8020726e9c7f4d9431e840851f7952261
@@ -5502,7 +5503,7 @@ snapshots:
 
   '@exodus/bytes@1.16.0': {}
 
-  '@fisch0920/medium-zoom@1.0.7': {}
+  '@fisch0920/medium-zoom@1.0.7(patch_hash=a1607caa02bf812a3d9ac8cc74d34a3c2fd61332613438402b95eccfbd4a01f6)': {}
 
   '@floating-ui/core@1.8.0':
     dependencies:
@@ -8747,7 +8748,7 @@ snapshots:
 
   react-notion-x@8.0.8(@babel/runtime@7.29.7)(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
-      '@fisch0920/medium-zoom': 1.0.7
+      '@fisch0920/medium-zoom': 1.0.7(patch_hash=a1607caa02bf812a3d9ac8cc74d34a3c2fd61332613438402b95eccfbd4a01f6)
       '@matejmazur/react-katex': 3.1.3(katex@0.18.4)(react@19.3.0)
       katex: 0.18.4
       notion-types: 8.0.8

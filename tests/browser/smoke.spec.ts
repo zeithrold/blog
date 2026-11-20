@@ -1,6 +1,20 @@
 import { expect, test } from '@playwright/test'
 
 test('desktop shell navigates home search and real Notion article content', async ({ page }) => {
+  const articleErrors: string[] = []
+  page.on('pageerror', (error) => {
+    articleErrors.push(error.message)
+  })
+  await page.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+      console.error(`CSP blocked ${event.effectiveDirective}: ${event.blockedURI}`)
+    })
+  })
+  page.on('console', (message) => {
+    if (message.type() === 'error' && message.text().startsWith('CSP blocked ')) {
+      articleErrors.push(message.text())
+    }
+  })
   await page.goto('/')
   await expect(page.getByRole('link', { name: 'Reliable systems & small tools', exact: true })).toBeVisible()
   await page.getByRole('navigation', { name: 'Site navigation' }).getByRole('link', { name: 'Search' }).click()
@@ -41,6 +55,11 @@ test('desktop shell navigates home search and real Notion article content', asyn
     .getByRole('link', { name: 'Tags', exact: true })
     .click()
   await expect(page.getByRole('heading', { name: 'Tags', exact: true })).toBeVisible()
+
+  // Direct requests exercise document hydration rather than just client navigation.
+  await page.goto('/posts/reliable-systems')
+  await expect(page.locator('.notion pre .token.keyword').first()).toHaveText('const')
+  expect(articleErrors).toEqual([])
 })
 
 test('mobile menu keyboard controls appearance and returns focus on Escape', async ({ page }) => {

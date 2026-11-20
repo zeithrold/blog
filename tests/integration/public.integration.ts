@@ -70,6 +70,30 @@ test('article renders adapted nested Notion blocks and mapped public links', asy
   assert.ok(body.querySelector('.notion-equation') !== null, 'The equation must reach the renderer')
 }).catch(rejected)
 
+test('KaTeX uses a same-origin font under the article font policy', async () => {
+  await using worker = await workerFixture()
+  const response = await worker.fetch('/posts/reliable-systems')
+  assert.equal(response.status, 200)
+  const document = html(await response.text())
+  const policy = response.headers.get('content-security-policy') ?? ''
+  assert.match(policy, /(?:^|; )font-src 'self' https:\/\/fonts\.gstatic\.com(?:;|$)/)
+
+  const stylesheets = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
+    .map(link => link.getAttribute('href') ?? '')
+    .filter(href => href.startsWith('/_next/static/'))
+  const css = (await Promise.all(stylesheets.map(async (href) => {
+    const stylesheet = await worker.fetch(href)
+    assert.equal(stylesheet.status, 200)
+    return await stylesheet.text()
+  }))).join('\n')
+  const face = /@font-face\{[^}]*font-family:KaTeX_Size3[^}]*\}/.exec(css)?.[0] ?? ''
+  const url = /url\(["']?(\/_next\/static\/[^)"']+\.woff2)["']?\)/.exec(face)?.[1]
+  assert.ok(url !== undefined, 'KaTeX_Size3 must use a same-origin WOFF2 asset under the article font policy')
+  const font = await worker.fetch(url)
+  assert.equal(font.status, 200)
+  assert.equal(font.headers.get('content-type'), 'font/woff2')
+}).catch(rejected)
+
 for (const [query, paths] of [
   [
     'second',
