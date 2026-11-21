@@ -7,6 +7,22 @@
   "workers_dev": false,
   "preview_urls": false,
   "routes": [{ "pattern": "blog.ztd.me", "custom_domain": true }],
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "redact_query_string": false,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": "dist/client",
