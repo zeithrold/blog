@@ -22,6 +22,7 @@ export type NotionFixtureOptions = {
   readonly additionalPostCount?: number
   readonly tagId?: string
   readonly invalidPostSlug?: boolean
+  readonly embeds?: boolean
   readonly tagDescription?: string | null
   readonly articleCover?: boolean
 }
@@ -136,7 +137,7 @@ export class NotionFixture {
   private blocks(url: URL): Response {
     const id = /^\/v1\/blocks\/([^/]+)\/children$/.exec(url.pathname)?.[1]
     if (id === articleId) {
-      const blocks = articleBlocks(this.paragraph)
+      const blocks = articleBlocks(this.paragraph, this.options.embeds)
       return url.searchParams.get('start_cursor') === null
         ? Response.json(list(blocks.slice(0, 4), 'blocks-next'))
         : Response.json(list(blocks.slice(4)))

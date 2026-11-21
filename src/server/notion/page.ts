@@ -61,7 +61,8 @@ export async function readPage(bindings: NotionBindings, path: PublicPath): Prom
   const converted = convertBlocks(item, blocks, pageLinks)
   const start = current === null ? fetchedAt : current.fetchedAt
   const freshUntil = deadline(start, 300, [converted.mediaExpiresAt])
-  if (current === null) {
+  // A file-backed embed can return a signed URL without an expiry field.
+  if (current === null && !blocks.some(entry => entry.block.type === 'embed')) {
     await writeCache(bindings, key, { blocks, updatedAt: item.updatedAt, fetchedAt: start, freshUntil })
   }
   return { item, ...converted, pageLinks, fetchedAt: start, freshUntil }

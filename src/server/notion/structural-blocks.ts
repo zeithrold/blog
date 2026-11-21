@@ -1,12 +1,32 @@
 import type { BlockConverter } from './block-shape'
 import { z } from 'zod'
 import { NotionContentError, richTextSchema } from './api'
+import { blockColor } from './rich-text'
 
 const structuralConverters: Readonly<Record<string, BlockConverter>> = {
   divider: context => ({ ...context.base, type: 'divider' }),
-  table_of_contents: context => ({ ...context.base, type: 'table_of_contents' }),
+  table_of_contents: (context) => {
+    const { color } = z.object({ color: z.string().optional() }).parse(context.data)
+    const mapped = blockColor(color)
+    return {
+      ...context.base,
+      type: 'table_of_contents',
+      ...(mapped === undefined ? {} : { format: { block_color: mapped } }),
+    }
+  },
+  tab: (context) => {
+    z.object({}).parse(context.data)
+    if (context.blocks.some(entry => entry.parentId === context.base.id && entry.block.type !== 'paragraph')) {
+      throw new NotionContentError('Invalid tab panel')
+    }
+    return { ...context.base, type: 'tab' }
+  },
   column_list: context => ({ ...context.base, type: 'column_list' }),
-  column: context => ({ ...context.base, type: 'column', format: { column_ratio: 1 } }),
+  column: (context) => {
+    const column = z.object({ width_ratio: z.number().gt(0).max(1).optional() }).parse(context.data)
+    const count = context.blocks.filter(entry => entry.parentId === context.base.parent_id).length
+    return { ...context.base, type: 'column', format: { column_ratio: column.width_ratio ?? 1 / Math.max(1, count) } }
+  },
   synced_block: (context) => {
     z.object({ synced_from: z.null() }).parse(context.data)
     return { ...context.base, type: 'transclusion_container' }

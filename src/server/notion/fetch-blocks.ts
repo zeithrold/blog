@@ -31,7 +31,9 @@ export async function fetchBlocks(
         }
         visited.add(block.id)
         ids.push(block.id)
-        blocks.push({ block, parentId, children: block.has_children ? await children(block.id) : [] })
+        // Nested pages must pass the publication gate independently.
+        const nested = block.has_children && block.type !== 'child_page' ? await children(block.id) : []
+        blocks.push({ block, parentId, children: nested })
       }
       cursor = nextCursor(result.next_cursor, seen)
     } while (cursor !== null)

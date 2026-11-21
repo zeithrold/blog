@@ -40,6 +40,11 @@ letter or digit and at most 120 characters. Only unarchived, untrashed pages dir
 in the configured data source with Status = Published are public. PublishedAt does
 not schedule publication. Page covers and body media remain hosted by Notion.
 
+The reader renders Notion tabs and embeds from the official API. YouTube and Vimeo
+player URLs allowed by the existing CSP render inline; other embeds and link previews
+use link cards. PDFs remain downloads. Child pages are not inlined or made public
+by their parent. Database views and synced references are not rendered.
+
 Published posts also expose `/posts/<slug>.md`, combining the title with Notion's
 enhanced Markdown. Each request rechecks publication and fetches fresh Markdown;
 incomplete upstream responses fail rather than return partial content.
@@ -79,6 +84,8 @@ Catalog snapshots are fresh for at most 60 seconds and bodies for at most 300 se
 Signed media expiry shortens these windows by a 60-second margin. Article requests
 recheck current metadata, publication status and path before reusing a body. Lists can
 remain stale within their finite cache window, and already loaded pages are not live.
+Bodies containing an Embed bypass KV writes: Notion can return a signed Embed URL
+without an explicit expiry.
 
 The endpoint is `/api/notion/webhook`. Subscribe to page content/property changes and
 lifecycle events, plus relevant data source changes. Signed events invalidate caches;

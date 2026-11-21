@@ -1,3 +1,5 @@
+import { frameOrigins } from '@/contracts/embed'
+
 export type SecurityContext = {
   readonly nonce: string
   readonly head: boolean
@@ -22,7 +24,7 @@ export function security(
     'media-src \'self\' https:',
     'connect-src \'self\'',
     'worker-src \'self\'',
-    'frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com',
+    `frame-src ${frameOrigins.join(' ')}`,
     'object-src \'none\'',
     'base-uri \'none\'',
     'frame-ancestors \'none\'',

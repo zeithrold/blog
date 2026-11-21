@@ -144,3 +144,55 @@ test('unknown, incomplete, external synced and malformed table blocks fail expli
     ] }, { parentId: 'table' }),
   ], {}))
 }).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
+test('tab records retain label paragraphs and their panel content', () => {
+  const map = convertBlocks(item(), [
+    stored('tabs', 'tab', {}, { children: ['label'] }),
+    stored('label', 'paragraph', { rich_text: [
+      rich('Details'),
+    ] }, { parentId: 'tabs', children: ['panel'] }),
+    stored('panel', 'paragraph', { rich_text: [
+      rich('Panel text'),
+    ] }, { parentId: 'label' }),
+  ], {}).recordMap
+  const tabs = blockValue(map, 'tabs')
+  const label = blockValue(map, 'label')
+  const panel = blockValue(map, 'panel')
+  assert.equal(tabs?.type, 'tab')
+  deepEqual(tabs.content, ['label'])
+  assert.equal(label?.type, 'text')
+  deepEqual(label.properties?.title, [
+    ['Details'],
+  ])
+  deepEqual(label.content, ['panel'])
+  assert.equal(panel?.type, 'text')
+  deepEqual(panel.properties?.title, [
+    ['Panel text'],
+  ])
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))
+
+test('columns keep explicit widths or share equal widths within their parent', () => {
+  const map = convertBlocks(item(), [
+    stored('left', 'column', { width_ratio: 0.3 }, { parentId: 'first' }),
+    stored('right', 'column', { width_ratio: 0.7 }, { parentId: 'first' }),
+    stored('one', 'column', {}, { parentId: 'second' }),
+    stored('two', 'column', {}, { parentId: 'second' }),
+    stored('three', 'column', {}, { parentId: 'second' }),
+  ], {}).recordMap
+  deepEqual([
+    'left',
+    'right',
+    'one',
+    'two',
+    'three',
+  ].map((id) => {
+    const column = blockValue(map, id)
+    return column?.type === 'column' ? column.format.column_ratio : null
+  }), [
+    0.3,
+    0.7,
+    1 / 3,
+    1 / 3,
+    1 / 3,
+  ])
+}).catch((error: unknown) => assert.fail(error instanceof Error ? error.message : 'Test failed'))

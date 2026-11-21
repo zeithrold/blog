@@ -64,7 +64,7 @@ export function block(id: string | number, type: string, data: unknown): StoredB
   })
 }
 
-export function articleBlocks(paragraph: string): StoredBlock['block'][] {
+export function articleBlocks(paragraph: string, embeds = false): StoredBlock['block'][] {
   const aboutURL = `https://app.notion.com/p/about-${aboutId.replaceAll('-', '')}`
   return [
     block(1, 'heading_2', { rich_text: [
@@ -94,5 +94,14 @@ export function articleBlocks(paragraph: string): StoredBlock['block'][] {
       rich('const recovery = true;'),
     ], language: 'javascript', caption: [] }),
     block(6, 'equation', { expression: 'E = mc^2' }),
+    ...(embeds
+      ? [
+          block(7, 'embed', { url: 'https://player.vimeo.com/video/123456789', caption: [
+            rich('Recovery walkthrough'),
+          ] }),
+          block(8, 'embed', { url: 'https://example.test/interactive' }),
+          block(9, 'link_preview', { url: 'https://example.test/field-notes' }),
+        ]
+      : []),
   ]
 }

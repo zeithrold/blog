@@ -24,6 +24,10 @@ const colors: Readonly<Record<string, Color | undefined>> = {
   red_background: 'red_background',
 }
 
+export function blockColor(color: string | undefined): Color | undefined {
+  return color === undefined ? undefined : colors[color]
+}
+
 export function publicLink(url: string, links: Readonly<Record<string, PublicPath>>): string | null {
   const parsed = URL.parse(url, 'https://www.notion.so')
   if (parsed === null) {
@@ -93,7 +97,7 @@ export function decorations(texts: readonly RichText[], links: Readonly<Record<s
     if (text.annotations.code) {
       marks.push(['c'])
     }
-    const color = colors[text.annotations.color]
+    const color = blockColor(text.annotations.color)
     if (color !== undefined) {
       marks.push(['h', color])
     }

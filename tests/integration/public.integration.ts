@@ -54,7 +54,7 @@ test('home lists published posts from every Notion query page', async () => {
 }).catch(rejected)
 
 test('article renders adapted nested Notion blocks and mapped public links', async () => {
-  await using worker = await workerFixture()
+  await using worker = await workerFixture({ embeds: true })
   const response = await worker.fetch('/posts/reliable-systems')
   assert.equal(response.status, 200)
   const document = html(await response.text())
@@ -64,6 +64,12 @@ test('article renders adapted nested Notion blocks and mapped public links', asy
   assert.match(body.textContent, /Nested recovery instructions\./)
   assert.equal(body.querySelector('b')?.textContent, ' Strong evidence.')
   assert.equal(body.querySelector('a[href="/pages/about"]')?.textContent, 'About this notebook')
+  assert.deepEqual(Array.from(body.querySelectorAll('iframe'), frame => frame.getAttribute('src')), [
+    'https://player.vimeo.com/video/123456789',
+  ])
+  assert.match(body.textContent, /Recovery walkthrough/)
+  assert.notEqual(body.querySelector('a[href="https://example.test/interactive"]'), null)
+  assert.notEqual(body.querySelector('a[href="https://example.test/field-notes"]'), null)
   const rows = Array.from(body.querySelectorAll('table tr')).map(row => row.textContent)
   assert.equal(rows.join('\n'), 'SignalAction\nFailureRecover')
   assert.match(body.querySelector('pre')?.textContent ?? '', /const recovery = true;/)
