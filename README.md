@@ -40,8 +40,8 @@ letter or digit and at most 120 characters. Only unarchived, untrashed pages dir
 in the configured data source with Status = Published are public. PublishedAt does
 not schedule publication. Page covers and body media remain hosted by Notion.
 
-The reader renders Notion tabs and embeds from the official API. YouTube and Vimeo
-player URLs allowed by the existing CSP render inline; other embeds and link previews
+The reader renders Notion tabs and HTTPS embeds from the official API without a domain
+allowlist. The destination can still refuse to be framed. HTTP embeds and link previews
 use link cards. PDFs remain downloads. Child pages are not inlined or made public
 by their parent. Database views and synced references are not rendered.
 

@@ -1,5 +1,3 @@
-import { frameOrigins } from '@/contracts/embed'
-
 export type SecurityContext = {
   readonly nonce: string
   readonly head: boolean
@@ -24,7 +22,7 @@ export function security(
     'media-src \'self\' https:',
     'connect-src \'self\'',
     'worker-src \'self\'',
-    `frame-src ${frameOrigins.join(' ')}`,
+    'frame-src https:',
     'object-src \'none\'',
     'base-uri \'none\'',
     'frame-ancestors \'none\'',

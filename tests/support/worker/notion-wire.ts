@@ -101,6 +101,7 @@ export function articleBlocks(paragraph: string, embeds = false): StoredBlock['b
           ] }),
           block(8, 'embed', { url: 'https://example.test/interactive' }),
           block(9, 'link_preview', { url: 'https://example.test/field-notes' }),
+          block(13, 'embed', { url: 'https://open.spotify.com/embed/track/2Lg88dMkXwvy7E5EeB0teR' }),
         ]
       : []),
   ]

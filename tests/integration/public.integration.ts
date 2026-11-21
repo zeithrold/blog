@@ -64,11 +64,13 @@ test('article renders adapted nested Notion blocks and mapped public links', asy
   assert.match(body.textContent, /Nested recovery instructions\./)
   assert.equal(body.querySelector('b')?.textContent, ' Strong evidence.')
   assert.equal(body.querySelector('a[href="/pages/about"]')?.textContent, 'About this notebook')
+  assert.match(response.headers.get('content-security-policy') ?? '', /(?:^|; )frame-src https:(?:;|$)/)
   assert.deepEqual(Array.from(body.querySelectorAll('iframe'), frame => frame.getAttribute('src')), [
     'https://player.vimeo.com/video/123456789',
+    'https://example.test/interactive',
+    'https://open.spotify.com/embed/track/2Lg88dMkXwvy7E5EeB0teR',
   ])
   assert.match(body.textContent, /Recovery walkthrough/)
-  assert.notEqual(body.querySelector('a[href="https://example.test/interactive"]'), null)
   assert.notEqual(body.querySelector('a[href="https://example.test/field-notes"]'), null)
   const rows = Array.from(body.querySelectorAll('table tr')).map(row => row.textContent)
   assert.equal(rows.join('\n'), 'SignalAction\nFailureRecover')
