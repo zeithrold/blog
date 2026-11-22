@@ -1,4 +1,37 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+
+async function expectDesktopFeedPlacement(page: Page): Promise<void> {
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: 'Reliable systems & small tools', exact: true })).toBeVisible()
+  const cards = page.locator('#posts .post-feed > li')
+  await expect(cards).toHaveCount(3)
+  // A taller left card leaves room for the last card on the right first.
+  const left = cards.first()
+  await left.evaluate((item) => {
+    item.style.minHeight = '320px'
+  })
+  await expect(left).toHaveCSS('grid-row-end', 'span 80')
+  const leftBounds = await left.boundingBox()
+  const rightBounds = await cards.nth(1).boundingBox()
+  const lastBounds = await cards.last().boundingBox()
+  if (leftBounds === null || rightBounds === null || lastBounds === null) {
+    throw new Error('Expected all three feed cards to have layout boxes')
+  }
+  expect(rightBounds.x).toBeGreaterThan(leftBounds.x)
+  expect(rightBounds.height).toBeLessThan(leftBounds.height)
+  expect(lastBounds.x).toBe(leftBounds.x)
+  expect(lastBounds.y).toBeGreaterThanOrEqual(leftBounds.y + leftBounds.height)
+
+  await page.goto('/?offset=1')
+  await expect(cards).toHaveCount(2)
+  const firstEvenBounds = await cards.first().boundingBox()
+  const lastEvenBounds = await cards.last().boundingBox()
+  if (firstEvenBounds === null || lastEvenBounds === null) {
+    throw new Error('Expected both feed cards to have layout boxes')
+  }
+  expect(lastEvenBounds.x).toBeGreaterThan(firstEvenBounds.x)
+}
 
 test('desktop shell navigates home search and real Notion article content', async ({ page }) => {
   const articleErrors: string[] = []
@@ -15,8 +48,7 @@ test('desktop shell navigates home search and real Notion article content', asyn
       articleErrors.push(message.text())
     }
   })
-  await page.goto('/')
-  await expect(page.getByRole('link', { name: 'Reliable systems & small tools', exact: true })).toBeVisible()
+  await expectDesktopFeedPlacement(page)
   await page.getByRole('navigation', { name: 'Site navigation' }).getByRole('link', { name: 'Search' }).click()
   await expect(page.getByRole('heading', { name: 'Search published writing' })).toBeVisible()
   await page.getByRole('searchbox', { name: 'Search terms' }).fill('reliable')
@@ -31,14 +63,15 @@ test('desktop shell navigates home search and real Notion article content', asyn
   await page.locator('.reader-tags').getByRole('link', { name: 'Systems', exact: true }).click()
   await expect(page).toHaveURL('/tags/systems')
   await expect(page.getByRole('heading', { name: 'Systems', exact: true })).toBeVisible()
-  await expect(page.locator('header').getByText('2 posts', { exact: true })).toBeVisible()
+  await expect(page.locator('header').getByText('3 posts', { exact: true })).toBeVisible()
   await expect(page.locator('#posts .post-list a')).toHaveText([
+    /Additional post 0/,
     /Reliable systems & small tools/,
     /A second field note/,
   ])
   await page.getByRole('link', { name: 'All tags', exact: true }).click()
   const systems = page.getByRole('listitem').filter({ has: page.getByRole('link', { name: 'Systems', exact: true }) })
-  await expect(systems).toContainText('2 posts')
+  await expect(systems).toContainText('3 posts')
   await systems.getByRole('link', { name: 'Systems', exact: true }).click()
   await page.getByRole('link', { name: 'Reliable systems & small tools', exact: true }).click()
   await expect(page.locator('.notion').getByRole('heading', { name: 'Designing for recovery' })).toBeVisible()
@@ -65,6 +98,7 @@ test('desktop shell navigates home search and real Notion article content', asyn
 test('mobile menu keyboard controls appearance and returns focus on Escape', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
+  await expect(page.locator('#posts .post-feed > li').last()).toHaveCSS('grid-column-start', 'auto')
   const more = page.getByRole('button', { name: 'More options' })
   await expect(more).toBeEnabled()
   await more.focus()

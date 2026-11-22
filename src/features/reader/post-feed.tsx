@@ -13,8 +13,8 @@ import { MediaExpiryRefresh } from './media-expiry-refresh'
 
 /*
  * A measured grid masonry: items keep DOM order, and only the row span is
- * computed after mount. Without JavaScript every card still lays out in a
- * plain two-column grid; no column-flow or column-major ordering is used.
+ * computed after mount. An unpaired final card anchors to the first column
+ * so a shorter second column doesn't pull it to the right.
  */
 
 type Spans = Record<string, number>
@@ -24,7 +24,7 @@ const feedClass = [
   'min-[702px]:grid-cols-2',
 ].join(' ')
 
-const itemClass = 'post-feed-item min-w-0 pb-6'
+const itemClass = 'post-feed-item min-w-0 pb-6 min-[702px]:last:odd:col-start-1'
 
 const cardClass = [
   'post-feed-card group flex flex-col overflow-hidden rounded-[var(--blog-radius-card)]',

@@ -7,7 +7,7 @@ async function main(): Promise<void> {
     throw new Error('BLOG_BROWSER_PORT must be a valid TCP port')
   }
   // Miniflare owns process signals; the fixture also cleans state on exit.
-  await workerFixture({ port })
+  await workerFixture({ port, additionalPostCount: 1 })
   process.send?.('ready')
 }
 
